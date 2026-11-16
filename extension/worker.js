@@ -4,8 +4,10 @@ let port;
 function connect() {
   port = chrome.runtime.connectNative('org.still.browser');
   port.onMessage.addListener(async m => {
-    try { port.postMessage({id:m.id, result:await lane.run(m)}); }
-    catch (e) { port.postMessage({id:m.id,error:e.message}); }
+    if (m.op === 'disconnect') { lane.cancel(m.session); return; }
+    const connection = port;
+    try { const result=await lane.run(m); connection.postMessage({id:m.id,result}); }
+    catch (e) { try { connection.postMessage({id:m.id,error:e.message}); } catch {} }
   });
   port.onDisconnect.addListener(() => { port = null; });
 }

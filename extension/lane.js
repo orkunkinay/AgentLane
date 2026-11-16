@@ -5,6 +5,7 @@ export class Lane {
     this.windowId = null;
     this.origins = [];
     this.sessions = new Map();
+    this.cancelled = new Set();
     this.tail = Promise.resolve();
   }
   configure(windowId, origins) {
@@ -44,10 +45,15 @@ export class Lane {
   async command(s, method, params = {}) {
     return this.api.debugger.sendCommand({tabId:s.tabId}, method, params);
   }
+  cancel(session) {
+    this.cancelled.add(session);
+    return this.run({session,op:'close'}).catch(()=>{}).finally(()=>this.cancelled.delete(session));
+  }
   invalidate(tabId) {
     for (const s of this.sessions.values()) if (s.tabId === tabId) s.frame = null;
   }
   async execute({session, op, args = {}}) {
+    if (this.cancelled.has(session) && op !== 'close') throw Error('Session disconnected');
     if (typeof session !== 'string' || !session) throw Error('Missing session');
     if (!['open','close','screenshot','click','type','key','scroll','navigate'].includes(op)) throw Error('Unsupported operation');
     if (op === 'close') {
