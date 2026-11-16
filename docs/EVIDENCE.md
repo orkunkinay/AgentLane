@@ -154,3 +154,26 @@ Harness failures retained: trusted-event assertions originally ran after tab rec
 and inspected the wrong document's event history (moved before durability reset);
 headless create-window bounds at (100,100) exceeded Chrome's minimum visible-area
 rule (changed disposable test placement to (0,0)). Neither was reported as a pass.
+
+## E8: physical human observation and additional live failures
+
+The user explicitly reported: “I actively used Chrome; no interference observed.”
+The first requested two-minute load had actually stopped after about ten seconds
+(10 completed rounds, at least 160 tool calls) on a transient post-navigation
+`Page.captureScreenshot` error: “Not attached to an active page”. Therefore this
+human observation is recorded for the active interval, not as a two-minute pass.
+Added bounded read-only capture retries; no uncertain input/navigation retries.
+
+A second run stopped after 3 rounds / 50 tool calls / 3.179 s on Chrome's tab-strip
+edit refusal, which says a user may be dragging a tab. This is evidence of a shared
+browser control-plane lock, not proof that user dragging was the only possible cause.
+The backend had unnecessarily updated active:true before every action. Changed it
+to skip edits for an already staged tab; only the explicit documented pre-execution
+edit refusal is retried, with ownership/cancellation checks and a bounded wait.
+Cleanup now retains ownership until tab removal succeeds.
+
+Reloaded the approved production extension, re-prepared a normal lane and restored
+the human's previously selected tab. A third two-minute load is running with that
+fix. No native input is used during its workload. Fourteen policy/IPC tests now pass.
+A formatter check also caught an invalid demo-helper template edit; fixed it and
+added syntax checks for every JavaScript helper before the test suite.

@@ -5,7 +5,7 @@
 | macOS + Chrome for Testing 159.0.8154.6 | Tested bounded workflow | Actual extension debugger, headless and headed fixtures |
 | Existing normal Chrome 157.0.8103.51 | Tested bounded workflow | Approved production extension installation; model-guided local visual workflow |
 | Existing authenticated real account | One safe Google page verified | Signed-in avatar in agent screenshot, no login/cookie export; other sites unverified |
-| Physical human typing/clicking/Spaces | Not yet tested | Renderer interleaving and idle native observer are not human participation |
+| Physical human activity | User reported no interference during a short real run | Two-minute load initially failed; individual typing/Spaces acceptance still not certified |
 | Codex MCP | Full protocol path tested; globally registered | Used official SDK client in this conversation; native backend not replaced |
 | Codex native Computer Use/extension | Not replaced | Browser host unavailable in this session |
 | Other stdio MCP agents | Expected, untested | Standard tool/image content; coordinate interpretation depends on model |

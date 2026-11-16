@@ -11,8 +11,8 @@ export, desktop event injection, private display API or debugging TCP port.
 **Status:** working real-browser prototype, not a complete guarantee of uninterrupted
 use. Automated headless and headed Chrome for Testing experiments pass bounded
 workflows. Normal Chrome 157 also passed a screenshot-guided local workflow and a
-read-only existing Google sign-in check. Physical human concurrency, Spaces switching
-and arbitrary websites remain unverified. Native dialogs and popups can escape
+read-only existing Google sign-in check. The user reported no interference during a short concurrent run; broader physical
+concurrency, Spaces switching and arbitrary websites are not certified. Native dialogs and popups can escape
 renderer isolation. See [exact evidence](docs/EVIDENCE.md) before relying on it.
 
 Screen-driving agents compete for desktop focus. DOM-only tools cannot operate all

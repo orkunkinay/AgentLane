@@ -104,3 +104,23 @@ Remaining hard boundary: renderer isolation cannot guarantee browser-chrome or O
 modal isolation. Strict zero-interruption for arbitrary hostile websites likely
 requires upstream Chrome support for non-activating targets and isolated modal
 surfaces. The implementation must not advertise that invariant as solved.
+
+## Additional measured constraints from normal Chrome
+
+A headed Tab key probe transferred window focus when traversal escaped page content;
+Still blocks Tab. Normal-profile testing also found a transient page-surface loss
+immediately after navigation, and a global tab-strip edit lock while the human was
+using Chrome. Avoiding unconditional active-tab edits is an architectural improvement:
+renderer input need not repeatedly mutate browser UI selection. The
+[Chrome tabs documentation](https://developer.chrome.com/docs/extensions/reference/api/tabs)
+explicitly demonstrates retrying the tab-drag edit refusal; Chromium's
+[ExtensionTabUtil declaration](https://chromium.googlesource.com/chromium/src/+/05fb2fe4ba88de0961e355d8ebaf321c21eb4c6b/chrome/browser/extensions/extension_tab_util.h)
+notes editability checks across browsers in a profile. These are shared browser
+control-plane constraints, even though the page input streams are independent.
+Still now skips unnecessary edits and waits boundedly for the explicit pre-execution
+refusal. It never retries uncertain clicks, text insertion or page navigation.
+
+The exact native Codex implementation responsible for every focus report has not been
+established here: the browser host is unavailable and native code has no exposed
+replacement hook. Our local experiments establish concrete Chrome triggers and the
+supported MCP alternative, not a reverse-engineered account of closed app internals.

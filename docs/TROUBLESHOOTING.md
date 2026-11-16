@@ -30,8 +30,14 @@ snapshot and call visual capture verified, or bring Chrome forward as a fallback
 Reload the extension, close recognizable orphaned lane windows manually and prepare
 again. Restart the MCP connection. A hung command is not automatically retried.
 
+**Tab drag lock:** Chrome can refuse tab edits across all windows in a profile
+while the human drags a tab. Already-staged actions avoid edits; create/switch/close
+wait boundedly for the explicit refusal. Long drags may still return an error.
+Do not retry uncertain page input or focus the lane to recover.
+
 **Debugger detached:** Chrome DevTools or another extension may have detached Still.
-Close the session and create a fresh one. Do not attach to a human tab to recover.
+A target_closed event can reattach only to the same validated owned tab. Other
+detach reasons require closing the session and creating a fresh one. Do not attach to a human tab or bypass Chrome’s restriction on another extension URL.
 
 **Stale frame:** take a fresh screenshot before each click/type/key/scroll. Navigation
 or a prior input consumes the token. Dynamic content may still move after capture.

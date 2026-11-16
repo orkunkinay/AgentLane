@@ -29,7 +29,8 @@ flowchart LR
 4. `open` creates an inactive blank tab in the lane, attaches the debugger, enables
    Page, file-chooser interception, a fixed DPR=1 viewport and focus emulation. It
    selects only that owned tab inside the agent window, then navigates it.
-5. A FIFO stages commands for all sessions. Before actions, window focus/state and
+5. A FIFO stages commands for all sessions. Already-active tabs need no selection
+   edit; explicit Chrome tab-drag edit refusals wait boundedly with ownership checks. Before actions, window focus/state and
    current tab membership are checked. No windows are created during task execution.
 6. Screenshots return actual Page.captureScreenshot PNGs plus a single-use random
    frame token. Input requires that token; navigation events invalidate it. There
@@ -66,7 +67,9 @@ reattach only after validating that the exact owned tab still exists in its lane
 Chrome-prohibited extension URLs are never bypassed.
 Each CDP command has a 10-second deadline. Timeout poisons the lane and detaches the
 target; new actions require human reload/setup. The queue is not simply released to
-continue mutating after an uncertain in-flight command. The bridge deadline is 30 s.
+continue mutating after an uncertain in-flight command. Only a transient inactive-page capture is retried, for up to eight read-only
+   attempts. Clicks, typing and navigation are never automatically repeated.
+   The bridge deadline is 30 s.
 Malformed/oversized messages are bounded; outbound native messages are under 1 MiB,
 inbound native responses under 16 MiB, socket requests under 64 KiB.
 
