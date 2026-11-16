@@ -9,8 +9,9 @@ extension debugger API. Authentication stays inside Chrome. No profile copy, coo
 export, desktop event injection, private display API or debugging TCP port.
 
 **Status:** working real-browser prototype, not a complete guarantee of uninterrupted
-use. Automated headless and headed Chrome for Testing experiments pass a bounded
-workflow. Physical human concurrency, existing personal accounts, Spaces switching,
+use. Automated headless and headed Chrome for Testing experiments pass bounded
+workflows. Normal Chrome 157 also passed a screenshot-guided local workflow and a
+read-only existing Google sign-in check. Physical human concurrency, Spaces switching
 and arbitrary websites remain unverified. Native dialogs and popups can escape
 renderer isolation. See [exact evidence](docs/EVIDENCE.md) before relying on it.
 
@@ -95,11 +96,16 @@ Reproduce automated experiments with a disposable profile:
 ```sh
 npx playwright install chromium
 npm run test:browser
+mkdir -p artifacts
 swiftc experiments/observe-macos.swift -o artifacts/observe-macos
 STILL_MCP=1 STILL_HEADED=1 STILL_OBSERVER=artifacts/observe-macos npm run test:browser
 ```
 
-The experiment never opens your normal Chrome profile. The headed test opens Chrome
+For a scripted load in an explicitly prepared real-profile lane, run
+`node scripts/concurrency-demo.mjs http://127.0.0.1:8741 120` while a human works.
+This reports successful tool responses; human observation is still required.
+
+The automated browser experiment never opens your normal Chrome profile. The headed test opens Chrome
 for Testing windows; launch/setup is outside the measured workload. `STILL_KEY_PROBE=1`
 deliberately reproduces unsafe raw Tab traversal in the disposable test build; do not
 use that flag during normal work. Generated screenshots and observer data remain in

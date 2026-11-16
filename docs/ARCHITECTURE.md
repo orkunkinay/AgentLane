@@ -61,7 +61,9 @@ not a Chrome-enforced least-privilege sandbox.
 ## Failures and recovery
 
 A focused or minimized lane is refused. A moved tab loses ownership and is detached,
-never closed in its new window. A detached debugger requires session recreation.
+never closed in its new window. A user-cancelled debugger requires session recreation. A target_closed detach can
+reattach only after validating that the exact owned tab still exists in its lane;
+Chrome-prohibited extension URLs are never bypassed.
 Each CDP command has a 10-second deadline. Timeout poisons the lane and detaches the
 target; new actions require human reload/setup. The queue is not simply released to
 continue mutating after an uncertain in-flight command. The bridge deadline is 30 s.

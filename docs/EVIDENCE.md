@@ -102,3 +102,55 @@ Nine automated policy/transport tests currently pass. These include queued mutat
 cancellation, timeout poisoning, ownership separation, moved tab revocation, forbidden
 Tab/raw CDP, native framing bounds, socket permissions and real SDK tool/image blocks.
 Normal Chrome 157 and real-account tests still require explicit installation approval.
+
+## E5: approved installation in normal authenticated Chrome 157
+
+User explicitly approved loading the local extension, native host registration and a
+safe read-only authenticated-page test. Loaded the production extension through
+Chrome's Load unpacked UI, registered its exact local origin, and added Still to
+Codex's global MCP configuration. No Chrome restart, profile copy or cookie read.
+No personal page screenshot or account identifier is committed.
+
+Setup initially presented full-screen-exit UI despite focused:false; closed that
+identified test window and added explicit normal state/position/bounds. Subsequent
+setup left the human's installation window selected. Setup is an interactive phase,
+not part of the no-interference runtime claim.
+
+Real normal Chrome local-page screenshot succeeded. Navigating to ChatGPT detached
+the debugger with target_closed while the tab survived. Added exact-tab reattachment
+for target_closed only, after membership validation. A retry was rejected by Chrome
+because the target had become another extension's URL. Did not bypass that boundary;
+the specific extension redirection mechanism remains unestablished. This site is not
+certified. Also fixed a real cleanup bug that had refused close on detached tabs.
+
+A safe Google homepage test through the production MCP/native/extension route
+returned actual page pixels showing the existing signed-in account avatar, without
+asking for login. This is a real-site authentication continuity observation, not
+proof of all account/session types. No account menu, inbox or credential store read.
+
+## E6: model-guided real-profile visual workflow
+
+Using `scripts/visual-client.mjs` as a client of the production MCP server, the agent
+inspected screenshots and chose coordinates (not DOM/AX selectors) in normal Chrome
+157. Entered a note, opened a dynamic actions menu, clicked Save, visually confirmed
+the saved note, scrolled to the footer and followed a link to the completion page.
+Canvas animation visibly progressed across screenshots. No native app input was
+used during this workflow. The local demo had not been seeded in this profile, so its
+synthetic-auth status correctly remained unset; real Google authentication was a
+separate successful check. A demo completion sentence previously implied synthetic
+auth regardless of state; corrected the fixture text to match its status.
+
+Physical concurrent human activity during this workflow has not yet been confirmed.
+A two-minute scripted repetition and a human observation request follow it.
+
+## E7: expanded disposable-profile durability
+
+Full MCP-to-Chrome headless run passed 300 interleaved renderer rounds, 11 owned-tab
+recreations, repeated navigations, dynamic menu choice, clicked second-page navigation,
+actual scroll and shared synthetic auth. The human fixture's text and active tab were
+preserved. This is a short load test, not the required 30-minute human acceptance run.
+
+Harness failures retained: trusted-event assertions originally ran after tab recreation
+and inspected the wrong document's event history (moved before durability reset);
+headless create-window bounds at (100,100) exceeded Chrome's minimum visible-area
+rule (changed disposable test placement to (0,0)). Neither was reported as a pass.

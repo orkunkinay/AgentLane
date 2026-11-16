@@ -30,7 +30,7 @@ try {
   const worker=context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
   const init=await worker.evaluate(async ({origin})=>{
     const lane=globalThis.testLane;
-    const w=await chrome.windows.create({url:chrome.runtime.getURL('anchor.html'),focused:false,type:'normal',state:'normal',left:100,top:100,width:1120,height:850});
+    const w=await chrome.windows.create({url:chrome.runtime.getURL('anchor.html'),focused:false,type:'normal',state:'normal',left:0,top:0,width:1100,height:760});
     lane.configure(w.id,[origin]);
     globalThis.testLane=lane;
     return {version:navigator.userAgent,windowId:w.id};
