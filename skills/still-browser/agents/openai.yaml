@@ -1,0 +1,4 @@
+interface:
+  display_name: "Still Browser"
+  short_description: "Use authenticated Chrome without desktop input"
+  default_prompt: "Use $still-browser to perform my browser task in a separate visual lane while I keep using Chrome."
