@@ -18,7 +18,10 @@ function fixture() {
         if (!tabs.has(id)) throw Error('No tab');
         return tabs.get(id);
       },
-      update: async (id, p) => calls.push(['update', id, p]),
+      update: async (id, p) => {
+        Object.assign(tabs.get(id), p);
+        calls.push(['update', id, p]);
+      },
       remove: async (id) => tabs.delete(id),
     },
     debugger: {
@@ -142,4 +145,28 @@ test('read-only capture retries a provisional navigation surface without repeati
   assert(s.frame);
   assert.equal(attempts, 2);
   assert(!f.calls.some((c) => c[0].startsWith('Input.')));
+});
+
+test('an already staged tab needs no tab-strip edit while the human drags tabs', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  f.lane.api.tabs.update = async () => {
+    throw Error('Tabs cannot be edited right now (user may be dragging a tab).');
+  };
+  const shot = await f.run('a', 'screenshot');
+  assert(shot.frame);
+});
+test('explicit tab-strip lock refusal retries before cleanup and retains ownership until removed', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  let attempts = 0;
+  f.lane.api.tabs.remove = async (id) => {
+    assert(f.lane.sessions.has('a'));
+    if (attempts++ === 0)
+      throw Error('Tabs cannot be edited right now (user may be dragging a tab).');
+    f.tabs.delete(id);
+  };
+  await f.run('a', 'close');
+  assert.equal(attempts, 2);
+  assert.equal(f.tabs.size, 0);
 });

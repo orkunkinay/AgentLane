@@ -64,6 +64,23 @@ export class Lane {
     }
     return s;
   }
+  async tabEdit(operation, session, closing = false) {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      if (!closing) {
+        if (this.cancelled.has(session)) throw Error('Session disconnected');
+        await this.assertLane();
+      }
+      if (this.sessions.has(session)) await this.owned(session, true);
+      try {
+        return await operation();
+      } catch (e) {
+        // Chrome explicitly refuses edits before execution while a human drags tabs.
+        // Retry only that documented refusal, never uncertain page input.
+        if (attempt === 19 || !/Tabs cannot be edited right now/.test(e.message)) throw e;
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+    }
+  }
   async prepareTarget(s) {
     await this.command(s, 'Page.enable');
     await this.command(s, 'Page.setInterceptFileChooserDialog', { enabled: true });
@@ -110,9 +127,9 @@ export class Lane {
       throw Error('Unsupported operation');
     if (op === 'close') {
       const s = await this.owned(session, true);
-      this.sessions.delete(session);
       await this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
-      await this.api.tabs.remove(s.tabId);
+      await this.tabEdit(() => this.api.tabs.remove(s.tabId), session, true);
+      this.sessions.delete(session);
       return { closed: true };
     }
     if (this.failed) throw Error(this.failed);
@@ -120,18 +137,25 @@ export class Lane {
     if (op === 'open') {
       if (this.sessions.has(session)) throw Error('Session already owns a tab');
       const url = this.url(args.url);
-      const tab = await this.api.tabs.create({
-        windowId: this.windowId,
-        url: 'about:blank',
-        active: false,
-      });
+      const tab = await this.tabEdit(
+        () =>
+          this.api.tabs.create({
+            windowId: this.windowId,
+            url: 'about:blank',
+            active: false,
+          }),
+        session,
+      );
       const s = { tabId: tab.id, frame: null, detached: false };
       this.sessions.set(session, s);
       try {
         await this.api.debugger.attach({ tabId: tab.id }, '1.3');
         await this.prepareTarget(s);
         // Changes selection only inside the dedicated lane, never focuses its window.
-        await this.api.tabs.update(tab.id, { active: true, autoDiscardable: false });
+        await this.tabEdit(
+          () => this.api.tabs.update(tab.id, { active: true, autoDiscardable: false }),
+          session,
+        );
         await this.command(s, 'Page.navigate', { url });
         return { opened: true, width: 1100, height: 760 };
       } catch (e) {
@@ -143,7 +167,9 @@ export class Lane {
     }
     const s = await this.owned(session);
     // Stage only the exact owned tab; never touch the human's selected tab.
-    await this.api.tabs.update(s.tabId, { active: true });
+    const stagedTab = await this.api.tabs.get(s.tabId);
+    if (!stagedTab.active)
+      await this.tabEdit(() => this.api.tabs.update(s.tabId, { active: true }), session);
     if (op === 'screenshot') {
       s.frame = null;
       let result;
