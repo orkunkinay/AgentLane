@@ -1,7 +1,9 @@
 // Only this module holds real Chrome tab IDs. Never accept one from an agent.
 export class Lane {
-  constructor(api) {
+  constructor(api, commandTimeoutMs = 10000) {
     this.api = api;
+    this.commandTimeoutMs = commandTimeoutMs;
+    this.failed = null;
     this.windowId = null;
     this.origins = [];
     this.sessions = new Map();
@@ -43,8 +45,18 @@ export class Lane {
     return s;
   }
   async command(s, method, params = {}) {
-    try { return await this.api.debugger.sendCommand({tabId:s.tabId}, method, params); }
-    catch(e) { throw Error(method + ': ' + e.message); }
+    let timer;
+    try {
+      return await Promise.race([
+        this.api.debugger.sendCommand({tabId:s.tabId}, method, params),
+        new Promise((_,reject)=>{timer=setTimeout(()=>{
+          this.failed='Renderer command timed out; reload extension and prepare a new lane';
+          this.api.debugger.detach({tabId:s.tabId}).catch(()=>{});
+          reject(Error(this.failed));
+        },this.commandTimeoutMs);})
+      ]);
+    } catch(e) { throw Error(method + ': ' + e.message); }
+    finally { clearTimeout(timer); }
   }
   cancel(session) {
     this.cancelled.add(session);
@@ -64,6 +76,7 @@ export class Lane {
       await this.api.tabs.remove(s.tabId);
       return {closed:true};
     }
+    if (this.failed) throw Error(this.failed);
     await this.assertLane();
     if (op === 'open') {
       if (this.sessions.has(session)) throw Error('Session already owns a tab');

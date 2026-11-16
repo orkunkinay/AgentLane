@@ -36,3 +36,18 @@ test('Tab is refused because native browser focus traversal can activate the lan
   await assert.rejects(f.run('a','key',{frame:s.frame,key:'Tab'}),/not allowed/);
   assert(!f.calls.some(c=>c[0]==='Input.dispatchKeyEvent'));
 });
+
+test('disconnect cancels a queued mutation before dispatch',async()=>{
+  const f=fixture();await f.run('a','open',{url:'https://example.com/'});const shot=await f.run('a','screenshot');
+  let release;f.lane.tail=new Promise(r=>release=r);
+  const mutation=f.run('a','type',{frame:shot.frame,text:'must-not-run'});
+  const cleanup=f.lane.cancel('a');release();
+  await assert.rejects(mutation,/disconnected/);await cleanup;
+  assert(!f.calls.some(c=>c[0]==='Input.insertText'));assert.equal(f.tabs.size,0);
+});
+test('timed out renderer poisons the lane and never falls back to native input',async()=>{
+  const f=fixture();await f.run('a','open',{url:'https://example.com/'});
+  f.lane.commandTimeoutMs=5;f.lane.api.debugger.sendCommand=()=>new Promise(()=>{});
+  await assert.rejects(f.run('a','screenshot'),/timed out/);
+  await assert.rejects(f.run('b','open',{url:'https://example.com/'}),/reload extension/);
+});

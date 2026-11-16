@@ -21,7 +21,7 @@ const server=net.createServer(socket=>{
   clients.add(socket);const session=randomUUID();let buffer='';let busy=false;
   socket.on('data',chunk=>{
     buffer+=chunk.toString();
-    if(Buffer.byteLength(buffer)>32768){socket.destroy();return;}
+    if(Buffer.byteLength(buffer)>65536){socket.destroy();return;}
     let end;
     while((end=buffer.indexOf('\n'))>=0){
       const line=buffer.slice(0,end);buffer=buffer.slice(end+1);
