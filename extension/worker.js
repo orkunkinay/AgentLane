@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
       if (lane.windowId !== null) throw Error('Lane already prepared; reload extension to reset');
       const origins = m.origins.map(o=>new URL(o).origin);
       if (!origins.length || origins.some(o=>!/^https?:\/\//.test(o))) throw Error('Enter HTTP(S) origins');
-      const w = await chrome.windows.create({url:chrome.runtime.getURL('anchor.html'),focused:false,type:'normal',width:1120,height:850});
+      const w = await chrome.windows.create({url:chrome.runtime.getURL('anchor.html'),focused:false,type:'normal',state:'normal',left:100,top:100,width:1120,height:850});
       lane.configure(w.id, origins);
       if (!port) connect();
       return {prepared:true};

@@ -7,10 +7,11 @@ import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 
 // Synthetic session values remain local; never accesses a real profile.
-const fixture = `<!doctype html><style>body{margin:0;font:24px system-ui}input{position:absolute;left:40px;top:60px;width:320px;height:40px}button{position:absolute;left:40px;top:140px;width:180px;height:50px}canvas{position:absolute;top:250px}#result{position:absolute;top:210px}#long{height:2500px}</style><input aria-label="Text"><button onclick="document.querySelector('#result').textContent='Saved '+document.querySelector('input').value">Save</button><div id="result"></div><canvas width="300" height="150"></canvas><div id="long"></div><script>window.trusted=[];for(const t of ['click','keydown','input','wheel'])addEventListener(t,e=>trusted.push({type:t,trusted:e.isTrusted}));let c=document.querySelector('canvas').getContext('2d');c.fillStyle='teal';c.fillRect(0,0,300,150);c.fillStyle='white';c.fillText('Real compositor pixels',20,60);</script>`;
+const fixture = `<!doctype html><style>body{margin:0;font:24px system-ui}input{position:absolute;left:40px;top:60px;width:320px;height:40px}button{position:absolute;left:40px;top:140px;width:180px;height:50px}canvas{position:absolute;top:250px}#result{position:absolute;top:210px}#long{height:2500px}</style><input aria-label="Text"><button onclick="document.querySelector('#result').textContent='Saved '+document.querySelector('input').value">Save</button><div id="result"></div><button id="menu" style="left:400px;top:60px;width:220px" onclick="document.querySelector('#option').hidden=false">Open actions</button><button id="option" hidden style="left:400px;top:140px;width:220px" onclick="document.querySelector('#result').textContent='Ready';this.hidden=true">Mark ready</button><a style="position:absolute;left:750px;top:70px" href="/next">Continue</a><canvas width="300" height="150"></canvas><div id="long"></div><script>window.trusted=[];for(const t of ['click','keydown','input','wheel'])addEventListener(t,e=>trusted.push({type:t,trusted:e.isTrusted}));let c=document.querySelector('canvas').getContext('2d');c.fillStyle='teal';c.fillRect(0,0,300,150);c.fillStyle='white';c.fillText('Real compositor pixels',20,60);</script>`;
 const server = createServer((req,res)=>{
   if(req.url==='/seed'){res.setHeader('Set-Cookie','still_fixture=local-session; HttpOnly; SameSite=Lax; Path=/');res.end('Synthetic human session established');}
   else if(req.url==='/auth'){res.end(req.headers.cookie?.includes('still_fixture=local-session')?'AUTHENTICATED':'LOGGED OUT');}
+  else if(req.url==='/next'){res.setHeader('Content-Type','text/html');res.end(req.headers.cookie?.includes('still_fixture=local-session')?'<h1>Authenticated next page</h1>':'Logged out');}
   else {res.setHeader('Content-Type','text/html');res.end(fixture);}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -29,7 +30,7 @@ try {
   const worker=context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
   const init=await worker.evaluate(async ({origin})=>{
     const lane=globalThis.testLane;
-    const w=await chrome.windows.create({url:chrome.runtime.getURL('anchor.html'),focused:false,type:'normal'});
+    const w=await chrome.windows.create({url:chrome.runtime.getURL('anchor.html'),focused:false,type:'normal',state:'normal',left:100,top:100,width:1120,height:850});
     lane.configure(w.id,[origin]);
     globalThis.testLane=lane;
     return {version:navigator.userAgent,windowId:w.id};
@@ -78,6 +79,12 @@ try {
   await act('click',{x:100,y:165});
   assert.equal(await agent.locator('#result').innerText(),'Saved agent-only');
   assert.equal(await human.locator('input').inputValue(),'human-keeps-this');
+  await act('click',{x:480,y:85});await agent.locator('#option').waitFor({state:'visible'});
+  await act('click',{x:480,y:165});assert.equal(await agent.locator('#result').innerText(),'Ready');
+  await act('click',{x:800,y:80});await agent.waitForURL(origin+'/next');
+  assert.equal(await agent.locator('h1').innerText(),'Authenticated next page');
+  await call('navigate',{url:origin+'/'});await agent.waitForURL(origin+'/');await agent.waitForLoadState();
+  await act('click',{x:100,y:80});await act('type',{text:'workflow complete'});await act('click',{x:100,y:165});
   const visibleShot=await call('screenshot');await mkdir('artifacts',{recursive:true});await writeFile('artifacts/workflow.png',Buffer.from(visibleShot.data,'base64'));
   await act('scroll',{x:600,y:450,deltaX:0,deltaY:300});
   await agent.waitForFunction(()=>scrollY>0,{},{timeout:5000});
@@ -92,13 +99,22 @@ try {
     console.log(JSON.stringify(keyResults,null,2));
     await writeFile('artifacts/key-probe.json',JSON.stringify(keyResults,null,2));return;
   }
-  for(let i=0;i<30;i++) {
+  const trusted=await agent.evaluate(()=>window.trusted);
+  assert(trusted.some(e=>e.type==='click'&&e.trusted));assert(trusted.some(e=>e.type==='input'&&e.trusted));
+  const rounds=Number(process.env.STILL_ROUNDS||30);
+  assert(Number.isInteger(rounds)&&rounds>0&&rounds<=10000);
+  let recreatedTabs=0;
+  for(let i=0;i<rounds;i++) {
+    if(process.env.STILL_DURABILITY && i>0 && i%25===0){
+      await call('close');await call('open',{url:origin+'/'});recreatedTabs++;
+      for(let j=0;j<200;j++){agent=context.pages().find(p=>p!==human && !p.isClosed() && p.url()===origin+'/');if(agent)break;await new Promise(r=>setTimeout(r,20));}
+      assert(agent,'Recreated owned target discovered');await agent.waitForLoadState();
+    } else if(process.env.STILL_DURABILITY && i>0 && i%10===0){
+      await call('navigate',{url:origin+'/?round='+i});await agent.waitForURL(origin+'/?round='+i);await agent.waitForLoadState();
+    }
     await Promise.all([human.locator('input').fill('human-'+i),act('key',{key:'ArrowDown'})]);
     assert.equal(await human.locator('input').inputValue(),'human-'+i);
   }
-  const trusted=await agent.evaluate(()=>window.trusted);
-  assert(trusted.some(e=>e.type==='click'&&e.trusted));
-  assert(trusted.some(e=>e.type==='input'&&e.trusted));
   const shot=await call('screenshot');
   await assert.rejects(call('click',{x:1,y:1,frame:crypto.randomUUID()}),/Stale/);
   await assert.rejects(call('navigate',{url:'https://unapproved.example/'}),/approved/);
@@ -109,7 +125,7 @@ try {
   assert(humanWindow,'Human fixture window known');
   assert.equal(after.tabs.find(t=>t.windowId===humanWindow)?.id,before.tabs.find(t=>t.windowId===humanWindow)?.id);
   if(observer){observer.kill();assert.equal(nativeEvents.length,1,'No foreground PID, pointer or Space change during measured workload');}
-  const report={...init,mode:opts.headless?'headless':'headed',backend:bridge?(process.env.STILL_MCP?'MCP stdio + native messaging + Unix socket + real chrome.debugger':'native messaging + Unix socket + real chrome.debugger'):'real chrome.debugger extension API',syntheticHttpOnlySession:true,visualCoordinateWorkflow:true,trustedClickAndText:true,concurrentRendererRounds:30,humanFieldUnchanged:true,humanSelectedTabPreserved:true,nativeMonitor:observer?{sampleMs:10,changes:nativeEvents.length-1,events:nativeEvents}:'NOT RUN',osKeyboardMouseSpaces:'Physical human participation NOT TESTED',realExistingAccount:'NOT TESTED'};
+  const report={...init,mode:opts.headless?'headless':'headed',backend:bridge?(process.env.STILL_MCP?'MCP stdio + native messaging + Unix socket + real chrome.debugger':'native messaging + Unix socket + real chrome.debugger'):'real chrome.debugger extension API',syntheticHttpOnlySession:true,visualCoordinateWorkflow:true,trustedClickAndText:true,concurrentRendererRounds:rounds,recreatedTabs,dynamicMenuAndLinkNavigation:true,humanFieldUnchanged:true,humanSelectedTabPreserved:true,nativeMonitor:observer?{sampleMs:10,changes:nativeEvents.length-1,events:nativeEvents}:'NOT RUN',osKeyboardMouseSpaces:'Physical human participation NOT TESTED',realExistingAccount:'NOT TESTED'};
   console.log(JSON.stringify(report,null,2));
   await writeFile('artifacts/browser-report.json',JSON.stringify(report,null,2)+'\n');
   await call('close');
