@@ -2,9 +2,9 @@
 
 ## Gate 1: finish empirical acceptance
 
-- Install the reviewed extension in normal Chrome 157 with explicit human consent.
+- Done: installed the reviewed extension in normal Chrome 157 with explicit human consent.
 - Run the seven human tests, including sustained typing, clicking, other apps and Spaces.
-- Verify one safe existing account indicator without exporting session material.
+- Done: verified a safe Google signed-in avatar without exporting session material.
 - Add cross-origin iframe, drag/drop, native select, shadow DOM, slow loading,
   redirects, unsaved beforeunload and popup regressions.
 - Exercise all allowed keys across page/iframe focus boundaries. Tab remains blocked.

@@ -177,3 +177,19 @@ the human's previously selected tab. A third two-minute load is running with tha
 fix. No native input is used during its workload. Fourteen policy/IPC tests now pass.
 A formatter check also caught an invalid demo-helper template edit; fixed it and
 added syntax checks for every JavaScript helper before the test suite.
+
+## E9: corrected two-minute normal-profile load
+
+Production extension reloaded with the tab-edit fix; setup was followed by restoring
+the human's previously selected tab. Then `node scripts/concurrency-demo.mjs
+http://127.0.0.1:8741 120` completed in **120.729 seconds**, **138 rounds**, **2,208
+MCP tool calls**, **zero observation retries** and no tool errors. Its final PNG was
+visually inspected and showed the completion page. The local synthetic session was
+unset and displayed as such. This load used fixed screenshot-coordinate actions;
+the independently screenshot-interpreted workflow was established separately in E6.
+The test closed its owned tab. No native input was used during the measured workload.
+
+A follow-up human observation was requested specifically for this corrected interval;
+until answered, do not extend the earlier no-interference report to all 120 seconds.
+This is not a 30-minute production soak or universal native-dialog/Spaces proof.
+GitHub CI is provided but has not run remotely; no publication or push occurred.

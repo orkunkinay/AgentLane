@@ -51,7 +51,7 @@ Use a test account/site before a private production workflow.
 | 3 Windows/Spaces | Change tabs, apps and Spaces repeatedly | Multi-page visual task | No unsolicited activation, tab or Space changes; pixels stay live | Pending; stationary headed workload observed no changes |
 | 4 Existing auth | Leave a safe already-authenticated site open | Open same site in lane, inspect safe account indicator only | Existing session recognized without new login or secret export | One safe signed-in Google page verified; synthetic HttpOnly session also passes |
 | 5 Complex visual UI | Continue normal work | Demo input, dynamic actions menu, save, footer scroll, second-page link | Correct result using screenshots/coordinates; no interference | Model-guided normal Chrome local demo passes; physical concurrency pending |
-| 6 Durability | Work normally for 30 minutes | Repeat workflows, open/close sessions, detach debugger and reconnect | No interference; failures reported, recovery follows docs | 300 renderer rounds and 11 tab recreations pass; sustained human test pending |
+| 6 Durability | Work normally for 30 minutes | Repeat workflows, open/close sessions, detach debugger and reconnect | No interference; failures reported, recovery follows docs | 300 fixture rounds, 11 tab recreations and 120.7 s normal-profile load pass; longer soak pending |
 | 7 Ownership/security | Move agent tab into a human window; try invalid operations | Request unsupported methods, stale frames, foreign IDs | No command reaches foreign tab; moved tab preserved; no secret/log leak | Policy/IPC tests pass; race/adversarial browser cases pending |
 
 Repeat tests 1–3 with the lane covered by another app and with Chrome on another
