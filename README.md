@@ -12,8 +12,8 @@ export, desktop event injection, private display API or debugging TCP port.
 use. Automated headless and headed Chrome for Testing experiments pass bounded
 workflows. Normal Chrome 157 also passed a screenshot-guided local workflow and a
 read-only existing Google sign-in check. A corrected normal-profile load completed 138 rounds / 2,208 calls in two minutes.
-The user reported no interference during an earlier short concurrent run; broader physical
-concurrency, Spaces switching and arbitrary websites are not certified. Native dialogs and popups can escape
+The user confirmed active Chrome use with no interference during that complete run.
+Individual Space-transition cases, native dialogs and arbitrary websites are not certified. Native dialogs and popups can escape
 renderer isolation. See [exact evidence](docs/EVIDENCE.md) before relying on it.
 
 Screen-driving agents compete for desktop focus. DOM-only tools cannot operate all

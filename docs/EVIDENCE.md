@@ -189,7 +189,8 @@ unset and displayed as such. This load used fixed screenshot-coordinate actions;
 the independently screenshot-interpreted workflow was established separately in E6.
 The test closed its owned tab. No native input was used during the measured workload.
 
-A follow-up human observation was requested specifically for this corrected interval;
-until answered, do not extend the earlier no-interference report to all 120 seconds.
+The user subsequently confirmed specifically for this corrected interval:
+“Actively using Chrome; no interference.” This is a positive human observation for
+the complete two-minute run, not an automated guarantee across every UI primitive.
 This is not a 30-minute production soak or universal native-dialog/Spaces proof.
 GitHub CI is provided but has not run remotely; no publication or push occurred.

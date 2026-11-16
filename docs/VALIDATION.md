@@ -46,9 +46,9 @@ Use a test account/site before a private production workflow.
 
 | Test | Human activity | Agent activity | Pass criterion | Current outcome |
 |---|---|---|---|---|
-| 1 Keyboard | Type a unique paragraph continuously in human window | Repeated visual clicks and text entry in lane | Paragraph exact, no typing redirected/focus transfer | Physical test pending; automated renderer field preserved |
-| 2 Mouse | Click and scroll another Chrome window | Click/scroll/navigate repeatedly | Pointer and human interactions unaffected | Physical test pending; idle observer measured no pointer changes |
-| 3 Windows/Spaces | Change tabs, apps and Spaces repeatedly | Multi-page visual task | No unsolicited activation, tab or Space changes; pixels stay live | Pending; stationary headed workload observed no changes |
+| 1 Keyboard | Type a unique paragraph continuously in human window | Repeated visual clicks and text entry in lane | Paragraph exact, no typing redirected/focus transfer | User reported active Chrome use/no interference in full two-minute run; exact physical keystroke audit pending |
+| 2 Mouse | Click and scroll another Chrome window | Click/scroll/navigate repeatedly | Pointer and human interactions unaffected | Same positive human observation; idle headed observer separately measured no pointer changes |
+| 3 Windows/Spaces | Change tabs, apps and Spaces repeatedly | Multi-page visual task | No unsolicited activation, tab or Space changes; pixels stay live | Broad human no-interference report; individual Space transitions not certified |
 | 4 Existing auth | Leave a safe already-authenticated site open | Open same site in lane, inspect safe account indicator only | Existing session recognized without new login or secret export | One safe signed-in Google page verified; synthetic HttpOnly session also passes |
 | 5 Complex visual UI | Continue normal work | Demo input, dynamic actions menu, save, footer scroll, second-page link | Correct result using screenshots/coordinates; no interference | Model-guided normal Chrome local demo passes; physical concurrency pending |
 | 6 Durability | Work normally for 30 minutes | Repeat workflows, open/close sessions, detach debugger and reconnect | No interference; failures reported, recovery follows docs | 300 fixture rounds, 11 tab recreations and 120.7 s normal-profile load pass; longer soak pending |
