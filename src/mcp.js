@@ -22,7 +22,7 @@ tool('lane_open','Create your own tab in a human-prepared lane, using the existi
 tool('lane_screenshot','Observe actual rendered page pixels. Use its frame token in exactly one next input action. Coordinates are CSS pixels.',{},'screenshot');
 tool('lane_click','Click a coordinate observed in your latest screenshot.',{frame,x,y},'click');
 tool('lane_type','Insert text into the field focused by your previous click; no clipboard access.',{frame,text:z.string().max(10000)},'type');
-tool('lane_key','Send a renderer key; browser and OS shortcuts are deliberately unavailable.',{frame,key:z.enum(['Enter','Tab','Escape','Backspace','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])},'key');
+tool('lane_key','Send a renderer key; browser and OS shortcuts are deliberately unavailable.',{frame,key:z.enum(['Enter','Escape','Backspace','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'])},'key');
 tool('lane_scroll','Scroll at a viewport coordinate.',{frame,x,y,deltaX:z.number().min(-3000).max(3000),deltaY:z.number().min(-3000).max(3000)},'scroll');
 tool('lane_navigate','Navigate your owned target to a setup-approved starting origin. This does not restrict redirects or links.',{url:z.string().url()},'navigate');
 tool('lane_close','Close only your owned tab. Always call when finished.',{},'close');

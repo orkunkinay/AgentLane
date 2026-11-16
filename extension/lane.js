@@ -117,7 +117,7 @@ export class Lane {
       if (typeof args.text !== 'string' || args.text.length > 10000) throw Error('Invalid text');
       await this.command(s,'Input.insertText',{text:args.text});
     } else if (op === 'key') {
-      const keys = {Enter:13,Tab:9,Escape:27,Backspace:8,ArrowUp:38,ArrowDown:40,ArrowLeft:37,ArrowRight:39};
+      const keys = {Enter:13,Escape:27,Backspace:8,ArrowUp:38,ArrowDown:40,ArrowLeft:37,ArrowRight:39};
       if (!Object.hasOwn(keys,args.key)) throw Error('Key is not allowed; browser shortcuts are unavailable');
       const p = {key:args.key,windowsVirtualKeyCode:keys[args.key]};
       await this.command(s,'Input.dispatchKeyEvent',{type:'rawKeyDown',...p});

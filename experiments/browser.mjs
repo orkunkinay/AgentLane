@@ -63,15 +63,16 @@ try {
   if(process.env.STILL_KEY_PROBE){
     const keyResults=[];
     for(const key of ['Enter','Escape','Backspace','ArrowDown','Tab']){
-      await worker.evaluate(async id=>chrome.windows.update(id,{focused:true}),before.tabs.find(t=>t.url===origin+'/').windowId);
-      const shot=await call('screenshot');await call('key',{frame:shot.frame,key});
+      await worker.evaluate(async id=>chrome.windows.update(id,{focused:true}),before.tabs.find(t=>t.windowId!==init.windowId).windowId);
+      // Deliberately bypass production key allowlist to reproduce the unsafe Tab boundary.
+      await worker.evaluate(async key=>{const s=globalThis.testLane.sessions.get('experiment');const code={Enter:13,Escape:27,Backspace:8,ArrowDown:40,Tab:9}[key];for(const type of ['rawKeyDown','keyUp'])await globalThis.testLane.command(s,'Input.dispatchKeyEvent',{type,key,windowsVirtualKeyCode:code});},key);
       keyResults.push({key,windows:await worker.evaluate(()=>chrome.windows.getAll())});
     }
     console.log(JSON.stringify(keyResults,null,2));
     await writeFile('artifacts/key-probe.json',JSON.stringify(keyResults,null,2));return;
   }
   for(let i=0;i<30;i++) {
-    await Promise.all([human.locator('input').fill('human-'+i),act('key',{key:'Tab'})]);
+    await Promise.all([human.locator('input').fill('human-'+i),act('key',{key:'ArrowDown'})]);
     assert.equal(await human.locator('input').inputValue(),'human-'+i);
   }
   const trusted=await agent.evaluate(()=>window.trusted);
@@ -83,7 +84,7 @@ try {
   await assert.rejects(call('Runtime.evaluate',{expression:'document.cookie'}),/Unsupported/);
   await mkdir('artifacts',{recursive:true});await writeFile('artifacts/agent.png',Buffer.from(shot.data,'base64'));
   const after=await worker.evaluate(async()=>({windows:await chrome.windows.getAll(),tabs:await chrome.tabs.query({active:true})}));
-  const humanWindow=before.tabs.find(t=>t.url===origin+'/')?.windowId;
+  const humanWindow=before.tabs.find(t=>t.windowId!==init.windowId)?.windowId;
   assert(humanWindow,'Human fixture window known');
   assert.equal(after.tabs.find(t=>t.windowId===humanWindow)?.id,before.tabs.find(t=>t.windowId===humanWindow)?.id);
   if(observer){observer.kill();assert.equal(nativeEvents.length,1,'No foreground PID, pointer or Space change during measured workload');}

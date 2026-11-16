@@ -30,3 +30,9 @@ test('invalid URLs and keys never reach privileged methods; queue survives error
   await assert.rejects(f.run('a','key',{frame:s.frame,key:'Meta+L'}),/not allowed/);
   await f.run('a','screenshot');assert(f.tabs.has(1));
 });
+
+test('Tab is refused because native browser focus traversal can activate the lane',async()=>{
+  const f=fixture();await f.run('a','open',{url:'https://example.com/'});const s=await f.run('a','screenshot');
+  await assert.rejects(f.run('a','key',{frame:s.frame,key:'Tab'}),/not allowed/);
+  assert(!f.calls.some(c=>c[0]==='Input.dispatchKeyEvent'));
+});
