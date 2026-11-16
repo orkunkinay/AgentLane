@@ -28,7 +28,13 @@ function tool(name, description, schema, op) {
               { type: 'image', data: r.data, mimeType: r.mimeType },
               {
                 type: 'text',
-                text: JSON.stringify({ frame: r.frame, width: r.width, height: r.height }),
+                text: JSON.stringify({
+                  frame: r.frame,
+                  width: r.width,
+                  height: r.height,
+                  navigationRevision: r.navigationRevision,
+                  captureAttempts: r.captureAttempts,
+                }),
               },
             ],
           };

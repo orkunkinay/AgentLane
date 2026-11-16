@@ -54,12 +54,13 @@ chrome.debugger.onDetach.addListener(({ tabId }, reason) => {
       s.detachReason = reason;
       s.frame = null;
     }
+  lane.invalidate(tabId, 'Debugger detached');
 });
 chrome.debugger.onEvent.addListener((source, method, params) => {
   if (method === 'Page.frameNavigated' || method === 'Page.navigatedWithinDocument')
-    lane.invalidate(source.tabId);
+    lane.invalidate(source.tabId, method);
   if (method === 'Page.javascriptDialogOpening') {
-    lane.invalidate(source.tabId);
+    lane.invalidate(source.tabId, method);
     // Cancel beforeunload rather than consenting to leave; never accept dialogs silently.
     chrome.debugger
       .sendCommand(source, 'Page.handleJavaScriptDialog', { accept: false })

@@ -4,6 +4,7 @@ export class Lane {
     this.api = api;
     this.commandTimeoutMs = commandTimeoutMs;
     this.failed = null;
+    this.captureSettleMs = 150;
     this.windowId = null;
     this.origins = [];
     this.sessions = new Map();
@@ -59,7 +60,7 @@ export class Lane {
       // No cancellation override: only a still-owned tab after target_closed may recover.
       await this.api.debugger.attach({ tabId: s.tabId }, '1.3');
       s.detached = false;
-      s.frame = null;
+      this.invalidate(s.tabId, 'Debugger target reattached');
       await this.prepareTarget(s);
     }
     return s;
@@ -117,8 +118,13 @@ export class Lane {
       .catch(() => {})
       .finally(() => this.cancelled.delete(session));
   }
-  invalidate(tabId) {
-    for (const s of this.sessions.values()) if (s.tabId === tabId) s.frame = null;
+  invalidate(tabId, reason = 'page navigation') {
+    for (const s of this.sessions.values()) {
+      if (s.tabId !== tabId) continue;
+      s.navigationRevision = (s.navigationRevision || 0) + 1;
+      s.frame = null;
+      s.frameInvalidation = reason;
+    }
   }
   async execute({ session, op, args = {} }) {
     if (this.cancelled.has(session) && op !== 'close') throw Error('Session disconnected');
@@ -146,7 +152,7 @@ export class Lane {
           }),
         session,
       );
-      const s = { tabId: tab.id, frame: null, detached: false };
+      const s = { tabId: tab.id, frame: null, detached: false, navigationRevision: 0 };
       this.sessions.set(session, s);
       try {
         await this.api.debugger.attach({ tabId: tab.id }, '1.3');
@@ -172,25 +178,46 @@ export class Lane {
       await this.tabEdit(() => this.api.tabs.update(s.tabId, { active: true }), session);
     if (op === 'screenshot') {
       s.frame = null;
-      let result;
       for (let attempt = 0; attempt < 8; attempt++) {
+        const revision = s.navigationRevision;
+        let result;
         try {
           result = await this.command(s, 'Page.captureScreenshot', {
             format: 'png',
             fromSurface: true,
             captureBeyondViewport: false,
           });
-          break;
         } catch (e) {
           if (attempt === 7 || !/Not attached to an active page/.test(e.message)) throw e;
           // Observation only: provisional navigation targets may temporarily lack a surface.
           await new Promise((resolve) => setTimeout(resolve, 150));
           await this.assertLane();
           await this.owned(session);
+          continue;
         }
+        // Never grant an input token to an image spanning an observed navigation.
+        // A brief settling interval also catches late page/iframe/history events.
+        if (this.captureSettleMs > 0)
+          await new Promise((resolve) => setTimeout(resolve, this.captureSettleMs));
+        if (this.cancelled.has(session)) throw Error('Session disconnected');
+        await this.assertLane();
+        await this.owned(session);
+        if (revision !== s.navigationRevision) continue;
+        s.frame = crypto.randomUUID();
+        s.frameInvalidation = null;
+        return {
+          data: result.data,
+          mimeType: 'image/png',
+          frame: s.frame,
+          width: 1100,
+          height: 760,
+          navigationRevision: revision,
+          captureAttempts: attempt + 1,
+        };
       }
-      s.frame = crypto.randomUUID();
-      return { data: result.data, mimeType: 'image/png', frame: s.frame, width: 1100, height: 760 };
+      throw Error(
+        'Page kept navigating during screenshot capture; retry observation after it settles. Input was not dispatched.',
+      );
     }
     if (op === 'navigate') {
       s.frame = null;
@@ -198,8 +225,14 @@ export class Lane {
       if (result.errorText) throw Error(result.errorText);
       return { navigated: true };
     }
-    if (!s.frame || args.frame !== s.frame)
-      throw Error('Stale or missing frame; take a screenshot before each action');
+    if (!s.frame || args.frame !== s.frame) {
+      const detail = s.frameInvalidation ? ' (' + s.frameInvalidation + ')' : '';
+      throw Error(
+        'Stale or missing frame' +
+          detail +
+          '; take a screenshot before each action. Input was not dispatched.',
+      );
+    }
     s.frame = null;
     const point = () => {
       if (

@@ -34,6 +34,7 @@ function fixture() {
     },
   };
   const lane = new Lane(api);
+  lane.captureSettleMs = 0;
   lane.configure(7, ['https://example.com']);
   const run = (session, op, args = {}) => lane.run({ session, op, args });
   return { lane, run, window, tabs, calls };
@@ -169,4 +170,62 @@ test('explicit tab-strip lock refusal retries before cleanup and retains ownersh
   await f.run('a', 'close');
   assert.equal(attempts, 2);
   assert.equal(f.tabs.size, 0);
+});
+
+test('a screenshot spanning navigation is recaptured before a token is issued', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  let captures = 0;
+  const original = f.lane.api.debugger.sendCommand;
+  f.lane.api.debugger.sendCommand = async (target, method, params) => {
+    if (method !== 'Page.captureScreenshot') return original(target, method, params);
+    captures++;
+    if (captures === 1) f.lane.invalidate(1, 'Page.frameNavigated');
+    return { data: 'capture-' + captures };
+  };
+  const shot = await f.run('a', 'screenshot');
+  assert.equal(captures, 2);
+  assert.equal(shot.data, 'capture-2');
+  await f.run('a', 'type', { frame: shot.frame, text: 'current document only' });
+});
+
+test('late navigation in the observation settling interval causes a fresh capture', async () => {
+  const f = fixture();
+  f.lane.captureSettleMs = 15;
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  let captures = 0;
+  f.lane.api.debugger.sendCommand = async () => {
+    captures++;
+    if (captures === 1) setTimeout(() => f.lane.invalidate(1, 'Page.navigatedWithinDocument'), 1);
+    return { data: 'capture-' + captures };
+  };
+  const shot = await f.run('a', 'screenshot');
+  assert.equal(captures, 2);
+  assert.equal(shot.data, 'capture-2');
+});
+
+test('navigation after a returned screenshot still blocks input and explains why', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  const shot = await f.run('a', 'screenshot');
+  f.lane.invalidate(1, 'Page.frameNavigated');
+  await assert.rejects(
+    f.run('a', 'type', { frame: shot.frame, text: 'must not dispatch' }),
+    /Page.frameNavigated.*not dispatched/,
+  );
+  assert(!f.calls.some((c) => c[0] === 'Input.insertText'));
+});
+
+test('continuous navigation returns a bounded observation error instead of a false token', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  let captures = 0;
+  f.lane.api.debugger.sendCommand = async () => {
+    captures++;
+    f.lane.invalidate(1, 'Page.frameNavigated');
+    return { data: 'unstable' };
+  };
+  await assert.rejects(f.run('a', 'screenshot'), /kept navigating/);
+  assert.equal(captures, 8);
+  assert.equal(f.lane.sessions.get('a').frame, null);
 });
