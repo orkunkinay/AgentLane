@@ -43,7 +43,8 @@ export class Lane {
     return s;
   }
   async command(s, method, params = {}) {
-    return this.api.debugger.sendCommand({tabId:s.tabId}, method, params);
+    try { return await this.api.debugger.sendCommand({tabId:s.tabId}, method, params); }
+    catch(e) { throw Error(method + ': ' + e.message); }
   }
   cancel(session) {
     this.cancelled.add(session);
@@ -74,7 +75,6 @@ export class Lane {
         await this.api.debugger.attach({tabId:tab.id}, '1.3');
         await this.command(s, 'Page.enable');
         await this.command(s, 'Page.setInterceptFileChooserDialog', {enabled:true});
-        await this.command(s, 'Page.setDownloadBehavior', {behavior:'deny'});
         await this.command(s, 'Emulation.setDeviceMetricsOverride', {width:1100,height:760,deviceScaleFactor:1,mobile:false});
         await this.command(s, 'Emulation.setFocusEmulationEnabled', {enabled:true});
         // Changes selection only inside the dedicated lane, never focuses its window.
