@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import {NativeDecoder,nativeFrame} from './framing.js';
 import {stateDir,socketPath} from './paths.js';
 process.umask(0o077);
+if(process.platform==='darwin' && Buffer.byteLength(socketPath)>103)throw Error('Unix socket path is too long; set a shorter STILL_STATE_DIR in native launcher and MCP environment');
 await mkdir(stateDir,{recursive:true,mode:0o700});
 const stat=await lstat(stateDir);
 if(!stat.isDirectory()||stat.isSymbolicLink()||stat.uid!==process.getuid())throw Error('Unsafe state directory');

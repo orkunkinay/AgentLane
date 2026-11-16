@@ -6,16 +6,18 @@ import {BrowserClient} from './client.js';
 const server=new McpServer({name:'still',version:'0.1.0'});
 const client=new BrowserClient();
 let connected=false;
+let queue=Promise.resolve();
+function serial(fn){const run=queue.then(fn);queue=run.catch(()=>{});return run;}
 const text=r=>({content:[{type:'text',text:JSON.stringify(r)}]});
 function tool(name,description,schema,op){
-  server.registerTool(name,{description,inputSchema:schema},async args=>{
+  server.registerTool(name,{description,inputSchema:schema},args=>serial(async()=>{
     try {
       if(!connected){await client.connect();connected=true;}
       const r=await client.call(op,args);
       if(op==='screenshot')return {content:[{type:'image',data:r.data,mimeType:r.mimeType},{type:'text',text:JSON.stringify({frame:r.frame,width:r.width,height:r.height})}]};
       return text(r);
     }catch(e){return {isError:true,content:[{type:'text',text:e.message}]};}
-  });
+  }));
 }
 const frame=z.string().uuid();const x=z.number().min(0).max(1099);const y=z.number().min(0).max(759);
 tool('lane_open','Create your own tab in a human-prepared lane, using the existing profile. Never use native computer tools for this workflow.',{url:z.string().url()},'open');

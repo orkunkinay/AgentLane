@@ -67,3 +67,38 @@ sampled. Thus PID-only monitoring is insufficient for same-app window isolation.
 This disproves a broad assumption that all target-scoped keyboard events preserve
 window focus. Added public CGWindowList ordering to the observer and a key probe.
 No human physical typing was part of this test.
+
+## E3: safe-key probe and corrected headed workload
+
+A headed disposable key probe re-focused the human fixture between deliberate raw
+CDP probes. Enter, Escape, Backspace and ArrowDown preserved window focused flags in
+that fixture; Tab transferred them to the agent window. This is context-specific,
+not a universal key safety proof. Production Tab was removed; the experiment's raw
+probe bypass remains only in the temporary test build.
+
+After that fix, headed Chrome for Testing 159 passed 30 interleaved rounds with
+human fixture field and selected tab preserved. A public 10 ms macOS observer
+recorded zero changes to foreground PID, front normal-window ID or pointer and no
+Space-change notification during the measured workload. Launch/setup/teardown were
+excluded. No person was continuously typing/clicking during the test.
+
+## E4: complete supported transport into a real browser
+
+`STILL_MCP=1 STILL_HEADED=1 STILL_OBSERVER=artifacts/observe-macos npm run test:browser`
+passed on 2026-11-16. Actual path: official MCP SDK stdio client -> Still MCP child ->
+owner-only Unix socket -> Chrome-launched native host -> extension port -> real
+chrome.debugger -> headed renderer. Synthetic HttpOnly session recognition, PNG
+capture, trusted coordinate clicks/text, Save result, actual scrollY > 0, 30 renderer
+rounds and human selected-tab preservation passed. Observer recorded zero changes
+at its sampling resolution. No private APIs or occlusion launch flags used.
+
+An initial native-connect attempt returned ENOENT before the socket appeared; a
+subsequent instrumented attempt succeeded. No root cause established. The harness
+waits for the socket and reports the native-port error if available. An initial MCP
+negative test used an invalid UUID, so schema validation rejected it before the lane;
+changed the test to a well-formed but stale UUID to exercise the intended boundary.
+
+Nine automated policy/transport tests currently pass. These include queued mutation
+cancellation, timeout poisoning, ownership separation, moved tab revocation, forbidden
+Tab/raw CDP, native framing bounds, socket permissions and real SDK tool/image blocks.
+Normal Chrome 157 and real-account tests still require explicit installation approval.

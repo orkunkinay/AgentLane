@@ -1,5 +1,5 @@
 import {chromium} from 'playwright';
-import {mkdtemp,rm,mkdir,writeFile,cp,appendFile} from 'node:fs/promises';
+import {mkdtemp,rm,mkdir,writeFile,cp,appendFile,chmod,stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {createServer} from 'node:http';
@@ -16,12 +16,12 @@ const server = createServer((req,res)=>{
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const origin=`http://127.0.0.1:${server.address().port}`;
 const profile=await mkdtemp(join(tmpdir(),'still-experiment-'));
-let context;let observer;const nativeEvents=[];const operationStates=[];
+let context;let bridge;let observer;const nativeEvents=[];const operationStates=[];
 await (async()=>{
 try {
   const extension=join(profile,'test-extension');
   await cp(resolve('extension'),extension,{recursive:true});
-  await appendFile(join(extension,'worker.js'),'\nglobalThis.testLane = lane; // Instrumented disposable test build only\n');
+  await appendFile(join(extension,'worker.js'),'\nglobalThis.testLane = lane; globalThis.testConnect = connect; globalThis.testPort = () => port; chrome.runtime.onConnect.addListener(()=>{}); // Instrumented disposable test build only\n');
   const opts={headless:!process.env.STILL_HEADED,channel:'chromium',args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]};
   if(process.env.STILL_CHROME) {delete opts.channel;opts.executablePath=process.env.STILL_CHROME;}
   context=await chromium.launchPersistentContext(profile,opts);
@@ -34,9 +34,28 @@ try {
     globalThis.testLane=lane;
     return {version:navigator.userAgent,windowId:w.id};
   },{origin});
+  if(process.env.STILL_NATIVE || process.env.STILL_MCP){
+    const id=new URL(worker.url()).host;
+    const hosts=join(profile,'NativeMessagingHosts');await mkdir(hosts,{recursive:true});
+    const state=join(profile,'bridge');const launcher=join(profile,'host-launcher');
+    const quote=s=>"'"+s.replaceAll("'","'\\''")+"'";
+    await writeFile(launcher,`#!/bin/sh\nSTILL_STATE_DIR=${quote(state)} exec ${quote(process.execPath)} ${quote(resolve('src/native-host.js'))} \"$@\"\n`,{mode:0o700});await chmod(launcher,0o700);
+    await writeFile(join(hosts,'org.still.browser.json'),JSON.stringify({name:'org.still.browser',description:'Disposable test host',path:launcher,type:'stdio',allowed_origins:[`chrome-extension://${id}/`]}));
+    await worker.evaluate(()=>{globalThis.testConnect();globalThis.testPort().onDisconnect.addListener(()=>{globalThis.testNativeError=chrome.runtime.lastError?.message;});});
+    for(let i=0;i<100;i++){try{await stat(join(state,'browser.sock'));break;}catch{await new Promise(r=>setTimeout(r,30));}}
+    const nativeError=await worker.evaluate(()=>globalThis.testNativeError);if(nativeError)throw Error('Native connect: '+nativeError);
+    process.env.STILL_STATE_DIR=state;
+    if(process.env.STILL_MCP){
+      const {Client}=await import('@modelcontextprotocol/sdk/client/index.js');
+      const {StdioClientTransport}=await import('@modelcontextprotocol/sdk/client/stdio.js');
+      const protocol=new Client({name:'still-live-test',version:'1.0'});
+      await protocol.connect(new StdioClientTransport({command:process.execPath,args:[resolve('src/mcp.js')],env:{...process.env,STILL_STATE_DIR:state}}));
+      bridge={call:async(op,args)=>{const r=await protocol.callTool({name:'lane_'+op,arguments:args});if(r.isError)throw Error(r.content[0].text);if(op==='screenshot')return {...JSON.parse(r.content[1].text),data:r.content[0].data,mimeType:r.content[0].mimeType};return JSON.parse(r.content[0].text);},close:()=>protocol.close()};
+    }else{const {BrowserClient}=await import('../src/client.js');bridge=new BrowserClient();await bridge.connect();}
+  }
   const call=async(op,args={})=>{
     if(process.env.STILL_VERBOSE)process.stderr.write('experiment: '+op+'\n');
-    let deadline;try{const result=await Promise.race([worker.evaluate(async ({op,args})=>globalThis.testLane.run({session:'experiment',op,args}),{op,args}),new Promise((_,reject)=>{deadline=setTimeout(()=>reject(Error('Timed out: '+op)),8000);})]);if(process.env.STILL_HEADED)operationStates.push({op,windows:await worker.evaluate(()=>chrome.windows.getAll())});return result;}finally{clearTimeout(deadline);}
+    let deadline;try{const result=await Promise.race([(bridge?bridge.call(op,args):worker.evaluate(async ({op,args})=>globalThis.testLane.run({session:'experiment',op,args}),{op,args})),new Promise((_,reject)=>{deadline=setTimeout(()=>reject(Error('Timed out: '+op)),8000);})]);if(process.env.STILL_HEADED)operationStates.push({op,windows:await worker.evaluate(()=>chrome.windows.getAll())});return result;}finally{clearTimeout(deadline);}
   };
   // Real native/OS focus is outside a headless experiment's observable surface.
   if(process.env.STILL_OBSERVER){
@@ -59,7 +78,9 @@ try {
   await act('click',{x:100,y:165});
   assert.equal(await agent.locator('#result').innerText(),'Saved agent-only');
   assert.equal(await human.locator('input').inputValue(),'human-keeps-this');
+  const visibleShot=await call('screenshot');await mkdir('artifacts',{recursive:true});await writeFile('artifacts/workflow.png',Buffer.from(visibleShot.data,'base64'));
   await act('scroll',{x:600,y:450,deltaX:0,deltaY:300});
+  await agent.waitForFunction(()=>scrollY>0,{},{timeout:5000});
   if(process.env.STILL_KEY_PROBE){
     const keyResults=[];
     for(const key of ['Enter','Escape','Backspace','ArrowDown','Tab']){
@@ -79,16 +100,16 @@ try {
   assert(trusted.some(e=>e.type==='click'&&e.trusted));
   assert(trusted.some(e=>e.type==='input'&&e.trusted));
   const shot=await call('screenshot');
-  await assert.rejects(call('click',{x:1,y:1,frame:'stale'}),/Stale/);
+  await assert.rejects(call('click',{x:1,y:1,frame:crypto.randomUUID()}),/Stale/);
   await assert.rejects(call('navigate',{url:'https://unapproved.example/'}),/approved/);
-  await assert.rejects(call('Runtime.evaluate',{expression:'document.cookie'}),/Unsupported/);
+  await assert.rejects(call('Runtime.evaluate',{expression:'document.cookie'}),/Unsupported|not found|Unknown|Invalid/i);
   await mkdir('artifacts',{recursive:true});await writeFile('artifacts/agent.png',Buffer.from(shot.data,'base64'));
   const after=await worker.evaluate(async()=>({windows:await chrome.windows.getAll(),tabs:await chrome.tabs.query({active:true})}));
   const humanWindow=before.tabs.find(t=>t.windowId!==init.windowId)?.windowId;
   assert(humanWindow,'Human fixture window known');
   assert.equal(after.tabs.find(t=>t.windowId===humanWindow)?.id,before.tabs.find(t=>t.windowId===humanWindow)?.id);
   if(observer){observer.kill();assert.equal(nativeEvents.length,1,'No foreground PID, pointer or Space change during measured workload');}
-  const report={...init,mode:opts.headless?'headless':'headed',backend:'real chrome.debugger extension API',syntheticHttpOnlySession:true,visualCoordinateWorkflow:true,trustedClickAndText:true,concurrentRendererRounds:30,humanFieldUnchanged:true,humanSelectedTabPreserved:true,nativeMonitor:observer?{sampleMs:10,changes:nativeEvents.length-1,events:nativeEvents}:'NOT RUN',osKeyboardMouseSpaces:'Physical human participation NOT TESTED',realExistingAccount:'NOT TESTED'};
+  const report={...init,mode:opts.headless?'headless':'headed',backend:bridge?(process.env.STILL_MCP?'MCP stdio + native messaging + Unix socket + real chrome.debugger':'native messaging + Unix socket + real chrome.debugger'):'real chrome.debugger extension API',syntheticHttpOnlySession:true,visualCoordinateWorkflow:true,trustedClickAndText:true,concurrentRendererRounds:30,humanFieldUnchanged:true,humanSelectedTabPreserved:true,nativeMonitor:observer?{sampleMs:10,changes:nativeEvents.length-1,events:nativeEvents}:'NOT RUN',osKeyboardMouseSpaces:'Physical human participation NOT TESTED',realExistingAccount:'NOT TESTED'};
   console.log(JSON.stringify(report,null,2));
   await writeFile('artifacts/browser-report.json',JSON.stringify(report,null,2)+'\n');
   await call('close');
@@ -97,6 +118,6 @@ try {
   let windows;try{windows=await context.serviceWorkers()[0].evaluate(()=>chrome.windows.getAll());}catch{}
   await writeFile('artifacts/browser-failure.json',JSON.stringify({message:e.message,nativeEvents,windows,operationStates},null,2));
   throw e;
-} finally {observer?.kill();await context?.close();server.close();await rm(profile,{recursive:true,force:true});}
+} finally {await bridge?.close();observer?.kill();await context?.close();server.close();await rm(profile,{recursive:true,force:true});}
 
 })();
