@@ -234,6 +234,45 @@ await (async () => {
     const visibleShot = await call('screenshot');
     await mkdir('artifacts', { recursive: true });
     await writeFile('artifacts/workflow.png', Buffer.from(visibleShot.data, 'base64'));
+    const navigationProbes = [];
+    if (process.env.STILL_NAVIGATION_PROBE) {
+      for (const kind of ['iframe', 'history']) {
+        // Inject a real navigation just after capture, in a disposable test build only.
+        // The production event handler must observe it and recapture before issuing a token.
+        await worker.evaluate((kind) => {
+          const lane = globalThis.testLane;
+          const original = lane.command.bind(lane);
+          globalThis.restoreProbeCommand = () => {
+            lane.command = original;
+          };
+          let scheduled = false;
+          lane.command = async (session, method, params) => {
+            const result = await original(session, method, params);
+            if (method === 'Page.captureScreenshot' && !scheduled) {
+              scheduled = true;
+              const expression =
+                kind === 'iframe'
+                  ? "setTimeout(()=>{const child=document.createElement('iframe');child.src='/?child-probe=1';document.body.append(child);},40)"
+                  : "setTimeout(()=>history.replaceState(null,'',location.pathname+'?history-probe=1'),40)";
+              await original(session, 'Runtime.evaluate', { expression });
+            }
+            return result;
+          };
+        }, kind);
+        try {
+          const observed = await call('screenshot');
+          assert(observed.captureAttempts >= 2, kind + ' navigation must cause recapture');
+          await call('scroll', { frame: observed.frame, x: 600, y: 450, deltaX: 0, deltaY: 50 });
+          navigationProbes.push({
+            kind,
+            captureAttempts: observed.captureAttempts,
+            inputAccepted: true,
+          });
+        } finally {
+          await worker.evaluate(() => globalThis.restoreProbeCommand());
+        }
+      }
+    }
     await act('scroll', { x: 600, y: 450, deltaX: 0, deltaY: 300 });
     await agent.waitForFunction(() => scrollY > 0, {}, { timeout: 5000 });
     if (process.env.STILL_KEY_PROBE) {
@@ -332,6 +371,7 @@ await (async () => {
       concurrentRendererRounds: rounds,
       recreatedTabs,
       dynamicMenuAndLinkNavigation: true,
+      navigationProbes,
       humanFieldUnchanged: true,
       humanSelectedTabPreserved: true,
       nativeMonitor: observer
