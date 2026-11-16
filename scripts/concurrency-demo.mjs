@@ -9,9 +9,14 @@ const seconds=Number(process.argv[3]||120);
 if(!Number.isFinite(seconds)||seconds<1||seconds>1800)throw Error('Duration must be 1–1800 seconds');
 const client=new Client({name:'still-concurrency-demo',version:'0.1.0'});
 await client.connect(new StdioClientTransport({command:process.execPath,args:[resolve('src/mcp.js')],env:process.env}));
-let calls=0;let rounds=0;let lastShot;let opened=false;
+let calls=0;let rounds=0;let observationRetries=0;let lastShot;let opened=false;
 async function call(op,args={}){const r=await client.callTool({name:'lane_'+op,arguments:args});calls++;if(r.isError)throw Error(r.content[0].text);return r;}
-async function shot(){const r=await call('screenshot');lastShot=r;return JSON.parse(r.content[1].text).frame;}
+async function shot(){
+  for(let attempt=0;attempt<8;attempt++){
+    try{const r=await call('screenshot');lastShot=r;return JSON.parse(r.content[1].text).frame;}
+    catch(e){if(attempt===7 || !/Not attached to an active page/.test(e.message))throw e;observationRetries++;await delay(150);}
+  }
+}
 async function act(op,args){return call(op,{...args,frame:await shot()});}
 const started=Date.now();
 try {
@@ -30,6 +35,6 @@ try {
   }while(Date.now()-started<seconds*1000);
   await mkdir('artifacts',{recursive:true});
   await writeFile('artifacts/concurrency-final.png',Buffer.from(lastShot.content[0].data,'base64'));
-  const report={elapsedSeconds:(Date.now()-started)/1000,rounds,calls,allToolResponsesSuccessful:true,physicalHumanIndependence:'requires human observation',workflowInterpretation:'fixed-coordinate scripted load; visually inspect final screenshot'};
+  const report={elapsedSeconds:(Date.now()-started)/1000,rounds,calls,completed:true,observationRetries,physicalHumanIndependence:'requires human observation',workflowInterpretation:'fixed-coordinate scripted load; visually inspect final screenshot'};
   await writeFile('artifacts/concurrency-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
-}finally{if(opened)await call('close').catch(()=>{});await client.close();}
+}catch(e){await mkdir('artifacts',{recursive:true});await writeFile('artifacts/concurrency-failure.json',JSON.stringify({message:e.message,rounds,calls,observationRetries,elapsedSeconds:(Date.now()-started)/1000},null,2));throw e;}finally{if(opened)await call('close').catch(()=>{});await client.close();}

@@ -62,3 +62,9 @@ test('only target_closed can reattach an exact still-owned live tab',async()=>{
   await f.run('a','screenshot');assert.equal(s.detached,false);
   s.detached=true;s.detachReason='canceled_by_user';await assert.rejects(f.run('a','screenshot'),/canceled_by_user/);
 });
+
+test('read-only capture retries a provisional navigation surface without repeating input',async()=>{
+  const f=fixture();await f.run('a','open',{url:'https://example.com/'});const original=f.lane.api.debugger.sendCommand;let attempts=0;
+  f.lane.api.debugger.sendCommand=async(t,m,p)=>{if(m==='Page.captureScreenshot'&&attempts++===0)throw Error('Not attached to an active page');return original(t,m,p);};
+  const s=await f.run('a','screenshot');assert(s.frame);assert.equal(attempts,2);assert(!f.calls.some(c=>c[0].startsWith('Input.')));
+});

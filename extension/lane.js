@@ -115,7 +115,19 @@ export class Lane {
     // Stage only the exact owned tab; never touch the human's selected tab.
     await this.api.tabs.update(s.tabId, {active:true});
     if (op === 'screenshot') {
-      const result = await this.command(s, 'Page.captureScreenshot', {format:'png',fromSurface:true,captureBeyondViewport:false});
+      s.frame=null;
+      let result;
+      for(let attempt=0;attempt<8;attempt++){
+        try {
+          result=await this.command(s, 'Page.captureScreenshot', {format:'png',fromSurface:true,captureBeyondViewport:false});
+          break;
+        } catch(e) {
+          if(attempt===7 || !/Not attached to an active page/.test(e.message))throw e;
+          // Observation only: provisional navigation targets may temporarily lack a surface.
+          await new Promise(resolve=>setTimeout(resolve,150));
+          await this.assertLane();await this.owned(session);
+        }
+      }
       s.frame = crypto.randomUUID();
       return {data:result.data, mimeType:'image/png', frame:s.frame, width:1100, height:760};
     }
