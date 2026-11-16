@@ -194,3 +194,23 @@ The user subsequently confirmed specifically for this corrected interval:
 the complete two-minute run, not an automated guarantee across every UI primitive.
 This is not a 30-minute production soak or universal native-dialog/Spaces proof.
 GitHub CI is provided but has not run remotely; no publication or push occurred.
+
+## Documentation and agent skill, 2026-11-16
+
+Added the portable `still-browser` skill and a non-overwriting installer. Installed
+it in the local Codex skills directory; the repository and installed copies passed
+the skill-creator validator and their SKILL.md contents match. The skill documents
+the actual MCP contract, fresh-frame sequencing, ownership, origin setup, supported
+keys, authorization boundaries, failure handling and measured limitations.
+
+Captured four documentation PNGs with `scripts/capture-docs.mjs` in headless Chrome
+for Testing 159.0.8154.6 using a disposable profile and synthetic localhost session.
+The extension screen and setup form are real UI; the demo pages use ordinary
+Playwright actions to illustrate their states. These images are not additional
+concurrency measurements. The profile and temporary server are removed after capture.
+No personal browser profile, account data or human-work observer recording was used.
+
+Visually inspected all four images and the rendered overview SVG. Checked 22 local
+README image/file links and SVG syntax. All 14 automated tests, JavaScript syntax
+checks and formatting checks passed. No changes to the browser-control runtime were
+needed for this documentation/skill task.
