@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>Still setup</title>
+<style>body{font:14px system-ui;width:340px;padding:16px}textarea{width:100%;height:100px}button{padding:8px}</style>
+<h2>Prepare an agent window</h2>
+<p>This grants debugger access. Page screenshots may reach your AI provider.
+Keep the agent window restored and separate from your work. This experimental build
+cannot isolate native dialogs or guarantee zero focus changes on every website.</p>
+<label>Approved starting origins, one per line<textarea id="origins" placeholder="https://example.com"></textarea></label>
+<p>These restrict requested navigation, not redirects, links or network traffic.</p>
+<button id="prepare">Create dedicated lane</button><p id="status"></p>
+<script src="setup.js"></script>
