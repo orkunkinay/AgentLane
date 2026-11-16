@@ -43,7 +43,9 @@ move the physical pointer to recover. The human keeps using their usual window.
 A click followed by typing requires: screenshot → click → **new screenshot** →
 type. `lane_type` inserts text into the already focused page field; it does not
 locate a field. Frame tokens are single-use and invalidated by observed navigation.
-They do not freeze dynamic content. Execute dependent actions sequentially.
+Capture waits briefly for navigation events and recaptures images spanning them, but
+it does not freeze dynamic content or guarantee no later navigation. Execute dependent
+actions sequentially.
 
 | Tool | Arguments | Use |
 |---|---|---|
@@ -77,7 +79,10 @@ Screenshots may contain private data and reach the configured model provider.
 
 ## Handle failures without interference
 
-- **Stale/missing frame:** take a fresh screenshot, inspect it and use its new token.
+- **Stale/missing frame:** the rejected input was not dispatched. The error may name
+  a navigation or debugger event that invalidated the screenshot. Take a fresh
+  screenshot, inspect it and decide the next action using its new token. A page can
+  navigate after capture even when the agent used the correct token.
 - **Uncertain click/type/navigation result:** inspect a new screenshot before deciding
   whether another action is needed. Do not blindly repeat a potentially completed action.
 - **Temporary inactive-page screenshot:** the backend retries a bounded number of

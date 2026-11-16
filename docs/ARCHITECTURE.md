@@ -32,7 +32,11 @@ flowchart LR
 5. A FIFO stages commands for all sessions. Already-active tabs need no selection
    edit; explicit Chrome tab-drag edit refusals wait boundedly with ownership checks. Before actions, window focus/state and
    current tab membership are checked. No windows are created during task execution.
-6. Screenshots return actual Page.captureScreenshot PNGs plus a single-use random
+6. Capture tracks navigation revisions and waits 150 ms for late navigation events.
+   If navigation spans capture/settling, it recaptures, up to eight attempts; ongoing
+   navigation returns an observation error instead of granting a token. The returned
+   metadata includes revision and capture attempt count, without page URLs or content.
+   Screenshots return actual Page.captureScreenshot PNGs plus a single-use random
    frame token. Input requires that token; navigation events invalidate it. There
    is no atomic screenshot/input lock on dynamic websites; tokens detect reuse and
    observed navigation, not every possible visual change.

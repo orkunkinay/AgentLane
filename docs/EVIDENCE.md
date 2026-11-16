@@ -214,3 +214,32 @@ Visually inspected all four images and the rendered overview SVG. Checked 22 loc
 README image/file links and SVG syntax. All 14 automated tests, JavaScript syntax
 checks and formatting checks passed. No changes to the browser-control runtime were
 needed for this documentation/skill task.
+
+## E10: user-reported fresh-frame rejections and capture/navigation race
+
+The user supplied a Codex trace of a successful Google search with two stale-frame
+rejections after screenshots, followed by successful reobservation/retry and owned-tab
+cleanup. The trace contains no input arguments, images or navigation event log, so
+neither token misuse nor a specific Google navigation event is established as its
+cause. No personal-profile replay or native UI interaction was performed for this fix.
+
+Inspection found a separate demonstrable race: navigation during Page.captureScreenshot
+could invalidate the session and then be overwritten by unconditional issuance of a
+new token for the capture. Four regression tests initially failed: capture spanning
+navigation, late event during settling, informative post-return invalidation and bounded
+failure under continuous navigation. Added per-session navigation revisions, a 150 ms
+post-capture settling interval and recapture on revision changes. All existing navigation
+invalidations remain enabled. Events after return still reject input. Rejected input
+errors explicitly state it was not dispatched and include the invalidating event when
+known. No click/type/navigation is automatically repeated.
+
+18 automated tests passed. The complete MCP/native/extension/browser test also passed
+in headless Chrome for Testing 159.0.8154.6 with controlled iframe and history navigation
+injections after capture. Each probe required exactly two captures, then accepted its
+input. Thirty interleaved renderer rounds, synthetic authentication and human-field/tab
+preservation also passed. This does not establish that every fresh-frame rejection on
+Google is eliminated or revalidate physical focus behavior on the updated build.
+
+Updated the product skill and its installed local copy. The source fix requires an
+extension reload/reprepare and a fresh MCP connection before normal Chrome uses it;
+the running personal-profile extension was not reloaded during this task.

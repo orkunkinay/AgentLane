@@ -25,6 +25,12 @@ no window titles, keystrokes or screenshots. It can miss changes shorter than it
 sampling interval; an idle observer is not evidence about simultaneous physical
 input. Browser launch/setup and teardown are outside its measured interval.
 
+`STILL_NAVIGATION_PROBE=1 STILL_MCP=1 npm run test:browser` injects real iframe and
+history navigations just after capture in the disposable test build. It asserts
+that capture retries before issuing an input token and that the resulting token
+accepts input. This is a controlled timing regression, not a claim about Google’s
+exact navigation behavior.
+
 `STILL_NATIVE=1` includes native transport without MCP. `STILL_VERBOSE=1` prints
 operation names only. `STILL_KEY_PROBE=1 STILL_HEADED=1` is a separate controlled
 experiment that intentionally bypasses the production key allowlist and focuses the

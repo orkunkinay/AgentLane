@@ -39,8 +39,17 @@ Do not retry uncertain page input or focus the lane to recover.
 A target_closed event can reattach only to the same validated owned tab. Other
 detach reasons require closing the session and creating a fresh one. Do not attach to a human tab or bypass Chrome’s restriction on another extension URL.
 
-**Stale frame:** take a fresh screenshot before each click/type/key/scroll. Navigation
-or a prior input consumes the token. Dynamic content may still move after capture.
+**Stale frame:** the rejected input was not dispatched. Take a fresh screenshot
+before each click/type/key/scroll. Navigation or a prior input invalidates the token;
+the error now reports the invalidating event when available. Capture recaptures
+images spanning observed navigation and settles briefly, but navigation after its
+return still requires another screenshot. Dynamic content may also move without a
+navigation event. Do not blindly replay a potentially completed input.
+
+**Applying a source update:** unpacked extension workers keep their loaded code.
+Finish existing sessions, click Still’s Reload control at `chrome://extensions`,
+prepare a fresh lane with the full origin list, and use a fresh MCP connection.
+Changing files on disk alone does not update the running worker.
 
 **Tab key rejected:** this is intentional. Headed Chrome focus traversal activated the
 agent window in the fixture. Click the next field or control using screenshot coordinates.
