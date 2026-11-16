@@ -4,6 +4,6 @@
   "version": "0.1.0",
   "description": "Experimental target-scoped visual input in a dedicated authenticated window.",
   "permissions": ["debugger", "nativeMessaging", "storage"],
-  "background": {"service_worker": "worker.js", "type": "module"},
-  "action": {"default_popup": "setup.html"}
+  "background": { "service_worker": "worker.js", "type": "module" },
+  "action": { "default_popup": "setup.html" }
 }

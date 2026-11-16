@@ -11,13 +11,16 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "test:browser": "node experiments/browser.mjs",
-    "mcp": "node src/mcp.js"
+    "mcp": "node src/mcp.js",
+    "format": "prettier --write src extension scripts experiments test package.json",
+    "format:check": "prettier --check src extension scripts experiments test package.json"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "playwright": "^1.56.0"
+    "playwright": "^1.56.0",
+    "prettier": "^3.10.1"
   }
 }
