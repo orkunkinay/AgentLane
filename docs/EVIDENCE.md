@@ -55,3 +55,15 @@ Playwright renderer automation, not a person. This establishes neither real-acco
 continuity nor normal Chrome UI isolation. Fixed fixture coordinates test a visual
 input transport, not autonomous visual reasoning. Browser test bypasses native
 messaging; a separate real-process IPC/MCP test uses simulated extension responses.
+
+## Experiment E2: headed macOS failure on renderer Tab
+
+Headed Chrome for Testing 159, same fixture, public NSWorkspace/NSEvent monitor.
+Repeated runs pass coordinate click/text/Save and scroll, then fail after first
+`Input.dispatchKeyEvent` Tab pair: extension window metadata changes human window
+focused true -> false and agent window focused false -> true. Subsequent screenshot
+is correctly refused by the focus guard. No frontmost PID or pointer change was
+sampled. Thus PID-only monitoring is insufficient for same-app window isolation.
+This disproves a broad assumption that all target-scoped keyboard events preserve
+window focus. Added public CGWindowList ordering to the observer and a key probe.
+No human physical typing was part of this test.
