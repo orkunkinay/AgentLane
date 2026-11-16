@@ -32,7 +32,7 @@ export class Lane {
     if (w.focused) throw Error('Lane is focused by a human; input is paused. Switch to your own window.');
     if (w.state === 'minimized') throw Error('Lane is minimized; restore it manually. No focus fallback.');
   }
-  async owned(session) {
+  async owned(session, allowDetached = false) {
     const s = this.sessions.get(session);
     if (!s) throw Error('No owned tab; create a session first');
     const tab = await this.api.tabs.get(s.tabId);
@@ -41,7 +41,7 @@ export class Lane {
       await this.api.debugger.detach({tabId:s.tabId}).catch(() => {});
       throw Error('Tab moved outside its lane; ownership revoked');
     }
-    if (s.detached) throw Error('Debugger detached; close session and create again');
+    if (s.detached && !allowDetached) throw Error('Debugger detached ('+(s.detachReason||'unknown')+'); close session and create again');
     return s;
   }
   async command(s, method, params = {}) {
@@ -70,7 +70,7 @@ export class Lane {
     if (typeof session !== 'string' || !session) throw Error('Missing session');
     if (!['open','close','screenshot','click','type','key','scroll','navigate'].includes(op)) throw Error('Unsupported operation');
     if (op === 'close') {
-      const s = await this.owned(session);
+      const s = await this.owned(session, true);
       this.sessions.delete(session);
       await this.api.debugger.detach({tabId:s.tabId}).catch(() => {});
       await this.api.tabs.remove(s.tabId);

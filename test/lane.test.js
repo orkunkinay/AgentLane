@@ -51,3 +51,8 @@ test('timed out renderer poisons the lane and never falls back to native input',
   await assert.rejects(f.run('a','screenshot'),/timed out/);
   await assert.rejects(f.run('b','open',{url:'https://example.com/'}),/reload extension/);
 });
+
+test('detached sessions can close their owned tab without adopting anything',async()=>{
+  const f=fixture();await f.run('a','open',{url:'https://example.com/'});f.lane.sessions.get('a').detached=true;
+  await assert.rejects(f.run('a','screenshot'),/detached/);await f.run('a','close');assert.equal(f.tabs.size,0);
+});

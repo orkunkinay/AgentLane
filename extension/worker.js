@@ -26,8 +26,8 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
     return true;
   }
 });
-chrome.debugger.onDetach.addListener(({tabId}) => {
-  for (const s of lane.sessions.values()) if (s.tabId === tabId) {s.detached=true;s.frame=null;}
+chrome.debugger.onDetach.addListener(({tabId}, reason) => {
+  for (const s of lane.sessions.values()) if (s.tabId === tabId) {s.detached=true;s.detachReason=reason;s.frame=null;}
 });
 chrome.debugger.onEvent.addListener((source, method, params) => {
   if (method === 'Page.frameNavigated' || method === 'Page.navigatedWithinDocument') lane.invalidate(source.tabId);
