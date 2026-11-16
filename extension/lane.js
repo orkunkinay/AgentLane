@@ -41,8 +41,21 @@ export class Lane {
       await this.api.debugger.detach({tabId:s.tabId}).catch(() => {});
       throw Error('Tab moved outside its lane; ownership revoked');
     }
-    if (s.detached && !allowDetached) throw Error('Debugger detached ('+(s.detachReason||'unknown')+'); close session and create again');
+    if (s.detached && !allowDetached) {
+      if(s.detachReason !== 'target_closed') throw Error('Debugger detached ('+(s.detachReason||'unknown')+'); close session and create again');
+      // Chrome can destroy the debugging target while retaining the same tab.
+      // No cancellation override: only a still-owned tab after target_closed may recover.
+      await this.api.debugger.attach({tabId:s.tabId}, '1.3');
+      s.detached=false;s.frame=null;
+      await this.prepareTarget(s);
+    }
     return s;
+  }
+  async prepareTarget(s) {
+    await this.command(s, 'Page.enable');
+    await this.command(s, 'Page.setInterceptFileChooserDialog', {enabled:true});
+    await this.command(s, 'Emulation.setDeviceMetricsOverride', {width:1100,height:760,deviceScaleFactor:1,mobile:false});
+    await this.command(s, 'Emulation.setFocusEmulationEnabled', {enabled:true});
   }
   async command(s, method, params = {}) {
     let timer;
@@ -86,10 +99,7 @@ export class Lane {
       this.sessions.set(session, s);
       try {
         await this.api.debugger.attach({tabId:tab.id}, '1.3');
-        await this.command(s, 'Page.enable');
-        await this.command(s, 'Page.setInterceptFileChooserDialog', {enabled:true});
-        await this.command(s, 'Emulation.setDeviceMetricsOverride', {width:1100,height:760,deviceScaleFactor:1,mobile:false});
-        await this.command(s, 'Emulation.setFocusEmulationEnabled', {enabled:true});
+        await this.prepareTarget(s);
         // Changes selection only inside the dedicated lane, never focuses its window.
         await this.api.tabs.update(tab.id, {active:true, autoDiscardable:false});
         await this.command(s, 'Page.navigate', {url});

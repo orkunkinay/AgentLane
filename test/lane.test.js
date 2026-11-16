@@ -56,3 +56,9 @@ test('detached sessions can close their owned tab without adopting anything',asy
   const f=fixture();await f.run('a','open',{url:'https://example.com/'});f.lane.sessions.get('a').detached=true;
   await assert.rejects(f.run('a','screenshot'),/detached/);await f.run('a','close');assert.equal(f.tabs.size,0);
 });
+
+test('only target_closed can reattach an exact still-owned live tab',async()=>{
+  const f=fixture();await f.run('a','open',{url:'https://example.com/'});const s=f.lane.sessions.get('a');s.detached=true;s.detachReason='target_closed';
+  await f.run('a','screenshot');assert.equal(s.detached,false);
+  s.detached=true;s.detachReason='canceled_by_user';await assert.rejects(f.run('a','screenshot'),/canceled_by_user/);
+});
