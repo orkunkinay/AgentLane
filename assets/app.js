@@ -167,4 +167,92 @@
       if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
     });
   }
+
+  /* ---- install: copy buttons, extension-ID helper, client tabs, system check ---- */
+  const flash = (btn, ok) => {
+    const old = btn.dataset.label || btn.textContent;
+    btn.dataset.label = old;
+    btn.textContent = ok ? 'Copied ✓' : 'Press ⌘C';
+    btn.classList.toggle('done', ok);
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => {
+      btn.textContent = old;
+      btn.classList.remove('done');
+    }, 1600);
+  };
+  const copyText = async (text, btn) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      flash(btn, true);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.append(ta);
+      ta.select();
+      let ok = false;
+      try {
+        ok = document.execCommand('copy');
+      } catch {}
+      ta.remove();
+      flash(btn, ok);
+    }
+  };
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button.copy');
+    if (!btn) return;
+    if (btn.dataset.copyText) return copyText(btn.dataset.copyText, btn);
+    const box = btn.closest('.code');
+    if (box) copyText(box.querySelector('code').textContent, btn);
+  });
+
+  const idIn = document.getElementById('ext-id');
+  if (idIn) {
+    const cmd = document.getElementById('host-cmd');
+    const st = document.getElementById('id-state');
+    const PLACE = 'YOUR_32_CHARACTER_EXTENSION_ID';
+    idIn.addEventListener('input', () => {
+      const v = idIn.value.trim();
+      const ok = /^[a-p]{32}$/.test(v);
+      cmd.textContent = 'node scripts/install-host.mjs ' + (ok ? v : PLACE);
+      st.textContent = !v ? '' : ok ? '✓ valid format' : '✗ must be 32 letters, a to p';
+      st.className = ok ? 'good' : v ? 'bad' : '';
+    });
+  }
+
+  document.querySelectorAll('.tabs').forEach((list) => {
+    const tabs = [...list.querySelectorAll('[role=tab]')];
+    const pick = (tab) => {
+      tabs.forEach((t) => {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+      });
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => pick(t));
+      t.addEventListener('keydown', (e) => {
+        const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+        if (!d) return;
+        const n = tabs[(i + d + tabs.length) % tabs.length];
+        pick(n);
+        n.focus();
+      });
+    });
+  });
+
+  const env = document.getElementById('env-text');
+  if (env) {
+    const ua = navigator.userAgent;
+    const plat = navigator.userAgentData?.platform || navigator.platform || '';
+    let msg;
+    if (/Mac/i.test(plat + ua) && !/iPhone|iPad/.test(ua)) msg = 'macOS detected. This is the supported platform.';
+    else if (/Win/i.test(plat)) msg = 'Windows detected. Not supported in this build (needs a Windows transport).';
+    else if (/Linux|X11/i.test(plat + ua) && !/Android/.test(ua)) msg = 'Linux detected. Expected to work with a custom manifest directory; untested.';
+    else msg = 'Install AgentLane on the Mac that runs Chrome and your agent.';
+    env.textContent = msg;
+    document.getElementById('env').dataset.ok = /macOS/.test(msg) ? 'yes' : 'no';
+  }
 })();

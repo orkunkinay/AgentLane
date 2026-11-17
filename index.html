@@ -265,6 +265,119 @@
           <p class="shots-note">Real screenshots from a disposable Chrome profile with a synthetic demo session. They are not a recording of simultaneous use; test results are in the <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/EVIDENCE.md" rel="noopener">evidence log</a>.</p>
         </div>
       </section>
+
+      <section class="install" id="install" aria-labelledby="install-title">
+        <div class="wrap">
+          <p class="eyebrow">Get started</p>
+          <h2 id="install-title">Six steps to <em>your first lane.</em></h2>
+          <p class="lede">
+            About ten minutes, mostly clicking through Chrome. Everything below is the verified
+            procedure from the repository; the <a href="docs/#install">docs</a> add detail and recovery.
+          </p>
+
+          <div class="env" id="env" aria-live="polite">
+            <span class="env-label">Your system</span>
+            <span id="env-text">Checking…</span>
+            <span class="env-req">Needs: macOS · Google Chrome · Node.js 22+</span>
+          </div>
+
+          <ol class="steps">
+            <li>
+              <div class="step-n">1</div>
+              <div class="step-b">
+                <h3>Get the code and check it</h3>
+                <p>Keep this checkout where it is afterwards: the native launcher and MCP config point at its files.</p>
+                <div class="code"><pre><code>git clone https://github.com/orkunkinay/AgentLane.git
+cd AgentLane
+npm ci
+npm test</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+              </div>
+            </li>
+            <li>
+              <div class="step-n">2</div>
+              <div class="step-b">
+                <h3>Load the extension in the Chrome profile you are already logged in to</h3>
+                <p>Open <code>chrome://extensions</code> <button type="button" class="copy inline" data-copy-text="chrome://extensions">copy</button>, turn on <b>Developer mode</b>, click <b>Load unpacked</b> and choose the <code>extension/</code> folder <em>inside</em> the checkout, not its root. Copy the 32-character <b>ID</b> from the AgentLane card.</p>
+                <p class="note">Chrome grants the extension broad debugger access, even though AgentLane exposes a narrow toolset. Review it before using a real profile.</p>
+              </div>
+            </li>
+            <li>
+              <div class="step-n">3</div>
+              <div class="step-b">
+                <h3>Register the local browser bridge</h3>
+                <label class="idlabel" for="ext-id">Paste your extension ID <span id="id-state"></span></label>
+                <input id="ext-id" class="idinput" type="text" inputmode="latin" autocomplete="off" spellcheck="false" maxlength="40" placeholder="abcdefghijklmnopabcdefghijklmnop" />
+                <div class="code"><pre><code id="host-cmd">node scripts/install-host.mjs YOUR_32_CHARACTER_EXTENSION_ID</code></pre><button type="button" class="copy" data-copy data-target="host-cmd">Copy</button></div>
+                <p class="note">Registers a Chrome native messaging host using an owner-only Unix socket. No debugging TCP port, no exported cookies. The installer refuses to overwrite existing files.</p>
+              </div>
+            </li>
+            <li>
+              <div class="step-n">4</div>
+              <div class="step-b">
+                <h3>Create the agent window</h3>
+                <p>Click <b>AgentLane</b> in Chrome's toolbar (or the puzzle-piece menu). Under <b>Where can your agent start browsing?</b> keep <b>Selected websites</b> and list at least one HTTP(S) address, or choose <b>Any website</b>. Click <b>Create agent window</b>.</p>
+                <p>A second window titled <b>AgentLane workspace</b> appears. Leave it <b>open, restored and unfocused</b>, then switch back to your own window. Wait for <b>Connected</b> in the popup.</p>
+              </div>
+            </li>
+            <li>
+              <div class="step-n">5</div>
+              <div class="step-b">
+                <h3>Connect your agent</h3>
+                <div class="tabs" role="tablist" aria-label="Agent client">
+                  <button type="button" role="tab" aria-selected="true" aria-controls="p-codex" id="t-codex">Codex <small>verified</small></button>
+                  <button type="button" role="tab" aria-selected="false" aria-controls="p-claude" id="t-claude" tabindex="-1">Claude Code <small>untested</small></button>
+                  <button type="button" role="tab" aria-selected="false" aria-controls="p-json" id="t-json" tabindex="-1">Other (JSON) <small>untested</small></button>
+                  <button type="button" role="tab" aria-selected="false" aria-controls="p-toml" id="t-toml" tabindex="-1">Other (TOML) <small>untested</small></button>
+                </div>
+                <div role="tabpanel" id="p-codex" aria-labelledby="t-codex">
+                  <p>From the checkout root. These record absolute paths, so they do not depend on your PATH later.</p>
+                  <div class="code"><pre><code>AGENTLANE_NODE="$(node -p 'process.execPath')"
+AGENTLANE_PROJECT="$(pwd)"
+codex mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"
+codex mcp get agentlane</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+                  <p class="note">The last command should show an enabled <b>stdio</b> server named <code>agentlane</code> pointing at <code>src/mcp.js</code>. Install the bundled skill too: <code>node scripts/install-skill.mjs</code> <button type="button" class="copy inline" data-copy-text="node scripts/install-skill.mjs">copy</button></p>
+                </div>
+                <div role="tabpanel" id="p-claude" aria-labelledby="t-claude" hidden>
+                  <p>Same stdio server, registered with Claude Code. This is the standard <code>claude mcp add</code> form; AgentLane's own tests have not been run against Claude Code.</p>
+                  <div class="code"><pre><code>AGENTLANE_NODE="$(node -p 'process.execPath')"
+AGENTLANE_PROJECT="$(pwd)"
+claude mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+                  <p class="note">Optional: copy the skill into Claude Code's skills folder with <code>node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser</code> <button type="button" class="copy inline" data-copy-text="node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser">copy</button></p>
+                </div>
+                <div role="tabpanel" id="p-json" aria-labelledby="t-json" hidden>
+                  <p>For clients configured with an <code>mcpServers</code> JSON object. Use absolute paths (<code>node -p 'process.execPath'</code> prints yours).</p>
+                  <div class="code"><pre><code>{
+  "mcpServers": {
+    "agentlane": {
+      "command": "/absolute/path/to/node",
+      "args": ["/absolute/path/to/AgentLane/src/mcp.js"]
+    }
+  }
+}</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+                </div>
+                <div role="tabpanel" id="p-toml" aria-labelledby="t-toml" hidden>
+                  <p>For clients configured with TOML, such as Codex's <code>config.toml</code>.</p>
+                  <div class="code"><pre><code>[mcp_servers.agentlane]
+command = "/absolute/path/to/node"
+args = ["/absolute/path/to/AgentLane/src/mcp.js"]</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+                </div>
+                <p class="note">Start a <b>fresh conversation</b> afterwards so the agent discovers the <code>lane_*</code> tools. If it cannot see them, that conversation does not have AgentLane enabled; do not let it fall back to desktop control.</p>
+              </div>
+            </li>
+            <li>
+              <div class="step-n">6</div>
+              <div class="step-b">
+                <h3>Try it, and keep working</h3>
+                <p>Paste this into the fresh conversation, then carry on in your own Chrome window.</p>
+                <div class="code"><pre><code>Use $agentlane-browser. Open https://www.google.com and search for
+“Chrome DevTools Protocol”. Use AgentLane lane tools and screenshots only.
+Show me the result, then close your owned tab.</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+                <p class="note">If anything steals your focus or switches Spaces, that is a failed isolation test: stop the workflow and <a href="https://github.com/orkunkinay/AgentLane/issues" rel="noopener">tell us</a>. Stuck? See <a href="docs/#troubleshooting">troubleshooting</a>.</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
     </main>
 
     <script src="assets/app.js" defer></script>
