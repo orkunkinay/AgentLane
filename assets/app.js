@@ -255,4 +255,26 @@
     env.textContent = msg;
     document.getElementById('env').dataset.ok = /macOS/.test(msg) ? 'yes' : 'no';
   }
+
+  /* ---- docs: highlight the section being read ---- */
+  const toc = document.getElementById('toc');
+  if (toc && 'IntersectionObserver' in window) {
+    const links = new Map([...toc.querySelectorAll('a')].map((a) => [a.getAttribute('href').slice(1), a]));
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (!en.isIntersecting) return;
+          links.forEach((a) => a.classList.remove('on'));
+          links.get(en.target.id)?.classList.add('on');
+        });
+      },
+      { rootMargin: '-72px 0px -70% 0px' },
+    );
+    links.forEach((_, id) => {
+      const s = document.getElementById(id);
+      if (s) io.observe(s);
+    });
+  }
+  /* open a troubleshooting entry if linked directly */
+  if (location.hash) document.querySelector(location.hash + ' details')?.setAttribute('open', '');
 })();

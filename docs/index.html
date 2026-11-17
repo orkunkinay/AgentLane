@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AgentLane documentation</title>
+    <meta name="description" content="Install, configure and troubleshoot AgentLane: the Chrome extension and MCP server that gives a coding agent its own lane in your logged-in Chrome." />
+    <meta name="theme-color" content="#f3eee5" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png" />
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" />
+    <meta property="og:title" content="AgentLane documentation" />
+    <meta property="og:description" content="Install, configure and troubleshoot AgentLane." />
+    <meta property="og:image" content="../assets/og.png" />
+    <link rel="stylesheet" href="../assets/style.css" />
+  </head>
+  <body class="docpage">
+    <a class="skip" href="#content">Skip to content</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="../" aria-label="AgentLane home"><img src="../assets/logo.png" alt="" width="30" height="30" />AgentLane</a>
+        <nav aria-label="Primary">
+          <a href="../">Home</a>
+          <a class="hide-sm" href="#troubleshooting">Troubleshooting</a>
+          <a href="https://github.com/orkunkinay/AgentLane" rel="noopener">GitHub</a>
+          <a class="cta" href="../#install">Install</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docgrid">
+      <aside class="toc" aria-label="Documentation sections">
+        <details open>
+          <summary>On this page</summary>
+          <nav id="toc">
+            <a href="#overview">Overview</a>
+            <a href="#requirements">Requirements &amp; support</a>
+            <a href="#install">Install</a>
+            <a href="#websites">Starting websites</a>
+            <a href="#connect">Connect an agent</a>
+            <a href="#use">Using AgentLane</a>
+            <a href="#tools">Tool reference</a>
+            <a href="#concepts">Concepts</a>
+            <a href="#security">Security</a>
+            <a href="#limitations">Known limitations</a>
+            <a href="#troubleshooting">Troubleshooting</a>
+            <a href="#uninstall">Uninstall</a>
+            <a href="#develop">Develop &amp; verify</a>
+            <a href="#more">More reading</a>
+          </nav>
+        </details>
+      </aside>
+
+      <main id="content" class="doc">
+        <h1>Documentation</h1>
+        <p class="lede">Everything needed to install AgentLane, connect an agent and recover when something goes wrong. Status labels used below: <span class="tag ok">Supported</span> tested in this repository, <span class="tag exp">Experimental</span> works but is not certified, <span class="tag no">Unsupported</span> / <span class="tag unk">Untested</span>.</p>
+
+        <section id="overview">
+          <h2>Overview</h2>
+          <p>AgentLane is a Chrome extension plus a local MCP (Model Context Protocol) server. It gives an agent its own <b>lane</b>: a separate Chrome window inside your existing profile, where the agent gets real screenshots and sends clicks, typing and scrolling to a tab it owns. Your keyboard and pointer keep driving your own window.</p>
+          <p>It solves a specific conflict: an agent that controls the desktop browser competes with you for focus and input. AgentLane separates the <em>input surface</em> from the <em>authentication store</em>: the agent shares your logins (the Chrome profile) but not your keyboard, pointer or tabs.</p>
+          <figure class="docfig"><img src="images/how-agentlane-works.svg" width="1200" height="500" alt="Diagram: your keyboard and mouse control your usual Chrome window; the agent uses screenshots and tab-targeted input in a separate restored window; both share the existing Chrome profile." /><figcaption>Overview diagram. This is a diagram, not a screenshot.</figcaption></figure>
+          <p><b>Status:</b> <span class="tag exp">Experimental</span>. A tested path exists on normal Chrome 157 (see <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/EVIDENCE.md" rel="noopener">the evidence log</a>), but native dialogs, popups, individual Space transitions and arbitrary sites are not universally isolated.</p>
+        </section>
+
+        <section id="requirements">
+          <h2>Requirements &amp; support</h2>
+          <div class="tablewrap"><table>
+            <thead><tr><th>Surface</th><th>Status</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td>macOS + Google Chrome</td><td><span class="tag ok">Supported</span></td><td>Tested on Chrome 157 (normal profile) and Chrome for Testing 159 (disposable).</td></tr>
+              <tr><td>Node.js</td><td><span class="tag ok">Supported</span></td><td>22 or newer.</td></tr>
+              <tr><td>Codex (MCP, stdio)</td><td><span class="tag ok">Supported</span></td><td>Full protocol path tested. Does not replace Codex's native computer use.</td></tr>
+              <tr><td>Other stdio MCP clients</td><td><span class="tag unk">Untested</span></td><td>Expected to work: standard tool and image content. Coordinate reading depends on the model.</td></tr>
+              <tr><td>Standard HTML selects</td><td><span class="tag ok">Supported</span></td><td>Rendered in-page; requires Chrome 134+ (<code>appearance: base-select</code>).</td></tr>
+              <tr><td>Linux Chromium</td><td><span class="tag unk">Untested</span></td><td>Needs a custom manifest directory and a short owner-only <code>AGENTLANE_STATE_DIR</code>.</td></tr>
+              <tr><td>Windows</td><td><span class="tag no">Unsupported</span></td><td>Unix socket and installer need a Windows transport.</td></tr>
+              <tr><td>Other Chromium browsers, Firefox, Safari</td><td><span class="tag no">Unsupported</span></td><td>Unverified or would need a different input backend.</td></tr>
+              <tr><td>Native menus, file pickers, permission sheets, passkeys, popups</td><td><span class="tag no">Not isolated</span></td><td>Stop the workflow at these boundaries.</td></tr>
+            </tbody>
+          </table></div>
+          <p>Full matrix: <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/COMPATIBILITY.md" rel="noopener">docs/COMPATIBILITY.md</a>.</p>
+        </section>
+
+        <section id="install">
+          <h2>Install</h2>
+          <p class="req">Required setup. Allow roughly ten minutes. Keep the checkout in place afterward: the native launcher and the MCP configuration refer to its files.</p>
+          <h3 id="install-1">1. Get the code and verify it</h3>
+          <div class="code"><pre><code>git clone https://github.com/orkunkinay/AgentLane.git
+cd AgentLane
+npm ci
+npm test</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p><code>npm test</code> runs syntax checks and the test suite (policy, framing, native transport, MCP over stdio, recovery). It does not open your Chrome profile.</p>
+          <h3 id="install-2">2. Load the extension</h3>
+          <ol>
+            <li>In the Chrome profile where you are already logged in, open <code>chrome://extensions</code>.</li>
+            <li>Turn on <b>Developer mode</b> (upper right).</li>
+            <li>Click <b>Load unpacked</b> and select the <code>extension/</code> folder <em>inside</em> the checkout, not the repository root.</li>
+            <li>Copy the 32-character <b>ID</b> on the AgentLane card.</li>
+          </ol>
+          <figure class="docfig"><img src="images/chrome-extensions.png" width="1280" height="460" loading="lazy" alt="Chrome Extensions page showing Developer mode, Load unpacked and the AgentLane card with its extension ID." /><figcaption>Real screenshot from a disposable Chrome for Testing profile. Copy your own ID, not this one.</figcaption></figure>
+          <p class="warn">Chrome grants the extension broad debugger access, although AgentLane exposes only a narrow toolset. Review the extension before using it on a real profile. Screenshots may contain private information and reach your configured AI provider.</p>
+          <h3 id="install-3">3. Register the native messaging host</h3>
+          <div class="code"><pre><code>node scripts/install-host.mjs YOUR_32_CHARACTER_EXTENSION_ID</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p>The ID must be 32 letters from <code>a</code> to <code>p</code>. The script writes <code>org.agentlane.browser.json</code> into Chrome's <code>NativeMessagingHosts</code> directory (default: <code>~/Library/Application Support/Google/Chrome/NativeMessagingHosts</code>, overridable as the second argument) and a launcher at <code>~/.agentlane/native-host</code> that pins your absolute Node path. It <b>refuses to overwrite</b> existing files; inspect and remove them yourself first. Chrome's manifest allows only your exact extension origin.</p>
+          <h3 id="install-4">4. Create the agent window</h3>
+          <p>Click <b>AgentLane</b> in Chrome's toolbar (or the puzzle-piece menu), choose where the agent may start browsing (see <a href="#websites">Starting websites</a>) and click <b>Create agent window</b>. A separate window titled <b>AgentLane workspace</b> appears. Keep it <b>restored and unfocused</b>; switch back to your own window. <b>Connected</b> only appears once the local connection is confirmed; otherwise the popup shows <b>Not connected</b> with a retry.</p>
+          <div class="pair">
+            <img src="images/lane-setup.png" width="384" height="523" loading="lazy" alt="AgentLane setup popup with Selected websites chosen." />
+            <img src="images/agent-window.png" width="1280" height="800" loading="lazy" alt="The empty AgentLane workspace window." />
+          </div>
+          <h3 id="install-5">5. Connect your agent</h3>
+          <p>See <a href="#connect">Connect an agent</a>, then start a <b>fresh conversation</b> so the tools are discovered.</p>
+          <h3 id="install-6">6. First task</h3>
+          <div class="code"><pre><code>Use $agentlane-browser. Open https://www.google.com and search for
+“Chrome DevTools Protocol”. Use AgentLane lane tools and screenshots only.
+Show me the result, then close your owned tab.</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p>Keep typing and clicking in your own window while the agent works. If anything steals focus or switches a Space, treat it as a failed isolation test and stop.</p>
+        </section>
+
+        <section id="websites">
+          <h2>Starting websites <span class="tag ok">Supported</span></h2>
+          <p class="req">Optional configuration, set in the AgentLane popup under <b>Where can your agent start browsing?</b></p>
+          <div class="tablewrap"><table>
+            <thead><tr><th>Mode</th><th>Behavior</th></tr></thead>
+            <tbody>
+              <tr><td><b>Selected websites</b> (default)</td><td><code>lane_open</code> and <code>lane_navigate</code> must match a listed website by protocol, hostname and port. Enter one HTTP(S) address per line; a bare domain gets <code>https://</code>. Fresh installs prefill <code>https://www.google.com</code>. <code>localhost</code> and <code>127.0.0.1</code> differ.</td></tr>
+              <tr><td><b>Any website</b></td><td>Direct opening and navigation accept any HTTP(S) address without embedded credentials. Tab ownership and focus protections still apply.</td></tr>
+            </tbody>
+          </table></div>
+          <div class="code"><pre><code>https://www.google.com
+http://127.0.0.1:8741</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p>Settings persist across popup reopening and browser restarts and can only be changed when no agent sessions are active. Empty or invalid older settings stay in Selected websites mode and never enable Any website. <b>This setting restricts direct opening and navigation only.</b> Links, redirects, iframes and other page requests are not filtered.</p>
+          <div class="pair">
+            <img src="images/lane-setup-any.png" width="384" height="393" loading="lazy" alt="AgentLane setup with Any website chosen." />
+          </div>
+        </section>
+
+        <section id="connect">
+          <h2>Connect an agent</h2>
+          <p>AgentLane's MCP server is a <b>stdio</b> process: <code>node /absolute/path/to/AgentLane/src/mcp.js</code>. Use absolute paths so the configuration does not depend on your shell's working directory or PATH.</p>
+          <h3>Codex <span class="tag ok">Supported</span></h3>
+          <div class="code"><pre><code>AGENTLANE_NODE="$(node -p 'process.execPath')"
+AGENTLANE_PROJECT="$(pwd)"
+codex mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"
+codex mcp get agentlane</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p>The last command should report an enabled <b>stdio</b> server named <code>agentlane</code> whose arguments end in <code>src/mcp.js</code>. Install the bundled skill, which teaches the agent the operating rules (it refuses to overwrite an existing skill):</p>
+          <div class="code"><pre><code>node scripts/install-skill.mjs</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p>This copies <code>skills/agentlane-browser</code> to <code>~/.codex/skills/agentlane-browser</code> (or under <code>$CODEX_HOME</code>). The skill does not create a browser connection by itself.</p>
+          <h3>Claude Code <span class="tag unk">Untested</span></h3>
+          <div class="code"><pre><code>AGENTLANE_NODE="$(node -p 'process.execPath')"
+AGENTLANE_PROJECT="$(pwd)"
+claude mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p>Optionally pass a destination to the skill installer: <code>node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser</code>. This uses Claude Code's documented <code>mcp add</code> form; it has not been exercised by AgentLane's tests.</p>
+          <h3>Other MCP clients <span class="tag unk">Untested</span></h3>
+          <div class="code"><pre><code>{
+  "mcpServers": {
+    "agentlane": {
+      "command": "/absolute/path/to/node",
+      "args": ["/absolute/path/to/AgentLane/src/mcp.js"]
+    }
+  }
+}</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p>Or, for TOML-configured clients:</p>
+          <div class="code"><pre><code>[mcp_servers.agentlane]
+command = "/absolute/path/to/node"
+args = ["/absolute/path/to/AgentLane/src/mcp.js"]</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p class="warn"><b>If the agent cannot see <code>lane_*</code> tools</b>, the current conversation does not have AgentLane enabled. Start a fresh conversation with the server enabled. Do not fall back to native desktop control for this workflow.</p>
+        </section>
+
+        <section id="use">
+          <h2>Using AgentLane</h2>
+          <p>Keep the <b>AgentLane workspace</b> window open, unminimized and unfocused; work in your usual window. Ask the agent for the skill by name and describe the task. The agent loop is: <code>lane_open</code> → <code>lane_screenshot</code> → one input → <code>lane_screenshot</code> → … → <code>lane_close</code>.</p>
+          <div class="tablewrap"><table>
+            <thead><tr><th>Situation</th><th>What to do</th></tr></thead>
+            <tbody>
+              <tr><td>Starting a task</td><td>Ask for <code>$agentlane-browser</code> in a conversation with the tools available.</td></tr>
+              <tr><td>Finishing</td><td>The agent calls <code>lane_close</code>. The empty lane window stays available.</td></tr>
+              <tr><td>Lane focused or minimized</td><td>Switch to your own window or restore the lane yourself. The agent must not activate it.</td></tr>
+              <tr><td>Changing browsing policy</td><td>Close agent sessions, open AgentLane, change mode or list, click <b>Save starting websites</b>. No reload needed.</td></tr>
+              <tr><td>Lane window closed</td><td>Click <b>Create agent window</b>, leave it unfocused, then <code>lane_open</code> again in the same conversation. Old tabs and tokens are gone.</td></tr>
+              <tr><td>Browser bridge disconnected</td><td>Click <b>Connect browser</b>. The existing MCP process reconnects on its next call; use <code>lane_open</code> for a fresh tab. Interrupted actions are never replayed.</td></tr>
+              <tr><td>Stale frame reported</td><td>Take a fresh screenshot before the next input.</td></tr>
+              <tr><td>Native auth, permission sheet or popup</td><td>Stop at that unsupported boundary and hand off.</td></tr>
+            </tbody>
+          </table></div>
+          <h3>Repeatable local demo</h3>
+          <p>A synthetic demo server and a scripted two-minute run exist for verifying your setup without touching real accounts:</p>
+          <div class="code"><pre><code>node scripts/demo-server.mjs
+# in your own Chrome window, visit http://127.0.0.1:8741/seed
+# add http://127.0.0.1:8741 under Selected websites, then in another terminal:
+node scripts/concurrency-demo.mjs http://127.0.0.1:8741 120</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p>The script reports completed tool calls and saves a final screenshot; whether you were interfered with still needs your own observation. Stop the server with Ctrl+C. See the <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/VALIDATION.md" rel="noopener">seven-test acceptance protocol</a>.</p>
+        </section>
+
+        <section id="tools">
+          <h2>Tool reference</h2>
+          <p>Eight tools, defined in <a href="https://github.com/orkunkinay/AgentLane/blob/main/src/mcp.js" rel="noopener">src/mcp.js</a>. Coordinates are CSS pixels in a fixed <b>1100 × 760</b> viewport at scale 1 (x 0–1099, y 0–759). Tool names may carry a client-specific prefix.</p>
+          <div class="tablewrap"><table>
+            <thead><tr><th>Tool</th><th>Arguments</th><th>Behavior</th></tr></thead>
+            <tbody>
+              <tr><td><code>lane_open</code></td><td><code>url</code></td><td>Creates the connection's one owned tab in the lane and navigates it. URL must pass the starting-website policy.</td></tr>
+              <tr><td><code>lane_screenshot</code></td><td>none</td><td>Returns a real PNG of the tab's rendered pixels plus a single-use <code>frame</code> token and metadata.</td></tr>
+              <tr><td><code>lane_click</code></td><td><code>frame</code>, <code>x</code>, <code>y</code></td><td>Left-click at a coordinate seen in the latest screenshot.</td></tr>
+              <tr><td><code>lane_type</code></td><td><code>frame</code>, <code>text</code> (≤ 10,000 chars)</td><td>Inserts text into the already-focused field. No clipboard access.</td></tr>
+              <tr><td><code>lane_key</code></td><td><code>frame</code>, <code>key</code></td><td><code>Enter</code>, <code>Escape</code>, <code>Backspace</code>, <code>ArrowUp</code>, <code>ArrowDown</code>, <code>ArrowLeft</code> or <code>ArrowRight</code>. <code>Tab</code> is intentionally absent.</td></tr>
+              <tr><td><code>lane_scroll</code></td><td><code>frame</code>, <code>x</code>, <code>y</code>, <code>deltaX</code>, <code>deltaY</code></td><td>Mouse-wheel scroll at a point; each delta from −3000 to 3000.</td></tr>
+              <tr><td><code>lane_navigate</code></td><td><code>url</code></td><td>Navigates the owned tab to an HTTP(S) URL permitted by setup.</td></tr>
+              <tr><td><code>lane_close</code></td><td>none</td><td>Closes only the owned tab. Call when finished.</td></tr>
+            </tbody>
+          </table></div>
+          <p>Not exposed, by design: arbitrary JavaScript, raw CDP, DOM selectors, cookie/storage access, file upload, clipboard, browser shortcuts, and any way to list or select your own tabs.</p>
+        </section>
+
+        <section id="concepts">
+          <h2>Concepts</h2>
+          <dl class="defs">
+            <dt>Lane</dt><dd>A dedicated normal Chrome window ("AgentLane workspace") in your existing profile. It must stay restored and unfocused while the agent works; a focused or minimized lane is refused.</dd>
+            <dt>Owned tab</dt><dd>Each connected MCP process gets one host-assigned session and one tab created inside the lane. Only that tab can be driven. If it moves to another window, ownership is lost and it is detached, never closed.</dd>
+            <dt>Frame token</dt><dd>Every screenshot returns a random single-use token. Each input consumes it, and observed navigation invalidates it. The sequence is screenshot → click → <em>new</em> screenshot → type. Tokens detect reuse and observed navigation; they do not freeze a dynamic page.</dd>
+            <dt>Capability gate</dt><dd>The extension worker queues commands, checks window state and tab membership, and applies the starting-website policy before any input reaches the page.</dd>
+            <dt>Native host &amp; socket</dt><dd>Chrome starts <code>src/native-host.js</code> as a native messaging host. It listens on an owner-only Unix socket (<code>~/.agentlane/browser.sock</code>, directory 0700, socket 0600). The MCP process connects there. No TCP port is opened.</dd>
+          </dl>
+          <p>Deeper reference: <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/ARCHITECTURE.md" rel="noopener">docs/ARCHITECTURE.md</a>.</p>
+        </section>
+
+        <section id="security">
+          <h2>Security considerations</h2>
+          <ul class="bul">
+            <li>AgentLane is a <b>local trusted browser controller</b>, not a sandbox against other processes running as your user, a malicious extension, a compromised Chrome, or an agent that also has shell or desktop tools.</li>
+            <li>No cookie, password or token extraction; no TCP listener; the host's extension-origin allowlist and owner-only socket restrict who can connect.</li>
+            <li>The extension itself holds broad <code>debugger</code> authority. Review it before use on a real profile.</li>
+            <li>Sharing authentication also shares <b>authority</b>: an agent can perform account actions through visible page UI. Confirm consequential actions under your agent's normal policy.</li>
+            <li>Screenshots and typed text go through your MCP client and may reach its model provider. Page content is untrusted and can attempt prompt injection.</li>
+            <li>Do not use AgentLane for hostile sites or security-critical workflows until remaining browser-UI escape paths are closed.</li>
+          </ul>
+          <p>Full threat table: <a href="https://github.com/orkunkinay/AgentLane/blob/main/SECURITY.md" rel="noopener">SECURITY.md</a>. This repository has no hosted security-reporting service yet; when filing bugs provide versions, a synthetic reproduction and redacted logs, never real account screenshots or profiles.</p>
+        </section>
+
+        <section id="limitations">
+          <h2>Known limitations</h2>
+          <ul class="bul">
+            <li><b>Not a general zero-interruption guarantee.</b> Popups, native dialogs, permission sheets, passkeys, file pickers and security interstitials can still activate windows. Popups are neither controlled nor adopted.</li>
+            <li>Individual Space transitions and a fully occluded lane are not certified; blank or stale screenshots count as failures.</li>
+            <li>Profile storage, cookies, service workers and server-side account state are shared between lanes and your tabs.</li>
+            <li>Some sites use tab-local or device-bound authentication that a new lane tab cannot inherit.</li>
+            <li><code>Tab</code> and browser shortcuts are unavailable; file uploads are not implemented; downloads are not suppressed.</li>
+            <li>A worker restart does not adopt old tabs. Orphaned windows may need manual cleanup.</li>
+            <li>A hung command poisons the lane; recovery needs a new lane window or an extension reload.</li>
+            <li>ChatGPT navigation was blocked in the tested profile (Chrome refuses access to another extension's URL; not bypassed).</li>
+            <li>Applying a source update requires reloading the extension and restarting the MCP process once.</li>
+          </ul>
+          <p>Planned work and gates: <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/ROADMAP.md" rel="noopener">docs/ROADMAP.md</a>. Measured results and failures: <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/EVIDENCE.md" rel="noopener">docs/EVIDENCE.md</a>.</p>
+        </section>
+
+        <section id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <p>Condensed from <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/TROUBLESHOOTING.md" rel="noopener">the full guide</a>. Never recover by copying cookies, switching to desktop input, or having the agent focus the lane.</p>
+          <details><summary>“Not connected”, ENOENT, or “Browser bridge unavailable”</summary>
+            <p>The lane window and the browser bridge are separate. Confirm the extension is loaded in the intended profile, that you registered its exact ID with <code>scripts/install-host.mjs</code>, and that <code>~/.agentlane/browser.sock</code> exists. Then click <b>Connect browser</b> or <b>Create agent window</b> in the popup. Retry <code>lane_open</code> in the same conversation; the MCP client reconnects. Moving the checkout requires re-registering the host after removing the old manifest. Opening <code>anchor.html</code> alone does not connect anything.</p></details>
+          <details><summary>Native host not found / forbidden</summary>
+            <p>The manifest must be named <code>org.agentlane.browser</code>, have an absolute launcher path and list exactly your extension origin (no wildcards). The installer targets normal macOS Google Chrome; for another browser pass its manifest directory as the second argument.</p></details>
+          <details><summary>EADDRINUSE on the socket</summary>
+            <p>Another profile or host may own it. Do not delete a live socket: check <code>ps -axo pid,command</code> for <code>native-host.js</code>. If Chrome crashed and nothing owns it, remove only <code>~/.agentlane/browser.sock</code>, reload the extension and create a fresh lane. A second profile needs a different short <code>AGENTLANE_STATE_DIR</code> set in both the launcher and the MCP environment.</p></details>
+          <details><summary>Lane focused or minimized</summary>
+            <p>Switch back to your own window or restore the lane manually, then retry. The agent must not fix this itself.</p></details>
+          <details><summary>Blank or stale screenshot</summary>
+            <p>Report it as a rendering failure and keep the lane restored. Use the disposable harness (<code>npm run test:browser</code>) to tell Chrome rendering apart from the target site. Never substitute DOM snapshots or bring Chrome forward.</p></details>
+          <details><summary>Renderer timeout</summary>
+            <p>A command deadline detaches the debugger and poisons the lane. Close the identified AgentLane window, create a new one (or reload the extension) and call <code>lane_open</code> again. The hung command is not replayed.</p></details>
+          <details><summary>Stale frame</summary>
+            <p>The rejected input was not dispatched. Take a fresh screenshot before each click, type, key or scroll. Do not blindly replay an input that may have completed.</p></details>
+          <details><summary>Unapproved starting origin</summary>
+            <p>Add the exact origin, including port, under <b>Selected websites</b> (after closing active sessions) or choose <b>Any website</b>, then <b>Save starting websites</b>. No reload is needed.</p></details>
+          <details><summary>Agent still uses native computer use</summary>
+            <p>The MCP server is a separate toolset. Start a conversation with AgentLane enabled and explicitly ask for the lane tools.</p></details>
+          <details><summary>Selecting an option switches windows</summary>
+            <p>Older builds opened Chrome's native select menu. Finish active tasks, reload the extension, create a new lane and start a fresh MCP conversation. If a native picker is still blocked, stop that dropdown workflow.</p></details>
+          <details><summary>Not authenticated on a site</summary>
+            <p>Confirm the extension runs in the profile with the login. Persistent cookies usually apply to new tabs; tab-local sessionStorage, expired or device-bound sessions and fresh consent may not. Do not copy cookies or fall back to a fresh browser.</p></details>
+        </section>
+
+        <section id="uninstall">
+          <h2>Uninstall</h2>
+          <ol>
+            <li>Disable or remove the extension at <code>chrome://extensions</code>.</li>
+            <li>Remove the <code>agentlane</code> entry from your agent's MCP configuration.</li>
+            <li>Remove <code>~/Library/Application Support/Google/Chrome/NativeMessagingHosts/org.agentlane.browser.json</code>.</li>
+            <li>Close only windows you recognise as AgentLane lanes. Once the native host has exited, remove <code>~/.agentlane/native-host</code> and any stale <code>~/.agentlane/browser.sock</code>.</li>
+          </ol>
+          <p>Do not delete Chrome profile files. Upgrading from the former <b>Still</b> installation: see <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/MIGRATION.md" rel="noopener">the migration guide</a>.</p>
+        </section>
+
+        <section id="develop">
+          <h2>Develop &amp; verify</h2>
+          <div class="code"><pre><code>npm test                  # syntax checks + unit/IPC/MCP tests
+npm run format:check      # prettier
+npx playwright install chromium
+npm run test:browser      # real chrome.debugger in a disposable profile
+node experiments/setup.mjs     # setup popup flows
+node experiments/dropdown.mjs  # select dropdown isolation</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
+          <p>Browser experiments use a disposable Chrome for Testing profile, never your own. Headed macOS observation (foreground app, pointer, Spaces) is described in <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/VALIDATION.md" rel="noopener">docs/VALIDATION.md</a>. This website itself is static: <code>python3 -m http.server</code> in the repository root serves it, and <code>npm run check:site</code> validates its links.</p>
+          <p>Contributing: <a href="https://github.com/orkunkinay/AgentLane/blob/main/CONTRIBUTING.md" rel="noopener">CONTRIBUTING.md</a>. Never commit profiles, cookies, tokens or screenshots of real accounts.</p>
+        </section>
+
+        <section id="more">
+          <h2>More reading</h2>
+          <ul class="bul">
+            <li><a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/ARCHITECTURE.md" rel="noopener">Architecture</a>: ownership, transport, rendering and failures.</li>
+            <li><a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/EVIDENCE.md" rel="noopener">Evidence</a>: exact results, failed experiments, limitations.</li>
+            <li><a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/RESEARCH.md" rel="noopener">Research</a>: alternatives considered and prior work.</li>
+            <li><a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/VALIDATION.md" rel="noopener">Validation</a>: reproducible acceptance protocol.</li>
+            <li><a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/ROADMAP.md" rel="noopener">Roadmap</a> and <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/COMPATIBILITY.md" rel="noopener">compatibility</a>.</li>
+            <li><a href="https://github.com/orkunkinay/AgentLane/issues" rel="noopener">Issues</a> · <a href="https://github.com/orkunkinay/AgentLane/blob/main/LICENSE" rel="noopener">MIT license</a></li>
+          </ul>
+        </section>
+      </main>
+    </div>
+    <script src="../assets/app.js" defer></script>
+  </body>
+</html>
