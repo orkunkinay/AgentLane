@@ -11,7 +11,7 @@ WHAT IT DOES
 • Reconnects an existing MCP process after bridge loss. Recreate the lane through the extension, then call lane_open for a fresh owned tab.
 
 SEPARATE LOCAL SETUP IS REQUIRED
-This extension does not work by itself. You need macOS, Chrome 134+, Node.js 22+, the AgentLane native messaging host/local MCP server, and an MCP-compatible AI client. Store installation replaces loading the unpacked extension; it does not install the local helper. Follow the setup guide on the project website. Windows is unsupported; other browsers and Linux are unverified.
+This extension does not work by itself. You need macOS, Chrome 134+, Node.js 22+, the AgentLane native messaging host/local MCP server, and an MCP-compatible AI client. Store installation replaces loading the unpacked extension; it does not install the local helper. Follow the setup guide on the project website. Windows is unsupported; other browsers and Linux are unverified. Your chosen AI provider’s own charges and policies apply.
 
 DATA AND CONTROL
 Screenshots, requested URLs and typed text pass through your local MCP client and may be sent to its configured AI provider. Screenshots can contain private or sensitive information visible in the page. Review the privacy policy and accept the in-product disclosure before connecting. AgentLane does not operate a hosted AI, advertising, analytics or screenshot collection service.

@@ -24,10 +24,11 @@ npm test
 ```
 
 Install the submitted/store extension in the disposable profile. Find its actual
-32-letter ID in chrome://extensions. Register only that ID with the native host:
+32-letter ID in chrome://extensions. The submitted store item ID is
+`mpiigaljakpfmmihkahppdaaccmpgmmk`; an unpacked development copy has a different ID. Register only that ID with the native host:
 
 ```sh
-node scripts/install-host.mjs YOUR_STORE_EXTENSION_ID
+node scripts/install-host.mjs mpiigaljakpfmmihkahppdaaccmpgmmk
 ```
 
 The native host manifest is org.agentlane.browser. It is installed under macOS

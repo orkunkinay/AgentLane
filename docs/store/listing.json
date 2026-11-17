@@ -9,8 +9,8 @@
   "privacyPolicy": "https://orkunkinay.github.io/AgentLane/privacy/",
   "singlePurpose": "Provide a user-directed visual browser workspace for an MCP-compatible AI client in a separate window of the user's existing Chrome profile, using screenshots and tab-targeted input without sharing the physical keyboard or mouse.",
   "permissions": {
-    "debugger": "Required to capture the owned tab's rendered page pixels and deliver coordinate clicks, text, scrolls and a restricted key set through chrome.debugger. It also configures the viewport, intercepts file choosers and renders standard select menus inside the page to reduce native-window interference. Fixed packaged code performs these operations only on tabs created for that MCP connection and their child frames. The MCP interface exposes no human-tab selection, cookie extraction or arbitrary JavaScript/CDP commands. Debugger access is broad at the Chrome permission level; this is disclosed in setup and the security model.",
-    "nativeMessaging": "Required to connect the extension to org.agentlane.browser, a separately installed local Node.js native messaging host. It relays tool requests/results between the extension and a locally running MCP client over an owner-only Unix socket. It does not open a remote-debugging TCP port. Store installation alone does not install this helper or MCP server.",
+    "debugger": "Required to capture the owned tab's rendered pixels and deliver coordinate clicks, text, scrolling and restricted keys through chrome.debugger. It also configures the viewport, intercepts file choosers and renders standard select menus inside the page to reduce native-window interference. Fixed packaged code performs these operations only on tabs created for that MCP connection and their child frames. The MCP interface exposes no human-tab selection, cookie extraction or arbitrary JavaScript/CDP commands. Debugger access is broad at Chrome's permission level and is disclosed in setup and the security model. All extension logic, including the fixed isolated-world picker bootstrap, is bundled in the ZIP; native requests contain tool data, never executable scripts.",
+    "nativeMessaging": "Required to connect the extension to org.agentlane.browser, a separately installed local Node.js native messaging host. It relays requests/results between the extension and a locally running MCP client over an owner-only Unix socket. It does not open a remote-debugging TCP port. Store installation alone does not install this helper or the MCP server. Source and reviewer installation instructions are provided on the project website.",
     "storage": "Required to persist the user-selected starting-website policy and accepted screenshot/input disclosure version in chrome.storage.local. Selected websites and explicit Any website modes remain distinct. No browsing history, screenshot history or analytics are stored in extension storage."
   },
   "remoteCode": false,
@@ -22,5 +22,6 @@
     "sensitiveCategories": "Visible screenshots and user-directed text may contain personally identifiable information, personal communications, authentication information, financial/payment information, health information and location information. The pipeline does not redact or classify these pixels, so disclose these potential categories rather than claiming they cannot be handled. No cookie/password-store extraction API is exposed.",
     "recipients": "The user's local MCP client and any AI/model providers it is configured to use; websites receive normal browsing and submitted actions. No developer-hosted collection/analytics/model endpoint is operated by this extension.",
     "saleAdvertisingCredit": false
-  }
+  },
+  "extensionId": "mpiigaljakpfmmihkahppdaaccmpgmmk"
 }
