@@ -348,7 +348,7 @@ codex mcp get agentlane</code></pre><button type="button" class="copy" data-copy
                   <div class="code"><pre><code>AGENTLANE_NODE="$(node -p 'process.execPath')"
 AGENTLANE_PROJECT="$(pwd)"
 claude mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
-                  <p class="note">The MCP tools work without the skill. Optionally copy the skill folder with <code>node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser</code> <button type="button" class="copy inline" data-copy-text="node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser">copy</button></p>
+                  <p class="note">Install the bundled skill too (Claude Code loads it as <code>/agentlane-browser</code>): <code>node scripts/install-skill.mjs --target claude</code> <button type="button" class="copy inline" data-copy-text="node scripts/install-skill.mjs --target claude">copy</button></p>
                 </div>
                 <div role="tabpanel" id="p-json" aria-labelledby="t-json" hidden>
                   <p>For clients configured with an <code>mcpServers</code> JSON object. Use absolute paths (<code>node -p 'process.execPath'</code> prints yours).</p>
@@ -375,7 +375,7 @@ args = ["/absolute/path/to/AgentLane/src/mcp.js"]</code></pre><button type="butt
               <div class="step-b">
                 <h3>Try it, and keep working</h3>
                 <p>Paste this into the fresh conversation, then carry on in your own Chrome window.</p>
-                <div class="code"><pre><code>Use $agentlane-browser. Open https://www.google.com and search for
+                <div class="code"><pre><code>Use the agentlane-browser skill. Open https://www.google.com and search for
 “Chrome DevTools Protocol”. Use AgentLane lane tools and screenshots only.
 Show me the result, then close your owned tab.</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
                 <p class="note">If anything steals your focus or switches Spaces, that is a failed isolation test: stop the workflow and <a href="https://github.com/orkunkinay/AgentLane/issues" rel="noopener">tell us</a>. Stuck? See <a href="docs/#troubleshooting">troubleshooting</a>.</p>

@@ -115,7 +115,7 @@ npm test</code></pre><button type="button" class="copy" data-copy>Copy</button><
           <h3 id="install-5">5. Connect your agent</h3>
           <p>See <a href="#connect">Connect an agent</a>, then start a <b>fresh conversation</b> so the tools are discovered.</p>
           <h3 id="install-6">6. First task</h3>
-          <div class="code"><pre><code>Use $agentlane-browser. Open https://www.google.com and search for
+          <div class="code"><pre><code>Use the agentlane-browser skill. Open https://www.google.com and search for
 “Chrome DevTools Protocol”. Use AgentLane lane tools and screenshots only.
 Show me the result, then close your owned tab.</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
           <p>Keep typing and clicking in your own window while the agent works. If anything steals focus or switches a Space, treat it as a failed isolation test and stop.</p>
@@ -149,12 +149,12 @@ codex mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"
 codex mcp get agentlane</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
           <p>The last command should report an enabled <b>stdio</b> server named <code>agentlane</code> whose arguments end in <code>src/mcp.js</code>. Install the bundled skill, which teaches the agent the operating rules (it refuses to overwrite an existing skill):</p>
           <div class="code"><pre><code>node scripts/install-skill.mjs</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
-          <p>This copies <code>skills/agentlane-browser</code> to <code>~/.codex/skills/agentlane-browser</code> (or under <code>$CODEX_HOME</code>). The skill does not create a browser connection by itself.</p>
+          <p>This copies <code>skills/agentlane-browser</code> to <code>~/.codex/skills/agentlane-browser</code> (or under <code>$CODEX_HOME</code>); invoke it as <code>$agentlane-browser</code>. The skill does not create a browser connection by itself. For another skills-compatible agent, pass a destination directory as the last argument.</p>
           <h3>Claude Code <span class="tag ok">Supported</span></h3>
           <div class="code"><pre><code>AGENTLANE_NODE="$(node -p 'process.execPath')"
 AGENTLANE_PROJECT="$(pwd)"
 claude mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
-          <p>Check it with <code>claude mcp get agentlane</code>; it should report <b>Connected</b>. Verified with Claude Code 2.1.326: the eight <code>lane_*</code> tools (shown as <code>mcp__agentlane__lane_*</code>) are discovered, and <code>lane_open</code> → <code>lane_screenshot</code> → <code>lane_close</code> completed against a real lane. The tools work without the skill. The skill folder can optionally be copied with <code>node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser</code> (the copy works; whether Claude Code loads it has not been checked). Without the skill, just ask for the lane tools by name.</p>
+          <p>Check it with <code>claude mcp get agentlane</code>; it should report <b>Connected</b>. Verified with Claude Code 2.1.326: the eight <code>lane_*</code> tools (shown as <code>mcp__agentlane__lane_*</code>) are discovered, and <code>lane_open</code> → <code>lane_screenshot</code> → <code>lane_close</code> completed against a real lane. Install the bundled skill with <code>node scripts/install-skill.mjs --target claude</code> (copies it to <code>~/.claude/skills/agentlane-browser</code>); Claude Code lists it and exposes it as <code>/agentlane-browser</code>. The lane tools also work without the skill: just ask for them by name.</p>
           <h3>Other MCP clients <span class="tag unk">Untested</span></h3>
           <div class="code"><pre><code>{
   "mcpServers": {
