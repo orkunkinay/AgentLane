@@ -13,6 +13,9 @@ test('setup accepts familiar website input and saves exact unique origins', () =
 });
 test('setup rejects credentials, non-web schemes and missing websites', () => {
   for (const input of [
+    undefined,
+    null,
+    [null],
     '',
     'file:///etc/passwd',
     'https://user:secret@example.com',

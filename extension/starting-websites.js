@@ -1,6 +1,10 @@
 // Human-facing setup input. This remains a starting-navigation check, not a network policy.
 export function parseStartingWebsites(value) {
-  const entries = Array.isArray(value) ? value : String(value).split(/\r?\n/);
+  if (typeof value !== 'string' && !Array.isArray(value))
+    throw Error('Add at least one starting website.');
+  const entries = Array.isArray(value) ? value : value.split(/\r?\n/);
+  if (entries.some((entry) => typeof entry !== 'string'))
+    throw Error('Enter website addresses as text.');
   const websites = entries.map((entry) => String(entry).trim()).filter(Boolean);
   if (!websites.length) throw Error('Add at least one starting website.');
   const origins = websites.map((website) => {

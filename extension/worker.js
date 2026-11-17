@@ -17,7 +17,7 @@ function connect() {
         port = null;
         bridge = 'disconnected';
       }
-      reject(Error('The local bridge did not respond. Check the setup guide, then try again.'));
+      reject(Error('Still did not hear back from Chrome. Check the setup guide, then try again.'));
     }, 5000);
     connection.onMessage.addListener(async (m) => {
       if (port !== connection) return;
@@ -49,9 +49,7 @@ function connect() {
         bridge = 'disconnected';
       }
       reject(
-        Error(
-          'Still could not connect to the local bridge. Complete installation, then try again.',
-        ),
+        Error('Still could not connect to Chrome. Finish the one-time setup, then try again.'),
       );
     });
   })
