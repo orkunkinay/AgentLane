@@ -6,6 +6,7 @@ const button = document.querySelector('#prepare');
 const buttonLabel = document.querySelector('#button-label');
 const error = document.querySelector('#form-error');
 const feedback = document.querySelector('#status');
+const consent = document.querySelector('#consent');
 const modes = [...document.querySelectorAll('input[name="website-mode"]')];
 const selectedMode = () => modes.find((radio) => radio.checked).value;
 let state;
@@ -44,8 +45,11 @@ function render() {
   document.querySelector('#intro-copy').textContent = connected
     ? 'Your agent has a workspace. Keep browsing in your usual Chrome window.'
     : 'A separate Chrome window for your agent, with the logins you already use.';
+  document.querySelector('#access-consent').hidden = !state.consentRequired;
+  consent.required = state.consentRequired;
   const locked = connecting || state.activeSessions > 0 || state.needsReload;
   for (const radio of modes) radio.disabled = locked;
+  consent.disabled = locked;
   const selected = selectedMode() === 'selected';
   input.disabled = locked || !selected;
   input.required = selected;
@@ -104,6 +108,7 @@ function changed() {
   render();
 }
 input.addEventListener('input', changed);
+consent.addEventListener('change', changed);
 for (const radio of modes) radio.addEventListener('change', changed);
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -120,6 +125,13 @@ form.addEventListener('submit', async (event) => {
     input.focus();
     return;
   }
+  if (state?.consentRequired && !consent.checked) {
+    error.textContent =
+      'Review and accept the screenshot and input disclosure to connect AgentLane.';
+    error.hidden = false;
+    consent.focus();
+    return;
+  }
   pending = true;
   render();
   try {
@@ -127,6 +139,7 @@ form.addEventListener('submit', async (event) => {
       op: 'prepare',
       mode: policy.mode,
       origins: policy.websites,
+      consent: consent.checked,
     });
     if (!result || result.error)
       throw Error(result?.error || 'AgentLane could not prepare the agent window.');

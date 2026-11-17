@@ -2,10 +2,12 @@ import { Lane } from './lane.js';
 import { parseStartingPolicy, restoreStartingPolicy } from './starting-websites.js';
 export const lane = new Lane(chrome);
 let settings = { mode: 'selected', websites: [] };
+let accessConsent = false;
 const settingsReady = chrome.storage.local
-  .get(['startingPolicy', 'websites', 'origins'])
+  .get(['startingPolicy', 'websites', 'origins', 'accessConsentVersion'])
   .then((saved) => {
     settings = restoreStartingPolicy(saved);
+    accessConsent = saved.accessConsentVersion === 1;
   });
 let port;
 let bridge = 'disconnected';
@@ -89,6 +91,7 @@ async function setupState() {
     minimized: window?.state === 'minimized',
     websites: settings.websites,
     mode: settings.mode,
+    consentRequired: !accessConsent,
     activeSessions: lane.sessions.size,
     needsReload: Boolean(lane.failed),
   };
@@ -104,6 +107,8 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
       await settingsReady;
       const policy = parseStartingPolicy(m.mode ?? 'selected', m.origins);
       const origins = policy.websites;
+      if (!accessConsent && m.consent !== true)
+        throw Error('Review and accept the screenshot and input disclosure to connect AgentLane.');
       const current = await setupState();
       if (lane.failed)
         throw Error(
@@ -130,7 +135,8 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
       } else if (changed) {
         lane.configure(lane.windowId, origins, policy.mode);
       }
-      await chrome.storage.local.set({ startingPolicy: policy });
+      await chrome.storage.local.set({ startingPolicy: policy, accessConsentVersion: 1 });
+      accessConsent = true;
       settings = policy;
       // A failed bridge can be retried using the same window, without creating duplicates.
       await connect();

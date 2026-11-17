@@ -378,3 +378,24 @@ summary:focus-visible {
   cursor: default;
   opacity: 0.65;
 }
+
+.access-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #56634f;
+  margin: 0 0 14px;
+}
+.access-consent input {
+  margin: 2px 0 0;
+  accent-color: #263f34;
+  flex-shrink: 0;
+}
+.access-consent:has(:focus-visible) {
+  outline: 2px solid #43876c;
+  outline-offset: 4px;
+  border-radius: 3px;
+}

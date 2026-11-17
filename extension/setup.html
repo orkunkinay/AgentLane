@@ -68,6 +68,13 @@
           An agent has a tab open. Finish its task to edit these.
         </p>
         <p id="form-error" class="form-error" role="alert" hidden></p>
+        <label id="access-consent" class="access-consent">
+          <input id="consent" type="checkbox" aria-describedby="form-error" />
+          <span
+            >I allow AgentLane to send page screenshots and input through my MCP client to my
+            configured AI provider.</span
+          >
+        </label>
         <button id="prepare" class="primary-button" type="submit" disabled>
           <span id="button-label">Create agent window</span
           ><svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -100,6 +107,9 @@
             work.
           </p>
         </details>
+        <a href="https://orkunkinay.github.io/AgentLane/privacy/" target="_blank" rel="noreferrer"
+          >Privacy</a
+        >
         <a
           href="https://github.com/orkunkinay/AgentLane#first-time-installation"
           target="_blank"

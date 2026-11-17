@@ -58,6 +58,17 @@ try {
   await page.locator('#prepare').click();
   await page
     .getByRole('alert')
+    .getByText(/Review and accept/)
+    .waitFor();
+  assert.equal((await windows()).length, originalCount, 'no connection/window before consent');
+  const unconsented = await page.evaluate(() =>
+    chrome.runtime.sendMessage({ op: 'prepare', origins: ['https://www.google.com'] }),
+  );
+  assert.match(unconsented.error, /Review and accept/);
+  await page.locator('#consent').check();
+  await page.locator('#prepare').click();
+  await page
+    .getByRole('alert')
     .getByText(/could not connect/)
     .waitFor();
   assert.equal((await windows()).length, originalCount + 1);
@@ -98,6 +109,7 @@ try {
   await page.reload();
   await page.locator('#connection-label').getByText('Connected', { exact: true }).waitFor();
   assert.equal(await page.locator('#origins').inputValue(), 'https://www.google.com');
+  assert.equal(await page.locator('#access-consent').isVisible(), false, 'consent persists');
   await page.locator('#origins').fill('https://www.google.com\nhttps://example.com/path');
   await page.getByRole('button', { name: 'Save starting websites', exact: true }).click();
   await page.getByRole('button', { name: 'Websites saved', exact: true }).waitFor();
@@ -288,6 +300,7 @@ try {
       {
         browser: context.browser().version(),
         invalidInputRejected: true,
+        affirmativeDisclosureRequiredAndPersisted: true,
         missingBridgeReported: true,
         readyAfterHandshakeOnly: true,
         retryAndSaveReuseWindow: true,

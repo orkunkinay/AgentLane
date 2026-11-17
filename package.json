@@ -1,6 +1,6 @@
 {
   "name": "agentlane",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "AgentLane: visual AI browser lanes in your authenticated Chrome without sharing desktop input",

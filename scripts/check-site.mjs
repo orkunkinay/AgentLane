@@ -5,7 +5,7 @@ import { dirname, join, normalize } from 'node:path';
 
 const GH = 'https://github.com/orkunkinay/AgentLane/';
 const PAGES = 'https://orkunkinay.github.io/AgentLane/';
-const pages = ['index.html', 'docs/index.html'];
+const pages = ['index.html', 'docs/index.html', 'privacy/index.html'];
 const html = Object.fromEntries(
   await Promise.all(pages.map(async (p) => [p, await readFile(p, 'utf8')])),
 );

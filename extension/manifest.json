@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AgentLane",
-  "version": "0.1.0",
-  "description": "Experimental target-scoped visual input in a dedicated authenticated window.",
+  "version": "0.1.1",
+  "description": "Give your AI agent a separate visual workspace in your logged-in Chrome. Requires the local AgentLane bridge and an MCP client.",
   "permissions": ["debugger", "nativeMessaging", "storage"],
   "background": {
     "service_worker": "worker.js",
@@ -20,5 +20,7 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
-  }
+  },
+  "minimum_chrome_version": "134",
+  "homepage_url": "https://orkunkinay.github.io/AgentLane/"
 }
