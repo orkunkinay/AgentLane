@@ -62,6 +62,26 @@ for (const t of tools)
 for (const m of html['docs/index.html'].matchAll(/<code>(lane_[a-z]+)<\/code>/g))
   if (!tools.includes(m[1])) problems.push(`docs: unknown tool ${m[1]}`);
 
+// Constants the pages state must match the code that enforces them.
+const lane = await readFile('extension/lane.js', 'utf8');
+const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+const viewport = lane.match(/width: (\d+),\s*height: (\d+),\s*deviceScaleFactor: 1/);
+if (!viewport) problems.push('extension/lane.js: viewport override not found');
+else if (!html['docs/index.html'].includes(`${viewport[1]}×${viewport[2]}`))
+  problems.push(`docs: viewport ${viewport[1]}×${viewport[2]} not documented`);
+const nodeMajor = pkg.engines.node.match(/\d+/)[0];
+for (const page of ['index.html', 'docs/index.html'])
+  if (
+    !new RegExp(`Node(?:\\.js)?\\s*${nodeMajor}\\+|Node(?:\\.js)? ${nodeMajor} or newer`).test(
+      html[page],
+    )
+  )
+    problems.push(`${page}: Node ${nodeMajor} requirement missing or outdated`);
+const manifest = JSON.parse(await readFile('extension/manifest.json', 'utf8'));
+for (const perm of manifest.permissions)
+  if (!html['docs/index.html'].includes(`<code>${perm}</code>`))
+    problems.push(`docs: extension permission ${perm} undocumented`);
+
 for (const script of [
   'install-host.mjs',
   'install-skill.mjs',

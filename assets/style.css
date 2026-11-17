@@ -2186,3 +2186,7 @@ h2 .tag {
   color: var(--ink-2);
   max-width: 46ch;
 }
+
+html:not(.js) button.copy {
+  display: none;
+}
