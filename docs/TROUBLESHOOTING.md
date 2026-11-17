@@ -1,5 +1,22 @@
 # Troubleshooting
 
+Run `npm run doctor` first. It changes nothing and checks Node.js, the native host
+manifest (including the pinned extension ID), the launcher, the state directory
+permissions and the socket, and prints a fix for each failure.
+
+**Node.js not found by Chrome:** Chrome starts the host without your shell profile, so
+nvm/asdf shims are not on its PATH. The installer records the exact Node that ran it;
+the launcher falls back to Homebrew locations and then PATH if that file is gone, and
+otherwise exits with a one-line message. Re-run `scripts/install-host.mjs` after
+changing Node versions. Node.js 22 or newer is required.
+
+**Other Chromium browsers:** `--browser=chrome-beta|chrome-canary|chromium|brave|edge`
+selects the manifest directory; any other directory can be passed explicitly. Only
+Google Chrome has been tested.
+
+**Stale socket after a crash:** the host now reclaims a socket that nothing answers on
+and refuses to start, with an explanation, when a live host owns it.
+
 **Not connected / ENOENT:** load the extension in the intended profile,
 register its exact ID with `scripts/install-host.mjs`, then click **Connect browser**
 or **Create agent window** in its popup. A failed connection retry reuses the window
