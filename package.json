@@ -19,7 +19,8 @@
     "check:site": "node scripts/check-site.mjs",
     "site": "python3 -m http.server 4173",
     "package:extension": "node scripts/package-extension.mjs",
-    "assets:store": "node scripts/capture-docs.mjs && node scripts/render-store-assets.mjs"
+    "assets:store": "node scripts/capture-docs.mjs && node scripts/render-store-assets.mjs",
+    "doctor": "node scripts/doctor.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.0",
