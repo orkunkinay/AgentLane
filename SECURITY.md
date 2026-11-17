@@ -13,8 +13,8 @@ review the extension before granting debugger access to a real profile.
 - Each connection receives an unforgeable host-assigned routing identity. Agents can
   operate only the tab that identity created; they cannot enumerate/read/select
   pre-existing human tabs through AgentLane's toolset.
-- Fixed methods, bounded payloads and viewport coordinates; no arbitrary JavaScript,
-  DOM reads, CDP passthrough, file upload, clipboard or OS-shortcut API.
+- Fixed methods, bounded payloads and viewport coordinates; no agent-facing arbitrary
+  JavaScript, DOM reads, CDP passthrough, file upload, clipboard or OS-shortcut API.
 - Moved tabs are detached, uncertain ownership fails closed, timeouts poison the lane,
   and disconnected queued mutations are cancelled. No best-effort focus restoration.
 
@@ -25,6 +25,14 @@ until corrected. The extension rejects non-HTTP(S) URLs and embedded credentials
 both modes. Links and redirects can lead elsewhere; this policy does not filter
 page requests. Changing modes requires no active sessions. Worker restart preserves
 settings but never restores tab ownership.
+
+The backend installs a fixed isolated-world presentation script only in owned tabs
+and their child frames. It styles ordinary select dropdowns with Chrome's in-page
+picker, retaining the original controls and events. This internal script exposes no
+page content, selectors or evaluation API to the agent. It blocks picker activation
+when conflicting styles would use native UI; unsupported browsers fail before task
+navigation. In-page listboxes and human tabs are left unchanged. Closed shadow-root
+pickers and other native controls remain unverified escape paths.
 
 ## Authority retained and risks
 

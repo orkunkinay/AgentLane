@@ -236,6 +236,12 @@ screenshot's frame token. `Tab` is deliberately unavailable after a headed test
 showed it could focus browser chrome; click the next field instead. The
 [agent skill](skills/agentlane-browser/SKILL.md) gives the complete operating contract.
 
+Standard HTML select dropdowns in owned tabs use an in-page picker, keeping their
+options visible in screenshots without opening Chrome's native menu window. The
+original select/options and form events remain in place; their appearance may
+change. Native select support requires Chrome with `appearance: base-select`
+(Chrome 134+). Other native pickers and dialogs remain unsupported.
+
 ## What is—and is not—isolated
 
 AgentLane separates the input surface from the authentication store. It avoids OS input
@@ -273,6 +279,17 @@ Check the setup UI, including missing-connection recovery and saving websites:
 ```sh
 node experiments/setup.mjs
 ```
+
+Check select dropdowns, including keyboard selection, dynamic controls, open shadow
+roots, cross-origin iframes, strict CSP and conflicting styles:
+
+```sh
+node experiments/dropdown.mjs
+AGENTLANE_HEADED=1 AGENTLANE_OBSERVER=artifacts/observe-macos node experiments/dropdown.mjs
+```
+
+The headed run requires the observer binary built above and verifies foreground,
+pointer, window and Space stability while selecting options in a disposable profile.
 
 Regenerate the six documentation screenshots with:
 

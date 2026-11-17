@@ -352,3 +352,37 @@ Regenerated six README screenshots, including both setup modes, using disposable
 profiles and synthetic data. Updated repository documentation and bundled skill;
 the personal Chrome installation and installed skill were not modified. Applying
 the extension update requires manual reload, setup and a fresh MCP conversation.
+
+## E14: native select window switch, 2026-11-17
+
+The reported localhost mail decision API control is a native HTML select. Inspected
+its served application bundle without submitting an API choice or processing mail.
+Reproduced the same control with synthetic options in disposable headed Chrome:
+CDP click opened the native picker and changed the frontmost macOS window ID while
+Chrome continued reporting the human window focused and the lane unfocused. This
+explains why the existing Chrome focus guard did not catch the window change.
+The older dynamic-menu test used ordinary page buttons, not a native select.
+
+An in-page base-select experiment eliminated the observed window transition. The
+backend now installs that fixed presentation in an isolated world only in owned
+tabs/child frames. It preserves the original select and options and trusted change
+events; listboxes and human tabs remain unchanged. Cross-origin frame targets need
+recursive child-session setup before resuming; a top-level bootstrap alone did not
+cover that regression. Conflicting styles fail closed before native activation.
+
+30 unit/transport/migration tests passed. `experiments/dropdown.mjs` passed mouse and
+keyboard selection, dynamic selects, open shadow roots, cross-origin iframe input,
+post-navigation installation, strict CSP, conflicting-style refusal and human-tab
+preservation in headed Chrome for Testing 159.0.8154.6. The 10 ms macOS observer
+recorded no foreground, pointer, window or Space changes during the corrected test.
+The existing headed MCP/native/browser workflow passed 30 interleaved rounds with
+zero observed native transitions and retained selected/any URL-policy checks.
+The headless MCP navigation-probe run also passed 30 rounds: iframe/history events
+required two captures before input, preserving the stale-frame regression. Setup
+persistence, bridge recovery and active-session locking integration passed unchanged.
+
+These are disposable synthetic fixtures. The actual mail application configuration
+was not changed and its paid/live API was not invoked. Closed shadow roots, arbitrary
+custom widgets and other native picker types are not certified by this fix. The
+personal installation was not reloaded or modified; manual extension reload and
+fresh lane/MCP setup are needed to apply the code.

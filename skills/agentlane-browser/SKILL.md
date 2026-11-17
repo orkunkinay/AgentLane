@@ -63,6 +63,14 @@ agent window in a headed test. Click the next field instead. Browser address bar
 native menus, file pickers, passkeys and permission sheets are outside the page
 surface. No DOM selectors, arbitrary JS, raw CDP or human-tab selection are exposed.
 
+Standard HTML selects in owned pages use an in-page picker. Click the control,
+take a screenshot of its options, then click the desired visible option; Arrow keys
+and Enter also remain page-targeted. Original form controls/events are preserved,
+but picker appearance may differ from the human tab. Dynamic selects, open shadow
+roots and child iframes are covered. If a native picker is blocked, stop that
+selection workflow; never switch to desktop input or restore focus. Closed shadow
+roots and other native pickers remain unverified.
+
 ## Authentication and authorization
 
 Open the requested site through the lane and use a safe visible account indicator

@@ -94,6 +94,28 @@ could capture a human tab. Old tabs/anchor windows may remain for manual cleanup
 A crash can leave a socket; after confirming its host process is gone, remove only
 that stale socket. There is no silent profile fallback or automatic focus repair.
 
+## Select picker presentation
+
+A native HTML select menu can change macOS window ordering while Chrome still
+reports the lane window as unfocused. The focus guard alone cannot detect that
+transition. Owned targets now install a fixed isolated-world script before document
+scripts, opting ordinary single-select controls into
+[Chrome's in-page select picker](https://developer.chrome.com/blog/a-customizable-select).
+Original nodes, options, values and trusted input/change events remain intact.
+Only control presentation changes; page values are never read back through this helper.
+
+The bootstrap handles dynamically inserted selects, navigations and open shadow
+roots. It leaves multiple/size>1 listboxes alone. Cross-process child iframes use
+[Chrome debugger flat sessions](https://developer.chrome.com/docs/extensions/reference/api/debugger#attach-to-related-targets):
+only iframe children of an owned tab are attached, recursively prepared, then resumed.
+These session identifiers remain internal. Human tabs and new popup tabs are never
+adopted. Pending frame setup must complete before further lane input.
+
+Browsers lacking base-select support fail before task navigation. A capture-phase
+guard blocks native select activation if computed picker styles conflict and reports
+a fixed failure through an isolated-world binding. No focus restoration is attempted.
+Other native controls and closed shadow-root pickers are outside the verified fix.
+
 ## Boundaries still missing
 
 Profile storage, cookies, service workers, permissions and server-side account state

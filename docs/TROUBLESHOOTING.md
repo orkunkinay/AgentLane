@@ -83,3 +83,11 @@ persisted tab IDs. Manually close only clearly identified AgentLane windows and 
 a session with AgentLane enabled and explicitly request lane tools. No supported hook was
 found to replace `cua_repl` in this environment. Do not infer that a successful native
 computer-use action passed AgentLane's ownership or isolation checks.
+
+**Selecting an option switches windows:** older builds let HTML select controls open
+Chrome's native menu, which can reorder macOS windows without changing Chrome's
+reported focus flags. Finish active tasks, reload the extension manually, prepare a
+new lane and use a fresh MCP conversation. The updated build renders standard selects
+inside the page. If it reports a blocked native picker, stop that dropdown workflow;
+do not retry with desktop input or focus restoration. Other native controls and
+closed shadow-root pickers still need separate validation.

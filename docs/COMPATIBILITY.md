@@ -14,7 +14,8 @@
 | Other Chromium browsers | Unverified | Manifest/host paths, debugger permission and rendering behavior vary |
 | Firefox/Safari | Unsupported | Would need a different target-input backend |
 | Shadow DOM/canvas/page menus | Pixels/input supported | Canvas fixture rendered; arbitrary complex applications not certified |
-| Cross-origin iframe input | Unverified | CDP root viewport dispatch tested only on same-origin fixture |
+| Standard HTML select dropdowns | Tested in-page presentation | Mouse/keyboard, dynamic controls, open shadow roots, strict CSP; original controls/events preserved; Chrome 134+ required |
+| Cross-origin iframe select input | Tested bounded fixture | Recursive owned-child debugger setup; screenshot/coordinate selection; arbitrary embedded apps unverified |
 | Native menus, file pickers, permission sheets, passkeys | Unsupported | Not part of page compositor surface |
 | ChatGPT navigation in tested profile | Blocked | target_closed followed by Chrome rejecting access to another extension URL; not bypassed |
 | Popups/new windows | Not isolated | Can activate UI; do not use as a zero-interruption claim |
