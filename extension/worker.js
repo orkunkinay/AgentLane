@@ -55,6 +55,8 @@ function connect() {
       if (port === connection) {
         port = null;
         bridge = 'disconnected';
+        // A new native host assigns new identities. Revoke and close only old owned tabs.
+        for (const session of lane.sessions.keys()) lane.cancel(session);
       }
       reject(
         Error('AgentLane could not connect to Chrome. Finish the one-time setup, then try again.'),
@@ -76,7 +78,9 @@ async function setupState() {
   if (lane.windowId !== null) {
     try {
       window = await chrome.windows.get(lane.windowId);
-    } catch {}
+    } catch {
+      lane.windowRemoved(lane.windowId);
+    }
   }
   return {
     windowOpen: Boolean(window),
@@ -97,12 +101,14 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
   }
   if (m.op === 'prepare') {
     (async () => {
-      if (lane.failed)
-        throw Error('Reload AgentLane from the Chrome extensions page to reset the agent window.');
       await settingsReady;
       const policy = parseStartingPolicy(m.mode ?? 'selected', m.origins);
       const origins = policy.websites;
       const current = await setupState();
+      if (lane.failed)
+        throw Error(
+          'Close and recreate the agent window, or reload AgentLane, to reset the failed lane.',
+        );
       const changed =
         policy.mode !== lane.mode || JSON.stringify(origins) !== JSON.stringify(lane.origins);
       if (lane.sessions.size && changed)
@@ -159,6 +165,7 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
       .catch(() => {});
   }
 });
+chrome.windows.onRemoved.addListener((windowId) => lane.windowRemoved(windowId));
 chrome.tabs.onRemoved.addListener((tabId) => {
   for (const [id, s] of lane.sessions) if (s.tabId === tabId) lane.sessions.delete(id);
 });

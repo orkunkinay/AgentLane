@@ -9,6 +9,7 @@ export class Lane {
     this.failed = null;
     this.captureSettleMs = 150;
     this.windowId = null;
+    this.generation = 0;
     this.origins = [];
     this.mode = 'selected';
     this.sessions = new Map();
@@ -19,9 +20,19 @@ export class Lane {
   configure(windowId, origins, mode = 'selected') {
     if (this.sessions.size) throw Error('Close all sessions before reconfiguring');
     const policy = parseStartingPolicy(mode, origins);
+    this.generation++;
+    this.framePreparations.clear();
     this.windowId = windowId;
     this.mode = policy.mode;
     this.origins = policy.websites;
+  }
+  windowRemoved(windowId) {
+    if (windowId !== this.windowId) return;
+    this.generation++;
+    this.windowId = null;
+    this.sessions.clear();
+    this.framePreparations.clear();
+    this.failed = null;
   }
   url(value) {
     const u = new URL(value);
@@ -41,7 +52,15 @@ export class Lane {
   }
   async assertLane() {
     if (this.windowId === null) throw Error('Prepare a lane in the extension first');
-    const w = await this.api.windows.get(this.windowId);
+    let w;
+    try {
+      w = await this.api.windows.get(this.windowId);
+    } catch {
+      this.windowRemoved(this.windowId);
+      throw Error(
+        'Agent window is closed. Reopen it from the AgentLane extension, then call lane_open.',
+      );
+    }
     if (w.focused)
       throw Error('Lane is focused by a human; input is paused. Switch to your own window.');
     if (w.state === 'minimized')
@@ -49,8 +68,13 @@ export class Lane {
   }
   async owned(session, allowDetached = false) {
     const s = this.sessions.get(session);
-    if (!s) throw Error('No owned tab; create a session first');
+    if (!s)
+      throw Error(
+        'No owned tab. If the lane was reopened or the bridge reconnected, call lane_open to create a fresh owned tab.',
+      );
     const tab = await this.api.tabs.get(s.tabId);
+    if (this.sessions.get(session) !== s || s.generation !== this.generation)
+      throw Error('Lane was recreated; call lane_open for a fresh owned tab.');
     if (tab.windowId !== this.windowId) {
       this.sessions.delete(session);
       await this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
@@ -132,10 +156,11 @@ export class Lane {
     if (params.targetInfo.type !== 'iframe') return;
     const entry = [...this.sessions].find(([, session]) => session.tabId === source.tabId);
     if (!entry) return;
-    const [id] = entry;
+    const [id, owner] = entry;
+    const generation = owner.generation;
     const preparation = (async () => {
       await this.owned(id);
-      const frame = { tabId: source.tabId, childSessionId: params.sessionId };
+      const frame = { tabId: source.tabId, childSessionId: params.sessionId, generation };
       await this.preparePicker(frame);
       await this.owned(id);
       // Only child frames of an owned tab are resumed; never attach to another tab.
@@ -144,15 +169,21 @@ export class Lane {
     this.framePreparations.add(preparation);
     preparation
       .catch(() => {
+        if (generation !== this.generation) return;
         this.failed =
           'Could not protect an embedded select picker; close the session and reload the extension.';
       })
       .finally(() => this.framePreparations.delete(preparation));
   }
   async command(s, method, params = {}) {
+    const generation = s.generation;
+    if (generation !== this.generation)
+      throw Error(
+        'Lane was recreated; the previous action was not continued. Call lane_open for a fresh owned tab.',
+      );
     let timer;
     try {
-      return await Promise.race([
+      const result = await Promise.race([
         this.api.debugger.sendCommand(
           { tabId: s.tabId, ...(s.childSessionId ? { sessionId: s.childSessionId } : {}) },
           method,
@@ -160,12 +191,19 @@ export class Lane {
         ),
         new Promise((_, reject) => {
           timer = setTimeout(() => {
-            this.failed = 'Renderer command timed out; reload extension and prepare a new lane';
+            const failure =
+              'Renderer command timed out; recreate the agent window or reload extension';
+            if (generation === this.generation) this.failed = failure;
             this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
-            reject(Error(this.failed));
+            reject(Error(failure));
           }, this.commandTimeoutMs);
         }),
       ]);
+      if (generation !== this.generation)
+        throw Error(
+          'Lane was recreated; the previous action was not continued. Call lane_open for a fresh owned tab.',
+        );
+      return result;
     } catch (e) {
       throw Error(method + ': ' + e.message);
     } finally {
@@ -203,6 +241,7 @@ export class Lane {
     if (op === 'open') {
       if (this.sessions.has(session)) throw Error('Session already owns a tab');
       const url = this.url(args.url);
+      const generation = this.generation;
       const tab = await this.tabEdit(
         () =>
           this.api.tabs.create({
@@ -212,7 +251,17 @@ export class Lane {
           }),
         session,
       );
-      const s = { tabId: tab.id, frame: null, detached: false, navigationRevision: 0 };
+      if (generation !== this.generation)
+        throw Error(
+          'Lane changed while opening the tab; call lane_open again in the prepared window.',
+        );
+      const s = {
+        tabId: tab.id,
+        frame: null,
+        detached: false,
+        navigationRevision: 0,
+        generation,
+      };
       this.sessions.set(session, s);
       try {
         await this.api.debugger.attach({ tabId: tab.id }, '1.3');
@@ -225,9 +274,11 @@ export class Lane {
         await this.command(s, 'Page.navigate', { url });
         return { opened: true, width: 1100, height: 760 };
       } catch (e) {
-        this.sessions.delete(session);
+        if (this.sessions.get(session) === s) this.sessions.delete(session);
         await this.api.debugger.detach({ tabId: tab.id }).catch(() => {});
-        await this.api.tabs.remove(tab.id).catch(() => {});
+        const current = await this.api.tabs.get(tab.id).catch(() => null);
+        if (generation === this.generation && current?.windowId === this.windowId)
+          await this.api.tabs.remove(tab.id).catch(() => {});
         throw e;
       }
     }

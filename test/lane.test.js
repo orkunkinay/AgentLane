@@ -332,3 +332,71 @@ test('iframe preparation is confined to children of a still-owned tab', async ()
   await Promise.allSettled([...f.lane.framePreparations]);
   assert.equal(sent.length, 0);
 });
+
+test('closing/recreating the lane revokes tabs and frames while preserving website policy', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  const shot = await f.run('a', 'screenshot');
+  f.lane.windowRemoved(99);
+  assert.equal(f.lane.sessions.size, 1, 'unrelated human windows do not reset the lane');
+  f.lane.windowRemoved(7);
+  assert.equal(f.lane.sessions.size, 0);
+  assert.equal(f.lane.windowId, null);
+  assert.deepEqual(f.lane.origins, ['https://example.com']);
+  f.lane.configure(7, ['https://example.com']);
+  await assert.rejects(f.run('a', 'screenshot'), /call lane_open/);
+  await f.run('a', 'open', { url: 'https://example.com' });
+  await assert.rejects(f.run('a', 'click', { frame: shot.frame, x: 10, y: 10 }), /Stale/);
+  f.window.focused = true;
+  await assert.rejects(f.run('a', 'screenshot'), /paused/);
+});
+
+test('an input interrupted by window recreation cannot continue or poison the replacement lane', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  const shot = await f.run('a', 'screenshot');
+  const send = f.lane.api.debugger.sendCommand;
+  let release;
+  let started;
+  const pressed = new Promise((resolve) => {
+    started = resolve;
+  });
+  f.lane.api.debugger.sendCommand = async (target, method, params) => {
+    if (method === 'Input.dispatchMouseEvent' && params.type === 'mousePressed') {
+      started();
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+    }
+    return send(target, method, params);
+  };
+  const click = f.run('a', 'click', { frame: shot.frame, x: 10, y: 10 });
+  await pressed;
+  f.lane.windowRemoved(7);
+  f.lane.configure(7, ['https://example.com']);
+  release();
+  await assert.rejects(click, /previous action was not continued/);
+  assert(
+    !f.calls.some(
+      ([method, , params]) =>
+        method === 'Input.dispatchMouseEvent' && params.type === 'mouseReleased',
+    ),
+  );
+  assert.equal(f.lane.failed, null);
+  await f.run('a', 'open', { url: 'https://example.com' });
+});
+
+test('a delayed timeout from a closed lane does not poison the reopened lane', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  f.lane.commandTimeoutMs = 10;
+  const send = f.lane.api.debugger.sendCommand;
+  f.lane.api.debugger.sendCommand = () => new Promise(() => {});
+  const pending = f.lane.command(f.lane.sessions.get('a'), 'Page.captureScreenshot');
+  f.lane.windowRemoved(7);
+  f.lane.configure(7, ['https://example.com']);
+  await assert.rejects(pending, /timed out/);
+  assert.equal(f.lane.failed, null);
+  f.lane.api.debugger.sendCommand = send;
+  await f.run('a', 'open', { url: 'https://example.com' });
+});
