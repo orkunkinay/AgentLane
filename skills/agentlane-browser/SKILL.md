@@ -1,24 +1,24 @@
 ---
-name: still-browser
-description: Use Still's MCP tools for screenshot-driven tasks in the user's authenticated Chrome while they keep using their own window. Use when the user asks to use Still, lane tools, or concurrent authenticated browser control. Does not replace native desktop control for other applications.
+name: agentlane-browser
+description: Use AgentLane's MCP tools for screenshot-driven tasks in the user's authenticated Chrome while they keep using their own window. Use when the user asks to use AgentLane, lane tools, or concurrent authenticated browser control. Does not replace native desktop control for other applications.
 ---
 
-# Still Browser
+# AgentLane
 
-Still gives an agent its own tab in a dedicated Chrome window inside the user's
+AgentLane gives an agent its own tab in a dedicated Chrome window inside the user's
 existing profile. Screenshots come from the tab's compositor; input goes to that
 renderer. Authentication stays in Chrome. Shared account/storage effects remain:
 separate input does not make account changes independent or harmless.
 
 ## Choose the interaction route
 
-Use the configured **Still MCP server** for this workflow. Tool names may have a
+Use the configured **AgentLane MCP server** for this workflow. Tool names may have a
 client-specific prefix; find tools ending in `lane_open`, `lane_screenshot`, etc.
-The native Computer Use backend is separate and is not intercepted by Still.
+The native Computer Use backend is separate and is not intercepted by AgentLane.
 
-If lane tools are unavailable, report that the current session lacks Still. Do not
+If lane tools are unavailable, report that the current session lacks AgentLane. Do not
 silently switch to native Chrome input, a fresh unauthenticated browser, cookie
-export, or a copied profile. If Still was just configured, use a fresh agent session
+export, or a copied profile. If AgentLane was just configured, use a fresh agent session
 with the server enabled. The skill itself does not install or enable MCP tools.
 
 The human prepares the extension and its dedicated lane once. During execution,
@@ -95,7 +95,7 @@ Screenshots may contain private data and reach the configured model provider.
   error. Let the human switch away, restore or reprepare as appropriate. A poisoned
   lane needs extension reload/setup and a fresh MCP connection; no native fallback.
 - **Unapproved starting origin:** identify the required origin, including its port.
-  The human can add it under **Starting websites** in the Still panel after closing
+  The human can add it under **Starting websites** in the AgentLane panel after closing
   active agent sessions, then choose **Save starting websites**. This reuses the
   existing window; no reload is required. Do not edit the implementation to bypass
   the starting-URL check. It is not a restriction on links or redirects.
@@ -108,7 +108,7 @@ Screenshots may contain private data and reach the configured model provider.
 
 ## State claims precisely
 
-Still is experimental. Normal Chrome 157 passed a screenshot-guided local workflow,
+AgentLane is experimental. Normal Chrome 157 passed a screenshot-guided local workflow,
 one safe existing Google sign-in check and a 120.7-second / 138-round load during
 which the human reported active Chrome use without interference. These observations
 do not certify every website, Space transition, popup, native dialog or long run.
