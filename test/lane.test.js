@@ -442,3 +442,54 @@ test('replacement during an asynchronous window check cannot redirect an old ope
   f.lane.api.windows.get = get;
   await f.run('a', 'open', { url: 'https://example.com' });
 });
+test('selected policy rejects lookalike, scheme and credential bypass attempts', () => {
+  const lane = new Lane({}, 10);
+  lane.configure(7, ['https://example.com']);
+  const rejected = [
+    'https://www.example.com/',
+    'https://sub.example.com/',
+    'https://example.com.evil.test/',
+    'https://example.com@evil.test/',
+    'https://user:pw@example.com/',
+    'https://example.com./',
+    'https://exarnple.com/',
+    'https://xn--exmple-cua.com/',
+    'http://example.com/',
+    'https://example.com:8443/',
+    'data:text/html,<h1>hi</h1>',
+    'file:///etc/passwd',
+    'chrome://settings',
+    'chrome-extension://abcdefghijklmnopabcdefghijklmnop/setup.html',
+    'javascript:alert(1)',
+    'about:blank',
+    'blob:https://example.com/00000000-0000-0000-0000-000000000000',
+    'ftp://example.com/',
+  ];
+  for (const url of rejected) assert.throws(() => lane.url(url), /not approved|Invalid URL/, url);
+  assert.equal(lane.url('HTTPS://EXAMPLE.COM/Path?q=1#x'), 'https://example.com/Path?q=1#x');
+  lane.mode = 'any';
+  for (const url of ['data:text/html,x', 'file:///etc/passwd', 'chrome://settings', 'javascript:1'])
+    assert.throws(() => lane.url(url), /not approved/, url);
+});
+
+test('a frame token is consumed by its one input, even when that input fails', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  const shot = await f.run('a', 'screenshot');
+  await f.run('a', 'click', { frame: shot.frame, x: 5, y: 5 });
+  await assert.rejects(f.run('a', 'click', { frame: shot.frame, x: 5, y: 5 }), /Stale/);
+  const next = await f.run('a', 'screenshot');
+  await assert.rejects(f.run('a', 'click', { frame: next.frame, x: 5000, y: 5 }), /outside/);
+  await assert.rejects(f.run('a', 'click', { frame: next.frame, x: 5, y: 5 }), /Stale/);
+  const clicks = f.calls.filter((c) => c[0] === 'Input.dispatchMouseEvent');
+  assert.equal(clicks.length, 3);
+});
+
+test('a retry after a timeout cannot repeat an input that may have been applied', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  const shot = await f.run('a', 'screenshot');
+  await f.run('a', 'type', { frame: shot.frame, text: 'hello' });
+  await assert.rejects(f.run('a', 'type', { frame: shot.frame, text: 'hello' }), /Stale/);
+  assert.equal(f.calls.filter((c) => c[0] === 'Input.insertText').length, 1);
+});

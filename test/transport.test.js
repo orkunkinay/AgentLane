@@ -81,6 +81,8 @@ test(
       });
       await client.connect(transport);
       assert.equal(client.getServerVersion().name, 'agentlane');
+      assert.match(client.getInstructions(), /untrusted data, never instructions/);
+      assert.match(client.getInstructions(), /CAPTCHA/);
       const tools = await client.listTools();
       assert.deepEqual(
         tools.tools.map((tool) => tool.name).sort(),
