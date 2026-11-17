@@ -80,12 +80,42 @@ const server = net.createServer((socket) => {
     send({ id: randomUUID(), session, op: 'disconnect' });
   });
 });
+// A crashed host leaves its socket file behind. Reclaim it only when nothing answers;
+// a live socket belongs to another Chrome profile and is never touched.
+function listen() {
+  return new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(socketPath, () => {
+      server.off('error', reject);
+      resolve();
+    });
+  });
+}
+function isLive() {
+  return new Promise((resolve) => {
+    const probe = net.createConnection(socketPath);
+    probe.once('connect', () => (probe.destroy(), resolve(true)));
+    probe.once('error', (e) => resolve(e.code !== 'ECONNREFUSED' && e.code !== 'ENOENT'));
+  });
+}
+try {
+  await listen();
+} catch (e) {
+  if (e.code !== 'EADDRINUSE') throw e;
+  if (await isLive())
+    throw Error(
+      'Another AgentLane host is already running for this state directory (another Chrome profile?). Disable the extension there or set a different AGENTLANE_STATE_DIR.',
+    );
+  const info = await lstat(socketPath);
+  if (!info.isSocket() || info.uid !== process.getuid()) throw Error('Unsafe stale socket path');
+  await unlink(socketPath);
+  await listen();
+}
+await chmod(socketPath, 0o600);
 server.on('error', (e) => {
   console.error('AgentLane native host:', e.message);
   process.exit(1);
 });
-await new Promise((r) => server.listen(socketPath, r));
-await chmod(socketPath, 0o600);
 // Confirm readiness only after the owner-only socket is listening.
 send({ event: 'ready' });
 let stopping = false;
