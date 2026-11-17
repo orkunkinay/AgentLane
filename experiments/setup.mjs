@@ -1,16 +1,25 @@
 // Test the real setup UI and bridge handshake without touching the user's Chrome profile.
 import { chromium } from 'playwright';
-import { mkdtemp, mkdir, writeFile, chmod, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, chmod, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 const profile = await mkdtemp(join(tmpdir(), 'agentlane-setup-'));
 const stateDir = join(profile, 'bridge');
 const extension = resolve('extension');
 let context;
 let client;
+const fixture = createServer((req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.end('<h1>Disposable recovery fixture</h1><input aria-label="Note">');
+});
 try {
+  await new Promise((resolve) => fixture.listen(0, '127.0.0.1', resolve));
+  const fixtureOrigin = `http://127.0.0.1:${fixture.address().port}`;
   context = await chromium.launchPersistentContext(profile, {
     headless: true,
     channel: 'chromium',
@@ -64,7 +73,7 @@ try {
   const quote = (s) => "'" + s.replaceAll("'", "'\\''") + "'";
   await writeFile(
     launcher,
-    `#!/bin/sh\nAGENTLANE_STATE_DIR=${quote(stateDir)} exec ${quote(process.execPath)} ${quote(resolve('src/native-host.js'))} "$@"\n`,
+    `#!/bin/sh\necho $$ > ${quote(join(profile, 'native.pid'))}\nAGENTLANE_STATE_DIR=${quote(stateDir)} exec ${quote(process.execPath)} ${quote(resolve('src/native-host.js'))} "$@"\n`,
     { mode: 0o700 },
   );
   await chmod(launcher, 0o700);
@@ -141,10 +150,22 @@ try {
   await page.locator('#connection-label').getByText('Connected', { exact: true }).waitFor();
   assert.equal((await windows()).length, originalCount + 1);
 
-  process.env.AGENTLANE_STATE_DIR = stateDir;
-  const { BrowserClient } = await import('../src/client.js');
-  client = new BrowserClient();
-  await client.connect();
+  const protocol = new Client({ name: 'setup-recovery-test', version: '1.0' });
+  await protocol.connect(
+    new StdioClientTransport({
+      command: process.execPath,
+      args: [resolve('src/mcp.js')],
+      env: { ...process.env, AGENTLANE_STATE_DIR: stateDir },
+    }),
+  );
+  client = {
+    call: async (op, args = {}) => {
+      const result = await protocol.callTool({ name: 'lane_' + op, arguments: args });
+      if (result.isError) throw Error(result.content[0].text);
+      return JSON.parse(result.content[op === 'screenshot' ? 1 : 0].text);
+    },
+    close: () => protocol.close(),
+  };
   await client.call('open', { url: 'https://example.com/' });
   await page.waitForFunction(() => document.querySelector('#origins').disabled);
   // Avoid network dependence for input policy: the owned tab need only exist.
@@ -153,8 +174,71 @@ try {
   );
   assert.match(locked.error, /agent to finish/);
   await client.call('close');
-  client.close();
+  await page.waitForFunction(() => !document.querySelector('#origins').disabled);
+  await page
+    .locator('#origins')
+    .fill('https://www.google.com\nhttps://example.com\n' + fixtureOrigin);
+  await page.getByRole('button', { name: 'Save starting websites', exact: true }).click();
+  await page.getByRole('button', { name: 'Websites saved', exact: true }).waitFor();
+  async function openFixture() {
+    await client.call('open', { url: fixtureOrigin });
+    let target;
+    for (let attempt = 0; attempt < 100; attempt++) {
+      target = context
+        .pages()
+        .filter((candidate) => candidate.url() === fixtureOrigin + '/')
+        .at(-1);
+      if (target) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert(target, 'recreated owned fixture is visible to the test harness');
+    await target.waitForLoadState();
+    await target.getByRole('heading', { name: 'Disposable recovery fixture' }).waitFor();
+  }
+  await openFixture();
+  for (let round = 0; round < 3; round++) {
+    const previous = await client.call('screenshot');
+    const workspace = (await windows()).find(
+      (w) => !originalWindows.some((original) => original.id === w.id),
+    );
+    await worker.evaluate((id) => chrome.windows.remove(id), workspace.id);
+    await assert.rejects(client.call('screenshot'), /Prepare a lane|window is closed/);
+    await page.reload();
+    await page.getByRole('button', { name: 'Create agent window', exact: true }).click();
+    await page.locator('#connection-label').getByText('Connected', { exact: true }).waitFor();
+    await assert.rejects(client.call('screenshot'), /call lane_open/);
+    await openFixture();
+    await assert.rejects(client.call('click', { frame: previous.frame, x: 10, y: 10 }), /Stale/);
+    const current = await client.call('screenshot');
+    assert.notEqual(current.frame, previous.frame);
+    assert.equal(
+      (await windows()).length,
+      originalCount + 1,
+      'one replacement lane, original human window retained',
+    );
+  }
+  // Kill only the disposable native host whose launcher wrote this test-only PID.
+  const nativePid = Number((await readFile(join(profile, 'native.pid'), 'utf8')).trim());
+  assert(Number.isSafeInteger(nativePid) && nativePid > 1);
+  process.kill(nativePid, 'SIGTERM');
+  await page.locator('#connection-label').getByText('Not connected', { exact: true }).waitFor();
+  await assert.rejects(
+    client.call('screenshot'),
+    /Browser bridge unavailable|Browser bridge disconnected/,
+  );
+  await page.waitForFunction(() => !document.querySelector('#origins').disabled);
+  await page.getByRole('button', { name: 'Connect browser', exact: true }).click();
+  await page.locator('#connection-label').getByText('Connected', { exact: true }).waitFor();
+  await assert.rejects(client.call('screenshot'), /call lane_open/);
+  await openFixture();
+  await client.call('screenshot');
+  await client.call('close');
+  await client.close();
   client = null;
+  await page.waitForFunction(() => !document.querySelector('#origins').disabled);
+  await page.locator('#origins').fill('https://www.google.com\nhttps://example.com');
+  await page.getByRole('button', { name: 'Save starting websites', exact: true }).click();
+  await page.getByRole('button', { name: 'Websites saved', exact: true }).waitFor();
   // A full browser restart preserves policy but must not adopt old tabs or capabilities.
   const restart = async () => {
     await context.close();
@@ -216,6 +300,9 @@ try {
         activeSessionChangesRejected: true,
         focusedWindowShowsPaused: true,
         closedWindowRecreated: true,
+        sameMcpSurvivesThreeWindowRecreations: true,
+        staleFramesRejectedAfterRecreation: true,
+        sameMcpSurvivesNativeHostRestart: true,
         readyPanelHeight: height,
       },
       null,
@@ -223,7 +310,8 @@ try {
     ),
   );
 } finally {
-  client?.close();
+  await client?.close();
   await context?.close();
+  await new Promise((resolve) => fixture.close(resolve));
   await rm(profile, { recursive: true, force: true });
 }
