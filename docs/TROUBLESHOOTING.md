@@ -1,8 +1,10 @@
 # Troubleshooting
 
-**No browser connection / ENOENT:** load the extension in the intended profile,
-register its exact ID with `scripts/install-host.mjs`, then prepare the lane from its
-popup. Confirm `~/.still/browser.sock` exists. GUI-launched Chrome may not inherit your
+**Not connected / ENOENT:** load the extension in the intended profile,
+register its exact ID with `scripts/install-host.mjs`, then click **Connect browser**
+or **Create agent window** in its popup. A failed connection retry reuses the window
+it already created. Confirm `~/.still/browser.sock` exists. GUI-launched Chrome may
+not inherit your
 shell PATH; the installer pins the absolute Node path. Moving the checkout requires
 re-registering the manifest after reviewing/removing the old one.
 
@@ -38,6 +40,11 @@ Do not retry uncertain page input or focus the lane to recover.
 **Debugger detached:** Chrome DevTools or another extension may have detached Still.
 A target_closed event can reattach only to the same validated owned tab. Other
 detach reasons require closing the session and creating a fresh one. Do not attach to a human tab or bypass Chrome’s restriction on another extension URL.
+
+**Starting websites:** this is a starting-URL check, not a website blocklist.
+Links, redirects and page requests can reach other websites. To change the list,
+finish agent sessions, edit **Starting websites** and click **Save starting websites**.
+Reloading the extension is not required for this setting.
 
 **Stale frame:** the rejected input was not dispatched. Take a fresh screenshot
 before each click/type/key/scroll. Navigation or a prior input invalidates the token;

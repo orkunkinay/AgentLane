@@ -99,24 +99,31 @@ replacing anything. [Recovery instructions.](docs/TROUBLESHOOTING.md)
 ### 4. Create the agent lane
 
 Click **Still** in Chrome's toolbar, or open it through the puzzle-piece extensions
-menu. Enter the **starting origins** the agent will need, one per line. For example:
+menu. Under **Starting websites**, enter where the agent may open a task, one website
+per line. For example:
 
 ```text
 https://www.google.com
 http://127.0.0.1:8741
 ```
 
-An origin is the protocol, hostname and port—not a full page path. `localhost` and
-`127.0.0.1` are different hostnames for this check.
+You can enter a domain such as `www.google.com` or a full address. Still adds
+`https://` to a bare domain and saves just the website part of a page address.
+The protocol, hostname and port must match; `localhost` and `127.0.0.1` differ.
 
-<img src="docs/images/lane-setup.png" alt="Still setup with two approved starting origins and the Create dedicated lane button." width="372">
+<img src="docs/images/lane-setup.png" alt="Compact Still setup showing Starting websites, a notice that links and redirects can leave them, and Create agent window." width="384">
 
-Click **Create dedicated lane**. You should see a separate Chrome window titled
+Click **Create agent window**. You should see a separate Chrome window titled
 **Still agent lane**. Keep that window restored and switch back to your own window.
-The screenshot above is the real extension UI, populated with example origins.
+The screenshot above is the real extension UI, populated with example websites.
+**Connected** appears only after the local connection is confirmed. If installation
+is incomplete, the panel shows **Not connected** and offers a retry.
 
-Starting-origin approval restricts requested navigation; it is **not a network
-sandbox**. Page links, redirects and subresources can leave that list.
+![The redesigned empty agent window with instructions to keep it open and return to your usual window.](docs/images/agent-window.png)
+
+**Starting websites controls where tasks start, not where the agent can browse.**
+Pages can still link or redirect to other websites. This is not a network sandbox;
+iframes and other page requests are not blocked by this setting.
 
 ### 5. Connect Codex to Still
 
@@ -198,7 +205,7 @@ pointer, window/Space, authentication, visual workflow, durability and ownership
 | Starting a task | Ask for `$still-browser` in a conversation with Still tools available. |
 | Finishing a task | The agent calls `lane_close`; the empty lane stays available. |
 | Lane focused or minimized | Switch to your own window or restore the lane manually. The agent must not activate it. |
-| Adding another website | Finish/close agent sessions, reload Still at `chrome://extensions`, then prepare a fresh lane with the full origin list. Reload loses ownership; manually close only recognizable old Still windows. |
+| Adding another website | Finish/close agent sessions, open Still, edit **Starting websites**, and click **Save starting websites**. The existing window is reused; no reload is needed. |
 | Agent reports stale frame | Take a fresh screenshot before the next input. |
 | Missing host or renderer timeout | Follow [troubleshooting](docs/TROUBLESHOOTING.md); do not copy cookies or switch to desktop input. |
 | Native authentication, permission sheet or popup | Stop at that unsupported boundary and hand off as appropriate. |
@@ -242,14 +249,23 @@ deliberately reproduces unsafe raw Tab traversal in a disposable test build; do 
 use it during normal work. Generated test artifacts stay in ignored `artifacts/`.
 Review them before sharing.
 
-Regenerate the four documentation screenshots with:
+Check the setup UI, including missing-connection recovery and saving websites:
+
+```sh
+node experiments/setup.mjs
+```
+
+Regenerate the five documentation screenshots with:
 
 ```sh
 node scripts/capture-docs.mjs
 ```
 
-The generator uses a disposable Chrome for Testing profile and a temporary local demo
-server, then removes both. The overview SVG is a diagram, not a screenshot. No
+The toolbar PNG icons are generated from `extension/icons/still.svg` with
+`node scripts/render-icons.mjs`.
+
+The screenshot generator uses a disposable Chrome for Testing profile and a temporary
+local demo server, then removes both. The overview SVG is a diagram, not a screenshot. No
 personal browser screenshots or profile data are part of this documentation.
 
 - [Architecture](docs/ARCHITECTURE.md) — ownership, transport, rendering and failures.

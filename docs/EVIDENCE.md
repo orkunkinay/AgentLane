@@ -243,3 +243,40 @@ Google is eliminated or revalidate physical focus behavior on the updated build.
 Updated the product skill and its installed local copy. The source fix requires an
 extension reload/reprepare and a fresh MCP connection before normal Chrome uses it;
 the running personal-profile extension was not reloaded during this task.
+
+## E11: compact setup UI and precise starting-website language, 2026-11-17
+
+Replaced “Approved starting origins” with **Starting websites** and the visible
+explanation: “Choose where tasks can start. Pages can still link or redirect to other
+websites.” No network/redirect enforcement was added or implied. The setting still
+restricts explicit start/navigation URLs. Setup accepts domains/full URLs, stores
+unique exact HTTP(S) origins and rejects credentials and non-web schemes.
+
+The popup now shows real setup/connection/paused status, loading/error states and a
+small illustration of the human/agent windows. A native-host readiness message is
+sent only after its owner-only socket is listening. UI success requires that message;
+a missing host is reported without falsely declaring readiness. Retrying connection
+and saving websites reuse an existing lane. Website changes are refused while a
+session is open. No agent-facing API or foreground-activation call was added.
+
+`node experiments/setup.mjs` passed in disposable headless Chrome for Testing
+159.0.8154.6: invalid input creates no window; missing host gives a connection error;
+installing the disposable host then retrying reuses the same window; readiness follows
+the handshake; settings survive reopening; saving creates no extra window; focused
+lane displays Paused; closed lane can be recreated; active-session settings are locked.
+The initial panel measured 528 px high, connected panel 596.27 px, at 384 px width.
+Setup, ready, error and agent-window screenshots were visually inspected.
+
+A focus-return probe initially timed out: headless Chrome reported both windows as
+focused after synthetic focus changes. Reloading the UI did not change those API
+flags. The test now checks Paused correctly and closes/recreates only the disposable
+lane for later checks; it does not weaken the production guard or claim real macOS
+focus transitions were certified. No native UI actions were used in the personal
+Chrome profile. Applying the update there still requires an extension reload.
+
+20 automated policy/transport tests passed, including native readiness and setup URL
+validation. The full MCP-to-browser navigation-probe workflow also passed 30 renderer
+rounds with iframe/history recapture and human fixture preservation. Documentation,
+matching toolbar/agent-window branding and five synthetic-data screenshots were
+updated. The installed product skill was synchronized and validated. No publication
+or push is part of this change.

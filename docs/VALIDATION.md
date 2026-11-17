@@ -77,3 +77,13 @@ socket. Timeouts may require a manual extension reload; seamless recovery is not
 Acceptance is conjunctive. Passing a synthetic cookie test does not certify all
 sites, passing PID monitoring does not certify same-app windows, and passing headless
 automation does not certify human concurrency. Keep failures in the evidence log.
+
+## Setup interface
+
+`node experiments/setup.mjs` runs the real setup page in a disposable Chrome profile.
+It checks invalid input, missing native host, handshake-based readiness, retry without
+a duplicate window, saving/reopening settings, active-session edit refusal, paused
+status after a simulated focus change and recovery after closing the lane. The
+connected popup is checked to fit within a 600 px height. It does not certify real
+macOS focus transitions: headless Chrome can report both windows focused after
+synthetic window-focus operations. The test preserves the production focus guard.

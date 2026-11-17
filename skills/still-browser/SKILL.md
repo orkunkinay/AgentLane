@@ -70,7 +70,7 @@ when authentication or account identity matters. Do not assume every site inheri
 a session: tab-local storage, expired/device-bound sessions and fresh consent differ.
 Report a login requirement accurately rather than extracting authentication data.
 
-Starting-origin approval matches protocol, hostname and port; it is **not** a network
+The **Starting websites** setting matches protocol, hostname and port; it is **not** a network
 sandbox. Links, redirects and resources can go elsewhere. The skill does not grant
 permission to send, publish, buy, delete or change account settings. Follow the user's
 actual task and the environment's action policy; preserve approvals already given.
@@ -95,9 +95,10 @@ Screenshots may contain private data and reach the configured model provider.
   error. Let the human switch away, restore or reprepare as appropriate. A poisoned
   lane needs extension reload/setup and a fresh MCP connection; no native fallback.
 - **Unapproved starting origin:** identify the required origin, including its port.
-  The human can add it through extension setup. Do not edit the implementation to
-  bypass the approval list. Setup currently requires closing sessions, reloading the
-  extension and preparing a new lane to change origins.
+  The human can add it under **Starting websites** in the Still panel after closing
+  active agent sessions, then choose **Save starting websites**. This reuses the
+  existing window; no reload is required. Do not edit the implementation to bypass
+  the starting-URL check. It is not a restriction on links or redirects.
 - **Debugger detach:** the backend may reattach after `target_closed` only to the
   same still-owned tab. Respect user cancellation and ownership revocation. A tab
   moved into a human window must be left alone.

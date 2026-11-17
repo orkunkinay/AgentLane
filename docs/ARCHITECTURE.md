@@ -19,10 +19,13 @@ flowchart LR
 ## Lifecycle
 
 1. Human loads the extension, registers its exact origin with the native host and
-   approves starting origins through the popup. Setup creates a separate unfocused
+   chooses starting websites through the popup. The label describes a starting-URL
+   check, not a site-access boundary. Setup creates a separate unfocused
    window containing an anchor. No automatic Chrome restart or launch-flag change.
 2. A native port starts `src/native-host.js`. It creates a 0700 directory and 0600
-   Unix socket. It refuses an existing socket instead of stealing another profile's
+   Unix socket, then sends a readiness handshake. Setup reports a connection only
+   after that handshake; failed connection attempts can reuse the same lane window.
+   It refuses an existing socket instead of stealing another profile's
    connection. Chrome's host manifest allows only the installed extension ID.
 3. Each socket gets a random session ID assigned by the host. Caller-supplied IDs
    are overwritten. The MCP toolset has no target enumeration/selection primitive.
@@ -95,3 +98,7 @@ Strict general isolation needs a Chrome-owned target class whose browser UI cann
 activate a desktop window, whose popup descendants inherit ownership, and whose
 modal surfaces are rendered into the lane. Such a change should live upstream;
 after-the-fact focus restoration is interference and is not an acceptable substitute.
+
+The setup popup can read its own lane/bridge state and update starting websites
+when there are no active sessions. Saving reuses the existing window. This user-only
+setup channel adds no agent-facing methods and cannot enumerate human tabs.

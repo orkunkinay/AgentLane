@@ -60,6 +60,9 @@ try {
   await page.locator('#origins').fill('https://www.google.com\nhttp://127.0.0.1:8741');
   await page.locator('body').screenshot({ path: join(directory, 'lane-setup.png') });
 
+  await page.goto(`chrome-extension://${extensionId}/anchor.html`);
+  await page.screenshot({ path: join(directory, 'agent-window.png') });
+
   // Synthetic content only. These screenshots explain the demo, not a concurrency measurement.
   await page.goto(origin + '/seed');
   await page.locator('textarea').fill('I can keep typing in my own window while the agent works.');
@@ -71,7 +74,7 @@ try {
   await agent.getByRole('button', { name: 'Save note', exact: true }).click();
   await agent.locator('#result').getByText('Saved: independent visual input').waitFor();
   await agent.screenshot({ path: join(directory, 'agent-workspace.png') });
-  console.log(`Captured four disposable-profile screenshots in ${directory}`);
+  console.log(`Captured five disposable-profile screenshots in ${directory}`);
   console.log(`Browser: ${context.browser()?.version() || 'Chrome for Testing'}`);
 } finally {
   await context?.close();
