@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AgentLane — a lane in your Chrome for your coding agent</title>
+    <meta
+      name="description"
+      content="AgentLane is a Chrome extension and local MCP server. Your coding agent gets its own window and screenshot-driven input inside your logged-in Chrome profile, so you never have to hand the browser over."
+    />
+    <meta name="theme-color" content="#f3eee5" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="preload" href="assets/fonts/InstrumentSerif-normal-400.woff2" as="font" type="font/woff2" crossorigin />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AgentLane — your agent needs Chrome. So do you." />
+    <meta
+      property="og:description"
+      content="Give your coding agent its own lane inside your logged-in Chrome. Open-source Chrome extension + MCP server."
+    />
+    <meta property="og:image" content="assets/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="assets/style.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="./" aria-label="AgentLane home">
+          <img src="assets/logo.png" alt="" width="30" height="30" />
+          AgentLane
+        </a>
+        <nav aria-label="Primary">
+          <a class="hide-sm" href="#how">How it works</a>
+          <a class="hide-sm" href="#see">See it</a>
+          <a href="docs/">Docs</a>
+          <a href="https://github.com/orkunkinay/AgentLane" rel="noopener">GitHub</a>
+          <a class="cta" href="#install">Install</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap hero-grid">
+          <div>
+            <p class="eyebrow">Chrome extension + MCP server</p>
+            <h1 id="hero-title">Your agent needs Chrome. <em>So do you.</em></h1>
+            <p class="lede">
+              AgentLane gives your coding agent its own window inside your logged-in Chrome: real
+              screenshots, clicks and typing, separate from your keyboard and pointer. You keep
+              working. The agent keeps working. Neither waits.
+            </p>
+            <div class="hero-cta">
+              <a class="btn primary" href="#install">Set up the MCP <span aria-hidden="true">↓</span></a>
+              <a class="btn ghost" href="docs/">Read the docs</a>
+            </div>
+            <ul class="chips" aria-label="Requirements and status">
+              <li class="warn">Experimental</li>
+              <li>macOS + Google Chrome</li>
+              <li>Node.js 22+</li>
+              <li>MCP over stdio</li>
+              <li>MIT</li>
+            </ul>
+          </div>
+
+          <figure class="stage" id="stage" data-mode="without" aria-label="Illustrated comparison">
+            <div class="stage-head">
+              <div class="seg" role="group" aria-label="Choose scenario">
+                <button type="button" class="without" aria-pressed="true" data-set="without">
+                  Without AgentLane
+                </button>
+                <button type="button" class="with" aria-pressed="false" data-set="with">
+                  With AgentLane
+                </button>
+              </div>
+              <span class="stage-note">Illustration, not a recording</span>
+            </div>
+
+            <div class="screen" role="img" aria-label="A desktop with two browser windows. Without AgentLane the agent and you take turns on one keyboard focus and your typing is interrupted. With AgentLane you type in your window while the agent works in its own separate window at the same time.">
+              <div class="focus-flag"><span class="dot"></span><span class="where"></span></div>
+
+              <div class="win win-human">
+                <div class="win-bar">
+                  <i></i><i></i><i></i>
+                  <span>Your Chrome · Launch notes</span>
+                  <span class="state"></span>
+                </div>
+                <div class="win-body">
+                  <p class="doc-title">Launch notes</p>
+                  <div class="typed-line">
+                    <span class="t-clip">Ship the migration plan before Friday.</span><span class="caret"></span>
+                  </div>
+                  <div class="bars" aria-hidden="true"><span></span><span></span><span></span></div>
+                  <span class="badge"></span>
+                  <div class="pause pause-human"></div>
+                  <span class="lost">!</span>
+                </div>
+                <div class="ptr ptr-human" style="left: 30%; top: 30%">
+                  <svg viewBox="0 0 16 20" aria-hidden="true"><path d="M1 1v15l4-4 3 7 3-1.4-3-6.6h6z" fill="#f3eee5" stroke="#000" stroke-width="1.2"/></svg>
+                  <b>you</b>
+                </div>
+              </div>
+
+              <div class="win win-agent">
+                <div class="win-bar">
+                  <i></i><i></i><i></i>
+                  <span>AgentLane workspace</span>
+                  <span class="state"></span>
+                </div>
+                <div class="win-body fakepage">
+                  <h4>Invoices · acme.app</h4>
+                  <div class="row">
+                    <div class="fakefield"><span class="agent-field-text">INV-2041</span></div>
+                    <div class="fakebtn">Export</div>
+                  </div>
+                  <div class="toast">✓ Exported</div>
+                  <div class="bars" aria-hidden="true"><span></span><span></span><span></span></div>
+                  <span class="badge"></span>
+                </div>
+              </div>
+
+              <div class="ptr ptr-agent" style="left: 66%; top: 40%">
+                <svg viewBox="0 0 16 20" aria-hidden="true"><path d="M1 1v15l4-4 3 7 3-1.4-3-6.6h6z" fill="#ff6a13" stroke="#000" stroke-width="1.2"/></svg>
+                <b>agent</b>
+              </div>
+            </div>
+
+            <div class="shared">Same Chrome profile · same logins · no cookie export</div>
+
+            <div class="tracks" aria-hidden="true">
+              <div class="track">
+                <span>YOU</span>
+                <div class="lane">
+                  <div class="seg-run human-run run-with" style="left: 0; width: 98%"></div>
+                  <div class="seg-run human-run run-without" style="left: 0; width: 26%"></div>
+                  <div class="seg-run wait-run run-without" style="left: 27%; width: 27%"></div>
+                  <div class="seg-run human-run run-without" style="left: 55%; width: 17%"></div>
+                  <div class="seg-run wait-run run-without" style="left: 73%; width: 16%"></div>
+                  <div class="seg-run human-run run-without" style="left: 90%; width: 9%"></div>
+                  <div class="playhead"></div>
+                </div>
+              </div>
+              <div class="track">
+                <span>AGENT</span>
+                <div class="lane">
+                  <div class="seg-run agent-run run-with" style="left: 4%; width: 94%"></div>
+                  <div class="seg-run wait-run run-without" style="left: 0; width: 27%"></div>
+                  <div class="seg-run agent-run run-without" style="left: 28%; width: 26%"></div>
+                  <div class="seg-run wait-run run-without" style="left: 55%; width: 17%"></div>
+                  <div class="seg-run agent-run run-without" style="left: 73%; width: 16%"></div>
+                  <div class="seg-run wait-run run-without" style="left: 90%; width: 9%"></div>
+                  <div class="playhead"></div>
+                </div>
+              </div>
+            </div>
+
+            <figcaption class="verdict" aria-live="polite">
+              <span class="v-without"><strong>One keyboard, two claimants.</strong> Each action by one side pauses the other.</span>
+              <span class="v-with"><strong>Two lanes.</strong> You keep focus. The agent works in its own window, using your logins.</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+    </main>
+
+    <script src="assets/app.js" defer></script>
+  </body>
+</html>
