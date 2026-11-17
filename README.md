@@ -4,6 +4,8 @@
 
 **Keep using your logged-in Chrome while an AI agent works in its own visual lane.**
 
+**Website and documentation:** open [`index.html`](index.html) (static; served by GitHub Pages) or run `npm run site` and visit <http://localhost:4173>. Check it with `npm run check:site`.
+
 AgentLane is a Chrome extension and local MCP server. It gives the agent a separate
 interaction surface inside your existing Chrome profile: real screenshots, clicks,
 scrolling and typing, with no profile copy or cookie export.

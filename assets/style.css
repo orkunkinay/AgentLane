@@ -2118,3 +2118,9 @@ h2 .tag {
     max-height: 260px;
   }
 }
+
+@media (max-width: 640px) {
+  .code pre {
+    padding: 46px 14px 14px;
+  }
+}
