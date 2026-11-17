@@ -4,6 +4,7 @@ import { readFile, access } from 'node:fs/promises';
 import { dirname, join, normalize } from 'node:path';
 
 const GH = 'https://github.com/orkunkinay/AgentLane/';
+const PAGES = 'https://orkunkinay.github.io/AgentLane/';
 const pages = ['index.html', 'docs/index.html'];
 const html = Object.fromEntries(
   await Promise.all(pages.map(async (p) => [p, await readFile(p, 'utf8')])),
@@ -28,6 +29,7 @@ for (const page of pages) {
       continue;
     }
     if (ref === GH.slice(0, -1) || ref.startsWith(GH)) continue; // repo root, issues
+    if (ref.startsWith(PAGES)) continue; // canonical/social metadata
     if (/^https?:/.test(ref)) {
       problems.push(`${page}: unexpected external link ${ref}`);
       continue;
