@@ -4,7 +4,7 @@ Automated tests are deliberately divided by their observable boundary. `npm test
 uses fake browser APIs for policy tests plus real child processes, MCP SDK stdio and
 native-framed IPC. `npm run test:browser` uses real `chrome.debugger` in a disposable
 Chrome for Testing profile; its human-side fixture is controlled by Playwright. Set
-`STILL_MCP=1` to include MCP, socket and native host all the way to Chrome.
+`AGENTLANE_MCP=1` to include MCP, socket and native host all the way to Chrome.
 No tests open the personal Chrome profile or inspect real authentication secrets.
 
 ## Automated run
@@ -16,7 +16,7 @@ npx playwright install chromium
 npm run test:browser
 mkdir -p artifacts
 swiftc experiments/observe-macos.swift -o artifacts/observe-macos
-STILL_MCP=1 STILL_HEADED=1 STILL_OBSERVER=artifacts/observe-macos npm run test:browser
+AGENTLANE_MCP=1 AGENTLANE_HEADED=1 AGENTLANE_OBSERVER=artifacts/observe-macos npm run test:browser
 ```
 
 The read-only macOS observer samples foreground PID, frontmost normal-window ID
@@ -25,14 +25,14 @@ no window titles, keystrokes or screenshots. It can miss changes shorter than it
 sampling interval; an idle observer is not evidence about simultaneous physical
 input. Browser launch/setup and teardown are outside its measured interval.
 
-`STILL_NAVIGATION_PROBE=1 STILL_MCP=1 npm run test:browser` injects real iframe and
+`AGENTLANE_NAVIGATION_PROBE=1 AGENTLANE_MCP=1 npm run test:browser` injects real iframe and
 history navigations just after capture in the disposable test build. It asserts
 that capture retries before issuing an input token and that the resulting token
 accepts input. This is a controlled timing regression, not a claim about Google’s
 exact navigation behavior.
 
-`STILL_NATIVE=1` includes native transport without MCP. `STILL_VERBOSE=1` prints
-operation names only. `STILL_KEY_PROBE=1 STILL_HEADED=1` is a separate controlled
+`AGENTLANE_NATIVE=1` includes native transport without MCP. `AGENTLANE_VERBOSE=1` prints
+operation names only. `AGENTLANE_KEY_PROBE=1 AGENTLANE_HEADED=1` is a separate controlled
 experiment that intentionally bypasses the production key allowlist and focuses the
 human fixture between probes. It reproduced unsafe Tab traversal. Do not combine
 that probe with a zero-focus-change acceptance run.

@@ -9,7 +9,7 @@
 | Codex MCP | Full protocol path tested; globally registered | Used official SDK client in this conversation; native backend not replaced |
 | Codex native Computer Use/extension | Not replaced | Browser host unavailable in this session |
 | Other stdio MCP agents | Expected, untested | Standard tool/image content; coordinate interpretation depends on model |
-| Linux Chromium | Expected, untested | Set custom manifest directory and short owner-only STILL_STATE_DIR |
+| Linux Chromium | Expected, untested | Set custom manifest directory and short owner-only AGENTLANE_STATE_DIR |
 | Windows | Unsupported in this build | Unix socket permissions/installer require a Windows transport |
 | Other Chromium browsers | Unverified | Manifest/host paths, debugger permission and rendering behavior vary |
 | Firefox/Safari | Unsupported | Would need a different target-input backend |
@@ -23,6 +23,10 @@
 | Multiple agent sessions | Unit-tested ownership/queue | 300 renderer rounds and 11 tab recreations tested; simultaneous real-agent load unmeasured |
 
 Only one Chrome native host may own a given socket. Use separate short
-`STILL_STATE_DIR` paths in both launcher and MCP environment for independent profiles.
+`AGENTLANE_STATE_DIR` paths in both launcher and MCP environment for independent profiles.
 No native messaging protocol API guarantees every supported CDP method behaves
 identically across Chrome versions. Run the harness after browser upgrades.
+
+Historical normal-profile observations were recorded under the former Still name.
+The rename was verified in disposable Chrome; the loaded personal-profile extension
+requires the [manual migration steps](MIGRATION.md) before it can be called updated.

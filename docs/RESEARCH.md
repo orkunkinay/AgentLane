@@ -1,5 +1,9 @@
 # Research and architecture decision
 
+Naming note: this project was called Still during the initial research. Current
+implementation references use AgentLane; the dated evidence log retains original
+names and commands. The third-party Agent Lanes project is a separate project.
+
 Status: experimental; no claim to have invented browser lanes. Sources accessed
 2026-11-16. Findings from third parties are distinguished from local experiments.
 
@@ -82,7 +86,7 @@ Scores: H = strong, M = conditional, L = weak. These are design assessments, not
 window pools, scheduling, native bridge, focus tripwire and private virtual display.
 Its docs report minimized/inactive rendering failures, occlusion flags and popup
 activation. Those observations guide experiments; they are not our measurements.
-No upstream code is copied into Still.
+No upstream code is copied into AgentLane.
 
 [Playwright 42973](https://github.com/microsoft/playwright/issues/42973) describes
 explicit active-tab/window-focus calls and upstream work (linked PR 43864). Its
@@ -108,7 +112,7 @@ surfaces. The implementation must not advertise that invariant as solved.
 ## Additional measured constraints from normal Chrome
 
 A headed Tab key probe transferred window focus when traversal escaped page content;
-Still blocks Tab. Normal-profile testing also found a transient page-surface loss
+AgentLane blocks Tab. Normal-profile testing also found a transient page-surface loss
 immediately after navigation, and a global tab-strip edit lock while the human was
 using Chrome. Avoiding unconditional active-tab edits is an architectural improvement:
 renderer input need not repeatedly mutate browser UI selection. The
@@ -117,7 +121,7 @@ explicitly demonstrates retrying the tab-drag edit refusal; Chromium's
 [ExtensionTabUtil declaration](https://chromium.googlesource.com/chromium/src/+/05fb2fe4ba88de0961e355d8ebaf321c21eb4c6b/chrome/browser/extensions/extension_tab_util.h)
 notes editability checks across browsers in a profile. These are shared browser
 control-plane constraints, even though the page input streams are independent.
-Still now skips unnecessary edits and waits boundedly for the explicit pre-execution
+AgentLane now skips unnecessary edits and waits boundedly for the explicit pre-execution
 refusal. It never retries uncertain clicks, text insertion or page navigation.
 
 The exact native Codex implementation responsible for every focus report has not been

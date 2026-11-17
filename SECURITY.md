@@ -1,6 +1,6 @@
 # Security model
 
-Still is a local trusted browser controller. It is not a sandbox against malicious
+AgentLane is a local trusted browser controller. It is not a sandbox against malicious
 processes running as your macOS user, a malicious extension, a compromised Chrome,
 or an agent that also has native computer/shell tools. It is experimental software;
 review the extension before granting debugger access to a real profile.
@@ -12,7 +12,7 @@ review the extension before granting debugger access to a real profile.
   Unix socket. Different OS users cannot normally connect through those permissions.
 - Each connection receives an unforgeable host-assigned routing identity. Agents can
   operate only the tab that identity created; they cannot enumerate/read/select
-  pre-existing human tabs through Still's toolset.
+  pre-existing human tabs through AgentLane's toolset.
 - Fixed methods, bounded payloads and viewport coordinates; no arbitrary JavaScript,
   DOM reads, CDP passthrough, file upload, clipboard or OS-shortcut API.
 - Moved tabs are detached, uncertain ownership fails closed, timeouts poison the lane,
@@ -47,15 +47,19 @@ It cannot prevent logout, server-side mutations or storage writes from affecting
 human's session. Existing tab-local sessionStorage, authentication-bound popups,
 passkeys and fresh consent may need a human or may be unsupported.
 
-Do not use Still for arbitrary hostile sites or security-critical workflows until its
+Do not use AgentLane for arbitrary hostile sites or security-critical workflows until its
 remaining browser-UI escape paths are addressed. No credential harvesting is needed
 to validate the design: use the included synthetic HttpOnly session first.
 
 ## Uninstall
 
-Disable/remove the extension, remove its `still` MCP entry and the manifest
-`~/Library/Application Support/Google/Chrome/NativeMessagingHosts/org.still.browser.json`.
-Close only windows you recognize as Still lanes. After its native host has exited,
-remove `~/.still/native-host` and any stale `~/.still/browser.sock`. Do not delete Chrome
+Disable/remove the extension, remove its `agentlane` MCP entry and the manifest
+`~/Library/Application Support/Google/Chrome/NativeMessagingHosts/org.agentlane.browser.json`.
+Close only windows you recognize as AgentLane lanes. After its native host has exited,
+remove `~/.agentlane/native-host` and any stale `~/.agentlane/browser.sock`. Do not delete Chrome
 profile files. To report a bug, provide versions, a synthetic reproduction and redacted
 logs. This repository has no designated hosted security-reporting service yet.
+
+For a renamed installation, see [migration and legacy cleanup](docs/MIGRATION.md).
+An active legacy socket/host must be preserved until its sessions finish; do not
+remove a Chrome profile or broaden extension allowlists during migration.

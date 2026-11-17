@@ -18,7 +18,7 @@
     <rect x="646" y="85" width="510" height="235" rx="14" fill="#fff" stroke="#a6cec4" stroke-width="2"/>
     <path d="M660 85h482a14 14 0 0 1 14 14v36H646V99a14 14 0 0 1 14-14" fill="#dceee8"/>
     <circle cx="670" cy="110" r="5" fill="#6d9a8b"/><circle cx="687" cy="110" r="5" fill="#6d9a8b"/><circle cx="704" cy="110" r="5" fill="#6d9a8b"/>
-    <text x="737" y="116" font-size="17" font-weight="600" fill="#245446">Still agent lane</text>
+    <text x="737" y="116" font-size="17" font-weight="600" fill="#245446">AgentLane workspace</text>
     <text x="676" y="181" font-size="25" font-weight="700" fill="#245446">The agent works here</text>
     <text x="676" y="217" font-size="18" fill="#415b6b">Leave open, unminimized and unfocused</text>
     <rect x="676" y="244" width="331" height="43" rx="8" fill="#e9f4ee"/>
