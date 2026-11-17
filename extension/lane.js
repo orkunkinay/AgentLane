@@ -1,3 +1,4 @@
+import { installSelectPicker } from './select-picker.js';
 import { parseStartingPolicy } from './starting-websites.js';
 
 // Only this module holds real Chrome tab IDs. Never accept one from an agent.
@@ -11,6 +12,7 @@ export class Lane {
     this.origins = [];
     this.mode = 'selected';
     this.sessions = new Map();
+    this.framePreparations = new Set();
     this.cancelled = new Set();
     this.tail = Promise.resolve();
   }
@@ -89,6 +91,15 @@ export class Lane {
   }
   async prepareTarget(s) {
     await this.command(s, 'Page.enable');
+    const support = await this.command(s, 'Runtime.evaluate', {
+      expression: "CSS.supports('appearance', 'base-select')",
+      returnByValue: true,
+    });
+    if (support.result?.value !== true)
+      throw Error(
+        'This Chrome version cannot keep select dropdowns inside the page. Update Chrome before using the lane.',
+      );
+    await this.preparePicker(s);
     await this.command(s, 'Page.setInterceptFileChooserDialog', { enabled: true });
     await this.command(s, 'Emulation.setDeviceMetricsOverride', {
       width: 1100,
@@ -98,11 +109,55 @@ export class Lane {
     });
     await this.command(s, 'Emulation.setFocusEmulationEnabled', { enabled: true });
   }
+  async preparePicker(s) {
+    await this.command(s, 'Page.enable');
+    await this.command(s, 'Runtime.enable');
+    await this.command(s, 'Runtime.addBinding', {
+      name: '__agentlanePickerBlocked',
+      executionContextName: 'agentlane-select-picker',
+    });
+    await this.command(s, 'Page.addScriptToEvaluateOnNewDocument', {
+      source: `(${installSelectPicker.toString()})();`,
+      worldName: 'agentlane-select-picker',
+      runImmediately: true,
+    });
+    await this.command(s, 'Target.setAutoAttach', {
+      autoAttach: true,
+      waitForDebuggerOnStart: true,
+      flatten: true,
+      filter: [{ type: 'iframe', exclude: false }],
+    });
+  }
+  attachFrame(source, params) {
+    if (params.targetInfo.type !== 'iframe') return;
+    const entry = [...this.sessions].find(([, session]) => session.tabId === source.tabId);
+    if (!entry) return;
+    const [id] = entry;
+    const preparation = (async () => {
+      await this.owned(id);
+      const frame = { tabId: source.tabId, childSessionId: params.sessionId };
+      await this.preparePicker(frame);
+      await this.owned(id);
+      // Only child frames of an owned tab are resumed; never attach to another tab.
+      await this.command(frame, 'Runtime.runIfWaitingForDebugger');
+    })();
+    this.framePreparations.add(preparation);
+    preparation
+      .catch(() => {
+        this.failed =
+          'Could not protect an embedded select picker; close the session and reload the extension.';
+      })
+      .finally(() => this.framePreparations.delete(preparation));
+  }
   async command(s, method, params = {}) {
     let timer;
     try {
       return await Promise.race([
-        this.api.debugger.sendCommand({ tabId: s.tabId }, method, params),
+        this.api.debugger.sendCommand(
+          { tabId: s.tabId, ...(s.childSessionId ? { sessionId: s.childSessionId } : {}) },
+          method,
+          params,
+        ),
         new Promise((_, reject) => {
           timer = setTimeout(() => {
             this.failed = 'Renderer command timed out; reload extension and prepare a new lane';
@@ -177,6 +232,8 @@ export class Lane {
       }
     }
     const s = await this.owned(session);
+    await Promise.all([...this.framePreparations]);
+    if (this.failed) throw Error(this.failed);
     // Stage only the exact owned tab; never touch the human's selected tab.
     const stagedTab = await this.api.tabs.get(s.tabId);
     if (!stagedTab.active)
@@ -239,6 +296,7 @@ export class Lane {
       );
     }
     s.frame = null;
+    s.pickerBlocked = false;
     const point = () => {
       if (
         ![args.x, args.y].every(Number.isFinite) ||
@@ -294,6 +352,10 @@ export class Lane {
         deltaY: args.deltaY,
       });
     }
+    if (s.pickerBlocked)
+      throw Error(
+        'Native select picker was blocked to prevent a window switch. This dropdown cannot be used safely in the lane.',
+      );
     return { performed: op };
   }
 }

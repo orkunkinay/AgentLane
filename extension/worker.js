@@ -143,6 +143,12 @@ chrome.debugger.onDetach.addListener(({ tabId }, reason) => {
   lane.invalidate(tabId, 'Debugger detached');
 });
 chrome.debugger.onEvent.addListener((source, method, params) => {
+  if (method === 'Target.attachedToTarget') lane.attachFrame(source, params);
+  if (method === 'Runtime.bindingCalled' && params.name === '__agentlanePickerBlocked') {
+    for (const session of lane.sessions.values())
+      if (session.tabId === source.tabId) session.pickerBlocked = true;
+    lane.invalidate(source.tabId, 'Native select picker blocked');
+  }
   if (method === 'Page.frameNavigated' || method === 'Page.navigatedWithinDocument')
     lane.invalidate(source.tabId, method);
   if (method === 'Page.javascriptDialogOpening') {

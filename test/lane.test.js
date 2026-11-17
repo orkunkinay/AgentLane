@@ -29,6 +29,7 @@ function fixture() {
       detach: async () => {},
       sendCommand: async (t, m, p) => {
         calls.push([m, t.tabId, p]);
+        if (m === 'Runtime.evaluate') return { result: { value: true } };
         return m === 'Page.captureScreenshot' ? { data: 'cG5n' } : {};
       },
     },
@@ -277,4 +278,57 @@ test('empty or unknown policy cannot reconfigure a lane to unrestricted access',
   assert.throws(() => f.lane.configure(7, []));
   assert.throws(() => f.lane.configure(7, ['https://example.com'], 'unknown'));
   assert.equal(f.lane.mode, 'selected');
+});
+
+test('unsupported in-page select rendering fails before navigation and releases the tab', async () => {
+  const f = fixture();
+  const command = f.lane.api.debugger.sendCommand;
+  f.lane.api.debugger.sendCommand = async (target, method, params) =>
+    method === 'Runtime.evaluate' ? { result: { value: false } } : command(target, method, params);
+  await assert.rejects(f.run('a', 'open', { url: 'https://example.com/' }), /Update Chrome/);
+  assert.equal(f.tabs.size, 0);
+  assert.equal(f.lane.sessions.size, 0);
+  assert(!f.calls.some(([method]) => method === 'Page.navigate'));
+});
+
+test('picker conflict fails closed and consumes the input frame without a focus fallback', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  const shot = await f.run('a', 'screenshot');
+  const command = f.lane.api.debugger.sendCommand;
+  f.lane.api.debugger.sendCommand = async (target, method, params) => {
+    if (method === 'Input.dispatchMouseEvent' && params.type === 'mousePressed')
+      f.lane.sessions.get('a').pickerBlocked = true;
+    return command(target, method, params);
+  };
+  await assert.rejects(
+    f.run('a', 'click', { frame: shot.frame, x: 10, y: 10 }),
+    /picker was blocked/,
+  );
+  await assert.rejects(f.run('a', 'click', { frame: shot.frame, x: 10, y: 10 }), /Stale/);
+  assert.equal(f.window.focused, false);
+});
+
+test('iframe preparation is confined to children of a still-owned tab', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  const sent = [];
+  const command = f.lane.api.debugger.sendCommand;
+  f.lane.api.debugger.sendCommand = async (target, method, params) => {
+    sent.push({ target, method, params });
+    return command(target, method, params);
+  };
+  f.lane.attachFrame({ tabId: 99 }, { sessionId: 'human-frame', targetInfo: { type: 'iframe' } });
+  f.lane.attachFrame({ tabId: 1 }, { sessionId: 'other-tab', targetInfo: { type: 'page' } });
+  assert.equal(sent.length, 0);
+  f.lane.attachFrame({ tabId: 1 }, { sessionId: 'child-frame', targetInfo: { type: 'iframe' } });
+  await Promise.all([...f.lane.framePreparations]);
+  assert(sent.length > 0);
+  assert(sent.every(({ target }) => target.tabId === 1 && target.sessionId === 'child-frame'));
+  assert(sent.some(({ method }) => method === 'Runtime.runIfWaitingForDebugger'));
+  f.tabs.get(1).windowId = 99;
+  sent.length = 0;
+  f.lane.attachFrame({ tabId: 1 }, { sessionId: 'moved-frame', targetInfo: { type: 'iframe' } });
+  await Promise.allSettled([...f.lane.framePreparations]);
+  assert.equal(sent.length, 0);
 });
