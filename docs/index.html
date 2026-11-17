@@ -82,6 +82,13 @@
               <tr><td>Native menus, file pickers, permission sheets, passkeys, popups</td><td><span class="tag no">Not isolated</span></td><td>Stop the workflow at these boundaries.</td></tr>
             </tbody>
           </table></div>
+          <h3>What an MCP client needs</h3>
+          <ul class="bul">
+            <li><b>stdio MCP servers:</b> it must be able to launch <code>node /absolute/path/to/AgentLane/src/mcp.js</code>.</li>
+            <li><b>Image tool results:</b> it must pass <code>lane_screenshot</code>'s image to the model without dropping it.</li>
+            <li><b>A vision model</b> that can read click coordinates from a 1100 × 760 screenshot.</li>
+            <li><b>The same Mac</b> that runs Chrome and the extension: the bridge is a local Unix socket, so remote or cloud-hosted agents cannot reach it.</li>
+          </ul>
           <p>Full matrix: <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/COMPATIBILITY.md" rel="noopener">docs/COMPATIBILITY.md</a>.</p>
         </section>
 
