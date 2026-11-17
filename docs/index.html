@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>document.documentElement.classList.add('js')</script>
     <title>AgentLane documentation</title>
     <meta name="description" content="Install, configure and troubleshoot AgentLane: the Chrome extension and MCP server that gives a coding agent its own lane in your logged-in Chrome." />
     <meta name="theme-color" content="#f3eee5" />
@@ -14,7 +15,7 @@
     <meta property="og:url" content="https://orkunkinay.github.io/AgentLane/docs/" />
     <meta property="og:image" content="https://orkunkinay.github.io/AgentLane/assets/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="stylesheet" href="../assets/style.css?v=6" />
+    <link rel="stylesheet" href="../assets/style.css?v=8" />
   </head>
   <body class="docpage">
     <a class="skip" href="#content">Skip to content</a>
@@ -240,6 +241,7 @@ node scripts/concurrency-demo.mjs http://127.0.0.1:8741 120</code></pre><button 
           <ul class="bul">
             <li>AgentLane is a <b>local trusted browser controller</b>, not a sandbox against other processes running as your user, a malicious extension, a compromised Chrome, or an agent that also has shell or desktop tools.</li>
             <li>No cookie, password or token extraction; no TCP listener; the host's extension-origin allowlist and owner-only socket restrict who can connect.</li>
+            <li>The manifest requests exactly three permissions: <code>debugger</code> (drive the owned tab), <code>nativeMessaging</code> (talk to the local host) and <code>storage</code> (remember starting-website settings and your consent). It requests no host permissions.</li>
             <li>The extension itself holds broad <code>debugger</code> authority. Review it before use on a real profile.</li>
             <li>Sharing authentication also shares <b>authority</b>: an agent can perform account actions through visible page UI. Confirm consequential actions under your agent's normal policy.</li>
             <li>Screenshots and typed text go through your MCP client and may reach its model provider. Page content is untrusted and can attempt prompt injection.</li>
@@ -259,6 +261,9 @@ node scripts/concurrency-demo.mjs http://127.0.0.1:8741 120</code></pre><button 
             <li>A worker restart does not adopt old tabs. Orphaned windows may need manual cleanup.</li>
             <li>A hung command poisons the lane; recovery needs a new lane window or an extension reload.</li>
             <li>ChatGPT navigation was blocked in the tested profile (Chrome refuses access to another extension's URL; not bypassed).</li>
+            <li><b>Redirects are not blocked.</b> Selected websites checks the address the agent asks to open; links and redirects on those pages can lead elsewhere, and Any website allows every HTTP(S) address. Neither is a network policy.</li>
+            <li>The viewport is fixed at 1100×760, so responsive sites render their desktop layout and an element hidden by a sticky banner stays hidden until the agent scrolls.</li>
+            <li>Screenshots reach the model as MCP image results. A client or model that drops images makes the tools unusable, and very large images may hit a client's size limit.</li>
             <li>Applying a source update requires reloading the extension and restarting the MCP process once.</li>
           </ul>
           <p>Planned work and gates: <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/ROADMAP.md" rel="noopener">docs/ROADMAP.md</a>. Measured results and failures: <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/EVIDENCE.md" rel="noopener">docs/EVIDENCE.md</a>.</p>
@@ -266,17 +271,25 @@ node scripts/concurrency-demo.mjs http://127.0.0.1:8741 120</code></pre><button 
 
         <section id="troubleshooting">
           <h2>Troubleshooting</h2>
-          <p>Condensed from <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/TROUBLESHOOTING.md" rel="noopener">the full guide</a>. Never recover by copying cookies, switching to desktop input, or having the agent focus the lane.</p>
+          <p>Start with <code>npm run doctor</code>. It changes nothing and checks Node.js, the host manifest and its extension ID, the launcher and the socket, and prints a fix for each failure. Condensed from <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/TROUBLESHOOTING.md" rel="noopener">the full guide</a>. Never recover by copying cookies, switching to desktop input, or having the agent focus the lane.</p>
           <details><summary>“Not connected”, ENOENT, or “Browser bridge unavailable”</summary>
             <p>The lane window and the browser bridge are separate. Confirm the extension is loaded in the intended profile, that you registered its exact ID with <code>scripts/install-host.mjs</code>, and that <code>~/.agentlane/browser.sock</code> exists. Then click <b>Connect browser</b> or <b>Create agent window</b> in the popup. Retry <code>lane_open</code> in the same conversation; the MCP client reconnects. Moving the checkout requires re-registering the host after removing the old manifest. Opening <code>anchor.html</code> alone does not connect anything.</p></details>
           <details><summary>Native host not found / forbidden</summary>
-            <p>The manifest must be named <code>org.agentlane.browser</code>, have an absolute launcher path and list exactly your extension origin (no wildcards). The installer targets normal macOS Google Chrome; for another browser pass its manifest directory as the second argument.</p></details>
+            <p>The manifest must be named <code>org.agentlane.browser</code>, have an absolute launcher path and list exactly your extension origin (no wildcards). The installer targets macOS Google Chrome by default; use <code>--browser=chrome-beta|chrome-canary|chromium|brave|edge</code> for a variant, or pass any manifest directory as the second argument. The extension ID must match the one shown at <code>chrome://extensions</code> exactly; the installer can only check its format. A loaded unpacked extension keeps its ID only while loaded from the same folder.</p></details>
+          <details><summary>Node.js not found by Chrome (nvm, asdf, Homebrew)</summary>
+            <p>Chrome starts the host without your shell profile, so version-manager shims are not on its PATH. The installer records the exact Node that ran it, and the launcher falls back to Homebrew locations and then PATH if that file disappears after an upgrade. If both fail it prints a one-line message and exits; re-run <code>scripts/install-host.mjs</code> after changing Node versions. Node.js 22 or newer is required.</p></details>
           <details><summary>EADDRINUSE on the socket</summary>
-            <p>Another profile or host may own it. Do not delete a live socket: check <code>ps -axo pid,command</code> for <code>native-host.js</code>. If Chrome crashed and nothing owns it, remove only <code>~/.agentlane/browser.sock</code>, reload the extension and create a fresh lane. A second profile needs a different short <code>AGENTLANE_STATE_DIR</code> set in both the launcher and the MCP environment.</p></details>
+            <p>Another profile or host may own it. Do not delete a live socket: check <code>ps -axo pid,command</code> for <code>native-host.js</code>. A socket left by a crashed host is detected and reclaimed automatically on the next connect; a live one is never taken over, and the new host then exits with an explanation. If the problem persists, reload the extension and create a fresh lane. A second profile needs a different short <code>AGENTLANE_STATE_DIR</code> set in both the launcher and the MCP environment.</p></details>
+          <details><summary>Several Chrome profiles or two agents</summary>
+            <p>One host owns the socket, so a second profile that also enables the extension is refused until you give it its own short <code>AGENTLANE_STATE_DIR</code>. Several agents on one lane each get their own tab and cannot see or close each other's; if an agent disconnects without calling <code>lane_close</code>, the host tells the extension and that tab is closed.</p></details>
+          <details><summary>Login walls, CAPTCHAs and two-factor prompts</summary>
+            <p>AgentLane uses your profile's existing sign-in. It does not solve CAPTCHAs or approve second factors, and the agent is told to stop and ask you. Complete those steps in your own window, then ask the agent to continue.</p></details>
+          <details><summary>Agent obeys text on a web page</summary>
+            <p>The MCP server instructs the agent to treat page content as untrusted data and to ask before purchases, messages, deletions, account changes or entering credentials. That reduces prompt-injection risk but cannot remove it. Use Selected websites, and keep sensitive accounts out of the profile you share.</p></details>
           <details><summary>Lane focused or minimized</summary>
             <p>Switch back to your own window or restore the lane manually, then retry. The agent must not fix this itself.</p></details>
           <details><summary>Blank or stale screenshot</summary>
-            <p>Report it as a rendering failure and keep the lane restored. Use the disposable harness (<code>npm run test:browser</code>) to tell Chrome rendering apart from the target site. Never substitute DOM snapshots or bring Chrome forward.</p></details>
+            <p>Report it as a rendering failure and keep the lane restored and visible: a window that is covered, on another Space or minimized can stop rendering, and the command then times out. The viewport is fixed at 1100×760 at scale 1, so coordinates match the screenshot on Retina displays too. Use the disposable harness (<code>npm run test:browser</code>) to tell Chrome rendering apart from the target site. Never substitute DOM snapshots or bring Chrome forward.</p></details>
           <details><summary>Renderer timeout</summary>
             <p>A command deadline detaches the debugger and poisons the lane. Close the identified AgentLane window, create a new one (or reload the extension) and call <code>lane_open</code> again. The hung command is not replayed.</p></details>
           <details><summary>Stale frame</summary>
@@ -327,6 +340,6 @@ node experiments/dropdown.mjs  # select dropdown isolation</code></pre><button t
         </section>
       </main>
     </div>
-    <script src="../assets/app.js?v=6" defer></script>
+    <script src="../assets/app.js?v=8" defer></script>
   </body>
 </html>
