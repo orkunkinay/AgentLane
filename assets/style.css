@@ -2171,7 +2171,7 @@ h2 .tag {
   color: var(--ink-2);
   text-align: center;
 }
-.and-more {
+.clients-card .and-more {
   margin: 30px 0 0;
   font: 600 13px var(--mono);
   color: var(--ink-2);
