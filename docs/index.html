@@ -115,9 +115,9 @@ npm test</code></pre><button type="button" class="copy" data-copy>Copy</button><
           <div class="code"><pre><code>node scripts/install-host.mjs YOUR_32_CHARACTER_EXTENSION_ID</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
           <p>The ID must be 32 letters from <code>a</code> to <code>p</code>. The script writes <code>org.agentlane.browser.json</code> into Chrome's <code>NativeMessagingHosts</code> directory (default: <code>~/Library/Application Support/Google/Chrome/NativeMessagingHosts</code>, overridable as the second argument) and a launcher at <code>~/.agentlane/native-host</code> that pins your absolute Node path. It <b>refuses to overwrite</b> existing files; inspect and remove them yourself first. Chrome's manifest allows only your exact extension origin.</p>
           <h3 id="install-4">4. Create the agent window</h3>
-          <p>Click <b>AgentLane</b> in Chrome's toolbar (or the puzzle-piece menu), choose where the agent may start browsing (see <a href="#websites">Starting websites</a>) and click <b>Create agent window</b>. A separate window titled <b>AgentLane workspace</b> appears. Keep it <b>restored and unfocused</b>; switch back to your own window. <b>Connected</b> only appears once the local connection is confirmed; otherwise the popup shows <b>Not connected</b> with a retry.</p>
+          <p>Click <b>AgentLane</b> in Chrome's toolbar (or the puzzle-piece menu), choose where the agent may start browsing (see <a href="#websites">Starting websites</a>) review and affirm the screenshot/input disclosure (see <a href="../privacy/">privacy</a>), and click <b>Create agent window</b>. A separate window titled <b>AgentLane workspace</b> appears. Keep it <b>restored and unfocused</b>; switch back to your own window. <b>Connected</b> only appears once the local connection is confirmed; otherwise the popup shows <b>Not connected</b> with a retry.</p>
           <div class="pair">
-            <img src="images/lane-setup.png" width="384" height="523" loading="lazy" alt="AgentLane setup popup with Selected websites chosen." />
+            <img src="images/lane-setup.png" width="384" height="569" loading="lazy" alt="AgentLane setup popup with Selected websites chosen." />
             <img src="images/agent-window.png" width="1280" height="800" loading="lazy" alt="The empty AgentLane workspace window." />
           </div>
           <h3 id="install-5">5. Connect your agent</h3>
@@ -143,7 +143,7 @@ Show me the result, then close your owned tab.</code></pre><button type="button"
 http://127.0.0.1:8741</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
           <p>Settings persist across popup reopening and browser restarts and can only be changed when no agent sessions are active. Empty or invalid older settings stay in Selected websites mode and never enable Any website. <b>This setting restricts direct opening and navigation only.</b> Links, redirects, iframes and other page requests are not filtered.</p>
           <div class="pair">
-            <img src="images/lane-setup-any.png" width="384" height="393" loading="lazy" alt="AgentLane setup with Any website chosen." />
+            <img src="images/lane-setup-any.png" width="384" height="438" loading="lazy" alt="AgentLane setup with Any website chosen." />
           </div>
         </section>
 

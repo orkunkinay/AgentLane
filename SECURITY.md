@@ -18,6 +18,11 @@ review the extension before granting debugger access to a real profile.
 - Moved tabs are detached, uncertain ownership fails closed, timeouts poison the lane,
   and disconnected queued mutations are cancelled. No best-effort focus restoration.
 
+Before establishing the bridge, setup requires an affirmative screenshot/input
+processing disclosure. The accepted disclosure version is stored locally. The public
+[privacy policy](https://orkunkinay.github.io/AgentLane/privacy/) describes screenshot
+handling through the configured MCP client/provider and local settings/retention.
+
 Browsing policy is stored locally as an explicit `selected` or `any` mode. Only a
 fresh installation without saved configuration receives a selected Google default.
 Older empty or invalid configurations remain selected with no permitted addresses

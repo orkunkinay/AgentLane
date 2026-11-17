@@ -57,7 +57,7 @@ server enabled. Do not switch to native Computer Use as a fallback for this task
 
 ## First-time installation
 
-You need **macOS, Google Chrome and Node.js 22+**. The supported integration is MCP;
+You need **macOS, Google Chrome 134+ and Node.js 22+**. The supported integration is MCP;
 AgentLane does not replace Codex's native Computer Use backend. Linux and other browser
 support remain unverified; Windows is not supported in this build.
 
@@ -135,6 +135,8 @@ The protocol, hostname and port must match; `localhost` and `127.0.0.1` differ.
 <img src="docs/images/lane-setup.png" alt="AgentLane setup with Selected websites chosen, editable starting addresses, and the direct navigation policy explained." width="384">
 
 <img src="docs/images/lane-setup-any.png" alt="AgentLane setup with Any website chosen and the existing-logins explanation." width="384">
+
+Review and accept the screenshot/input disclosure. The [privacy policy](https://orkunkinay.github.io/AgentLane/privacy/) explains the data path through your MCP client and AI provider.
 
 Click **Create agent window**. You should see a separate Chrome window titled
 **AgentLane workspace**. Keep that window restored and switch back to your own window.
@@ -273,6 +275,22 @@ selection. Browser/native prompts and popups remain escape paths. Some sites use
 tab-local storage or fresh/device-bound authentication that a new lane tab cannot
 inherit. Tabs still share persistent profile storage and server-side account effects.
 Read the [security model](SECURITY.md) before using sensitive workflows.
+
+## Chrome Web Store release materials
+
+The beta submission package contains only extension files; the local native bridge
+and MCP server remain separate prerequisites. Build and review the upload bundle:
+
+```sh
+npm run package:extension
+npm run assets:store
+```
+
+Outputs go to ignored `artifacts/chrome-store/`, including the versioned ZIP, SHA-256,
+three 1280 × 800 screenshots, 128px icon and 440 × 280 promotional tile.
+[Store metadata](docs/store/listing.json), [description](docs/store/description.txt)
+and [reviewer setup](docs/store/reviewer-instructions.md) are maintained with source.
+A prepared package is not a claim that the item is submitted or approved.
 
 ## Development and reproducibility
 
