@@ -23,7 +23,15 @@ test(
     const decoder = new NativeDecoder();
     host.stdout.pipe(decoder);
     const observed = [];
+    let ready;
+    const hostReady = new Promise((resolve) => {
+      ready = resolve;
+    });
     decoder.on('data', (m) => {
+      if (m.event === 'ready') {
+        ready();
+        return;
+      }
       observed.push(m);
       if (m.op === 'disconnect') return;
       const result =
@@ -48,6 +56,7 @@ test(
           await new Promise((r) => setTimeout(r, 20));
         }
       }
+      await hostReady;
       assert.equal((await stat(dir)).mode & 0o777, 0o700);
       assert.equal((await stat(path)).mode & 0o777, 0o600);
       const attacker = net.createConnection(path);

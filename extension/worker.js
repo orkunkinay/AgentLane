@@ -1,49 +1,122 @@
 import { Lane } from './lane.js';
+import { parseStartingWebsites } from './starting-websites.js';
 export const lane = new Lane(chrome);
 let port;
+let bridge = 'disconnected';
+let connectionAttempt;
 function connect() {
-  port = chrome.runtime.connectNative('org.still.browser');
-  port.onMessage.addListener(async (m) => {
-    if (m.op === 'disconnect') {
-      lane.cancel(m.session);
-      return;
-    }
-    const connection = port;
-    try {
-      const result = await lane.run(m);
-      connection.postMessage({ id: m.id, result });
-    } catch (e) {
+  if (bridge === 'connected') return Promise.resolve();
+  if (connectionAttempt) return connectionAttempt;
+  bridge = 'connecting';
+  connectionAttempt = new Promise((resolve, reject) => {
+    const connection = chrome.runtime.connectNative('org.still.browser');
+    port = connection;
+    const timer = setTimeout(() => {
+      connection.disconnect();
+      if (port === connection) {
+        port = null;
+        bridge = 'disconnected';
+      }
+      reject(Error('The local bridge did not respond. Check the setup guide, then try again.'));
+    }, 5000);
+    connection.onMessage.addListener(async (m) => {
+      if (port !== connection) return;
+      if (m.event === 'ready') {
+        clearTimeout(timer);
+        bridge = 'connected';
+        resolve();
+        return;
+      }
+      if (m.op === 'disconnect') {
+        lane.cancel(m.session);
+        return;
+      }
       try {
-        connection.postMessage({ id: m.id, error: e.message });
-      } catch {}
-    }
-  });
-  port.onDisconnect.addListener(() => {
-    port = null;
-  });
+        const result = await lane.run(m);
+        connection.postMessage({ id: m.id, result });
+      } catch (e) {
+        try {
+          connection.postMessage({ id: m.id, error: e.message });
+        } catch {}
+      }
+    });
+    connection.onDisconnect.addListener(() => {
+      // Reading lastError consumes Chrome's diagnostic; do not expose local paths in the UI.
+      void chrome.runtime.lastError;
+      clearTimeout(timer);
+      if (port === connection) {
+        port = null;
+        bridge = 'disconnected';
+      }
+      reject(
+        Error(
+          'Still could not connect to the local bridge. Complete installation, then try again.',
+        ),
+      );
+    });
+  })
+    .catch((error) => {
+      if (bridge !== 'connected') bridge = 'disconnected';
+      throw error;
+    })
+    .finally(() => {
+      connectionAttempt = null;
+    });
+  return connectionAttempt;
+}
+async function setupState() {
+  let window;
+  if (lane.windowId !== null) {
+    try {
+      window = await chrome.windows.get(lane.windowId);
+    } catch {}
+  }
+  return {
+    windowOpen: Boolean(window),
+    bridge,
+    focused: Boolean(window?.focused),
+    minimized: window?.state === 'minimized',
+    websites: lane.origins,
+    activeSessions: lane.sessions.size,
+    needsReload: Boolean(lane.failed),
+  };
 }
 chrome.runtime.onMessage.addListener((m, sender, respond) => {
   if (sender.id !== chrome.runtime.id || sender.url !== chrome.runtime.getURL('setup.html')) return;
+  if (m.op === 'status') {
+    setupState().then(respond, (e) => respond({ error: e.message }));
+    return true;
+  }
   if (m.op === 'prepare') {
     (async () => {
-      if (lane.windowId !== null) throw Error('Lane already prepared; reload extension to reset');
-      const origins = m.origins.map((o) => new URL(o).origin);
-      if (!origins.length || origins.some((o) => !/^https?:\/\//.test(o)))
-        throw Error('Enter HTTP(S) origins');
-      const w = await chrome.windows.create({
-        url: chrome.runtime.getURL('anchor.html'),
-        focused: false,
-        type: 'normal',
-        state: 'normal',
-        left: 100,
-        top: 100,
-        width: 1120,
-        height: 850,
-      });
-      lane.configure(w.id, origins);
-      if (!port) connect();
-      return { prepared: true };
-    })().then(respond, (e) => respond({ error: e.message }));
+      if (lane.failed)
+        throw Error('Reload Still from the Chrome extensions page to reset the agent window.');
+      const origins = parseStartingWebsites(m.origins);
+      const current = await setupState();
+      const changed = JSON.stringify(origins) !== JSON.stringify(lane.origins);
+      if (lane.sessions.size && changed)
+        throw Error('Wait for the agent to finish before changing starting websites.');
+      if (!current.windowOpen) {
+        if (lane.sessions.size)
+          throw Error('The agent window closed. Finish existing sessions, then try again.');
+        const w = await chrome.windows.create({
+          url: chrome.runtime.getURL('anchor.html'),
+          focused: false,
+          type: 'normal',
+          state: 'normal',
+          left: 0,
+          top: 0,
+          width: 1100,
+          height: 760,
+        });
+        lane.configure(w.id, origins);
+      } else if (changed) {
+        lane.configure(lane.windowId, origins);
+      }
+      // A failed bridge can be retried using the same window, without creating duplicates.
+      await connect();
+      return { prepared: true, ...(await setupState()) };
+    })().then(respond, async (e) => respond({ error: e.message, ...(await setupState()) }));
     return true;
   }
 });

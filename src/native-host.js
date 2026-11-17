@@ -86,6 +86,8 @@ server.on('error', (e) => {
 });
 await new Promise((r) => server.listen(socketPath, r));
 await chmod(socketPath, 0o600);
+// Confirm readiness only after the owner-only socket is listening.
+send({ event: 'ready' });
 let stopping = false;
 async function shutdown() {
   if (stopping) return;
