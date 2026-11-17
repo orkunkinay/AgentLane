@@ -163,6 +163,55 @@
           </figure>
         </div>
       </section>
+
+      <section class="how" id="how" aria-labelledby="how-title">
+        <div class="wrap">
+          <p class="eyebrow">How it works</p>
+          <h2 id="how-title">Share the logins. <em>Not the input.</em></h2>
+          <p class="lede">
+            Your physical keyboard and pointer drive your Chrome window. The agent never touches
+            them: it sees pixels and sends tab-targeted input to a tab it owns, in a separate window,
+            inside the same Chrome profile. Select any step to see what it really does.
+          </p>
+
+          <div class="flow" id="flow">
+            <div class="flow-lanes">
+              <div class="flow-row human" role="group" aria-label="Human lane">
+                <span class="row-tag">Human lane</span>
+                <button type="button" class="node" data-node="you">You</button>
+                <button type="button" class="node" data-node="os">Keyboard + pointer</button>
+                <button type="button" class="node" data-node="win">Your Chrome window</button>
+              </div>
+              <div class="flow-row agent" role="group" aria-label="Agent lane">
+                <span class="row-tag">Agent lane</span>
+                <button type="button" class="node" data-node="agent">Coding agent</button>
+                <button type="button" class="node" data-node="mcp">MCP server</button>
+                <button type="button" class="node" data-node="sock">Unix socket</button>
+                <button type="button" class="node" data-node="host">Native host</button>
+                <button type="button" class="node" data-node="ext" aria-pressed="true">Extension</button>
+                <button type="button" class="node" data-node="tab">Owned tab</button>
+              </div>
+            </div>
+            <div class="flow-profile">
+              <strong>Chrome profile</strong>
+              <span>cookies · logins · storage</span>
+              <em>shared by both lanes</em>
+            </div>
+          </div>
+
+          <div class="node-detail" id="node-detail" aria-live="polite">
+            <h3 id="nd-title"></h3>
+            <p id="nd-body"></p>
+            <p class="nd-src" id="nd-src"></p>
+          </div>
+
+          <ul class="contract">
+            <li><b>One tab per connection.</b> The host assigns each socket a random session ID. There is no tool to list, select or read your tabs.</li>
+            <li><b>Eight fixed tools.</b> No raw CDP, no arbitrary JavaScript, no cookie access, no OS shortcuts.</li>
+            <li><b>Screenshot, then one input.</b> Every click, key or scroll spends a single-use frame token from the latest screenshot.</li>
+          </ul>
+        </div>
+      </section>
     </main>
 
     <script src="assets/app.js" defer></script>
