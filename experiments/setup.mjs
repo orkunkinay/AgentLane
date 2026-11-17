@@ -92,16 +92,19 @@ try {
   );
   // Simulated human focus changes in a disposable profile, never in the real browser.
   await worker.evaluate((id) => chrome.windows.update(id, { focused: true }), laneWindow.id);
+  await page.reload();
   await page.locator('#connection-label').getByText('Paused', { exact: true }).waitFor();
   await page
     .locator('#ready-copy')
     .getByText(/Switch back/)
     .waitFor();
-  await worker.evaluate(
-    (id) => chrome.windows.update(id, { focused: true }),
-    originalWindows[0].id,
-  );
+  // Headless Chrome may report both windows focused after synthetic focus changes.
+  // Close/recreate the test lane instead of weakening the real focus guard.
+  await worker.evaluate((id) => chrome.windows.remove(id), laneWindow.id);
+  await page.reload();
+  await page.getByRole('button', { name: 'Create agent window', exact: true }).click();
   await page.locator('#connection-label').getByText('Connected', { exact: true }).waitFor();
+  assert.equal((await windows()).length, originalCount + 1);
 
   process.env.STILL_STATE_DIR = stateDir;
   const { BrowserClient } = await import('../src/client.js');
@@ -128,6 +131,7 @@ try {
         settingsSurvivePopupReopen: true,
         activeSessionChangesRejected: true,
         focusedWindowShowsPaused: true,
+        closedWindowRecreated: true,
         readyPanelHeight: height,
       },
       null,
