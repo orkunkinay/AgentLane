@@ -400,3 +400,45 @@ test('a delayed timeout from a closed lane does not poison the reopened lane', a
   f.lane.api.debugger.sendCommand = send;
   await f.run('a', 'open', { url: 'https://example.com' });
 });
+
+test('actions queued before a lane is recreated are not dispatched in the new window', async () => {
+  const f = fixture();
+  let release;
+  f.lane.tail = new Promise((resolve) => {
+    release = resolve;
+  });
+  const oldOpen = f.run('a', 'open', { url: 'https://example.com' });
+  f.lane.windowRemoved(7);
+  f.lane.configure(7, ['https://example.com']);
+  release();
+  await assert.rejects(oldOpen, /queued; it was not dispatched/);
+  assert.equal(f.tabs.size, 0);
+  await f.run('a', 'open', { url: 'https://example.com' });
+  assert.equal(f.tabs.size, 1);
+});
+
+test('replacement during an asynchronous window check cannot redirect an old open request', async () => {
+  const f = fixture();
+  const get = f.lane.api.windows.get;
+  let release;
+  let started;
+  const inspecting = new Promise((resolve) => {
+    started = resolve;
+  });
+  f.lane.api.windows.get = async () => {
+    started();
+    await new Promise((resolve) => {
+      release = resolve;
+    });
+    return f.window;
+  };
+  const oldOpen = f.run('a', 'open', { url: 'https://example.com' });
+  await inspecting;
+  f.lane.windowRemoved(7);
+  f.lane.configure(7, ['https://example.com']);
+  release();
+  await assert.rejects(oldOpen, /action was not dispatched/);
+  assert.equal(f.tabs.size, 0);
+  f.lane.api.windows.get = get;
+  await f.run('a', 'open', { url: 'https://example.com' });
+});

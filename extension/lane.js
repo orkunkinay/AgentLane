@@ -46,17 +46,25 @@ export class Lane {
     return u.href;
   }
   run(message) {
-    const next = this.tail.then(() => this.execute(message));
+    const generation = this.generation;
+    const next = this.tail.then(() => {
+      if (message.op !== 'close' && generation !== this.generation)
+        throw Error(
+          'Lane was recreated while the action was queued; it was not dispatched. Call lane_open in the prepared window.',
+        );
+      return this.execute(message, generation);
+    });
     this.tail = next.catch(() => {});
     return next;
   }
   async assertLane() {
     if (this.windowId === null) throw Error('Prepare a lane in the extension first');
+    const windowId = this.windowId;
     let w;
     try {
-      w = await this.api.windows.get(this.windowId);
+      w = await this.api.windows.get(windowId);
     } catch {
-      this.windowRemoved(this.windowId);
+      this.windowRemoved(windowId);
       throw Error(
         'Agent window is closed. Reopen it from the AgentLane extension, then call lane_open.',
       );
@@ -97,12 +105,15 @@ export class Lane {
     return s;
   }
   async tabEdit(operation, session, closing = false) {
+    const generation = this.generation;
     for (let attempt = 0; attempt < 20; attempt++) {
       if (!closing) {
         if (this.cancelled.has(session)) throw Error('Session disconnected');
         await this.assertLane();
       }
       if (this.sessions.has(session)) await this.owned(session, true);
+      if (generation !== this.generation)
+        throw Error('Lane was recreated; the tab edit was not dispatched. Call lane_open.');
       try {
         return await operation();
       } catch (e) {
@@ -224,7 +235,7 @@ export class Lane {
       s.frameInvalidation = reason;
     }
   }
-  async execute({ session, op, args = {} }) {
+  async execute({ session, op, args = {} }, generation = this.generation) {
     if (this.cancelled.has(session) && op !== 'close') throw Error('Session disconnected');
     if (typeof session !== 'string' || !session) throw Error('Missing session');
     if (!['open', 'close', 'screenshot', 'click', 'type', 'key', 'scroll', 'navigate'].includes(op))
@@ -238,10 +249,11 @@ export class Lane {
     }
     if (this.failed) throw Error(this.failed);
     await this.assertLane();
+    if (generation !== this.generation)
+      throw Error('Lane was recreated; the action was not dispatched. Call lane_open.');
     if (op === 'open') {
       if (this.sessions.has(session)) throw Error('Session already owns a tab');
       const url = this.url(args.url);
-      const generation = this.generation;
       const tab = await this.tabEdit(
         () =>
           this.api.tabs.create({
