@@ -1,5 +1,9 @@
 # Evidence log
 
+Naming note (2026-11-17): the product is now AgentLane. Earlier entries below retain
+the names and commands actually used at the time, including Still and `STILL_*`.
+See [migration notes](MIGRATION.md) for the current identifiers and installation state.
+
 ## 2026-11-16: initial inspection
 
 Environment: macOS, Node 24.18.0, Python 3.13, Google Chrome 157.0.8103.51.
@@ -280,3 +284,43 @@ rounds with iframe/history recapture and human fixture preservation. Documentati
 matching toolbar/agent-window branding and five synthetic-data screenshots were
 updated. The installed product skill was synchronized and validated. No publication
 or push is part of this change.
+
+
+## E12: AgentLane rename and local installation migration, 2026-11-17
+
+Inspected the repository and live local installation before editing. Found the
+legacy `still` Codex registration, matching `still-browser` skill, owner-only
+`~/.still`, native host registration `org.still.browser`, a live host process and a
+live MCP process. The old registration allowed one exact Chrome extension origin.
+No Chrome databases, authentication material or personal page contents were read.
+
+Renamed current extension/UI/window, package/server identity, scripts, environment
+variables, default state namespace, native host identifier, skill and documentation
+to AgentLane/agentlane. `lane_*` methods and Chrome manifest permissions are unchanged.
+Historic evidence and upstream references remain intact with naming explanations.
+
+The guarded migrator was previewed, tested and applied. It installed the new native
+host with an identical allowlist, owner-only `~/.agentlane`, new `agentlane` Codex
+registration and validated `agentlane-browser` skill. It archived the old skill
+outside discovery, saved the legacy launcher, and pinned future legacy launches to
+the old state namespace. The observed legacy processes and socket remained present;
+no process was killed and no socket/profile/tab was moved or deleted. A fresh SDK
+client verified `agentlane` server identity and the eight unchanged methods without
+opening a personal page. Re-preview succeeded after migration.
+
+The new GitHub description was updated using existing administrator access. No Git
+history was rewritten, visibility changed, commit pushed or remote branch ref changed.
+The personal-profile extension was NOT reloaded: manual reload, name/ID verification,
+starting-website reconfiguration and a fresh Codex conversation remain required.
+
+24 automated tests passed, including preservation of a live Unix socket and custom
+skill, partial-failure recovery/idempotence and refusal of broader allowlists, symlinks
+and custom MCP restrictions. Full renamed MCP/native/browser navigation-probe run
+passed 30 interleaved rounds with two-capture iframe/history regressions. Setup UI
+integration passed readiness, retry/save without duplicate windows, paused display,
+closed-window recovery and active-session setting refusal. These tests used temporary
+Chrome for Testing 159.0.8154.6 profiles, not the personal profile.
+
+Regenerated five documentation screenshots, icons and the renamed overview diagram
+from disposable/synthetic sources. Current screenshots show AgentLane; this is not
+an assertion that a live legacy worker or historical experiment changed its name.
