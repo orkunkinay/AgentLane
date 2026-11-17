@@ -378,7 +378,67 @@ Show me the result, then close your owned tab.</code></pre><button type="button"
           </ol>
         </div>
       </section>
+
+      <section class="ledger" id="limits" aria-labelledby="limits-title">
+        <div class="wrap">
+          <p class="eyebrow">Straight answers</p>
+          <h2 id="limits-title">What a lane <em>does</em> and <em>doesn't</em> isolate.</h2>
+          <p class="lede">AgentLane is experimental. Here is the ledger, taken from the evidence log and security model, not from marketing.</p>
+
+          <div class="ledger-grid">
+            <div class="col yes">
+              <h3>Measured and working</h3>
+              <ul>
+                <li>Separate input: no OS input injection, so the agent cannot take your keyboard or pointer.</li>
+                <li>Your existing logins: the agent's tab uses the same Chrome profile. No profile copy, no cookie export.</li>
+                <li>One run on normal Chrome 157: a visual workflow, an existing Google sign-in check, and <b>138 rounds / 2,208 tool calls in 120.7 s</b>, with the human actively using Chrome and reporting no interference.</li>
+                <li>Standard HTML select dropdowns render in-page, so they stay visible in screenshots (Chrome 134+).</li>
+                <li>Recovery in the same conversation after the lane window or browser bridge is lost; interrupted input is never replayed.</li>
+              </ul>
+            </div>
+            <div class="col no">
+              <h3>Not isolated. Do not rely on it</h3>
+              <ul>
+                <li>Native dialogs, permission sheets, passkeys, file pickers and popups can still grab focus.</li>
+                <li>Individual macOS Space transitions and occluded windows are not certified.</li>
+                <li>Cookies, storage and server-side account state are shared. Agent actions are real actions in your accounts.</li>
+                <li>Links, redirects and iframes can leave your “Selected websites” list; it governs direct opening and navigation only.</li>
+                <li>Screenshots and typed text go to your model provider. They can contain private data.</li>
+                <li>macOS and Chrome only; Windows unsupported; Linux and other browsers unverified.</li>
+              </ul>
+            </div>
+          </div>
+          <p class="ledger-foot">
+            Read the full <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/EVIDENCE.md" rel="noopener">evidence log</a>,
+            <a href="https://github.com/orkunkinay/AgentLane/blob/main/SECURITY.md" rel="noopener">security model</a> and the
+            <a href="docs/#limitations">known limitations</a> before using sensitive workflows.
+          </p>
+        </div>
+      </section>
     </main>
+    <footer class="foot">
+      <div class="wrap foot-grid">
+        <div>
+          <a class="brand" href="./"><img src="assets/logo.png" alt="" width="30" height="30" />AgentLane</a>
+          <p>Open source, MIT licensed. A lane in your Chrome for your coding agent.</p>
+        </div>
+        <nav aria-label="Project">
+          <h4>Project</h4>
+          <a href="https://github.com/orkunkinay/AgentLane" rel="noopener">GitHub repository</a>
+          <a href="https://github.com/orkunkinay/AgentLane/issues" rel="noopener">Issues</a>
+          <a href="https://github.com/orkunkinay/AgentLane/blob/main/CONTRIBUTING.md" rel="noopener">Contributing</a>
+          <a href="https://github.com/orkunkinay/AgentLane/blob/main/LICENSE" rel="noopener">MIT license</a>
+        </nav>
+        <nav aria-label="Documentation">
+          <h4>Docs</h4>
+          <a href="docs/#install">Install</a>
+          <a href="docs/#tools">Tool reference</a>
+          <a href="docs/#troubleshooting">Troubleshooting</a>
+          <a href="https://github.com/orkunkinay/AgentLane/blob/main/SECURITY.md" rel="noopener">Security model</a>
+        </nav>
+      </div>
+    </footer>
+
 
     <script src="assets/app.js" defer></script>
   </body>
