@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { BrowserClient } from './client.js';
 const server = new McpServer({ name: 'agentlane', version: '0.1.0' });
 const client = new BrowserClient();
-let connected = false;
 let queue = Promise.resolve();
 function serial(fn) {
   const run = queue.then(fn);
@@ -17,10 +16,6 @@ function tool(name, description, schema, op) {
   server.registerTool(name, { description, inputSchema: schema }, (args) =>
     serial(async () => {
       try {
-        if (!connected) {
-          await client.connect();
-          connected = true;
-        }
         const r = await client.call(op, args);
         if (op === 'screenshot')
           return {

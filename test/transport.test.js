@@ -116,3 +116,103 @@ test(
     }
   },
 );
+
+test(
+  'one MCP process recovers from missing/restarted bridge without replaying interrupted input',
+  { timeout: 20000 },
+  async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'agentlane-reconnect-'));
+    const observed = [];
+    let host;
+    let transport;
+    let inputReceived;
+    const interrupted = new Promise((resolve) => {
+      inputReceived = resolve;
+    });
+    async function stopHost() {
+      const nativeProcess = host;
+      host = null;
+      if (!nativeProcess) return;
+      const exited = once(nativeProcess, 'exit');
+      nativeProcess.stdin.end();
+      await exited;
+    }
+    async function startHost() {
+      host = spawn(process.execPath, ['src/native-host.js'], {
+        env: { ...process.env, AGENTLANE_STATE_DIR: dir },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      const nativeProcess = host;
+      const decoder = new NativeDecoder();
+      nativeProcess.stdout.pipe(decoder);
+      const owned = new Set();
+      await new Promise((resolve) => {
+        decoder.on('data', (m) => {
+          if (m.event === 'ready') return resolve();
+          observed.push(m);
+          if (m.op === 'disconnect') {
+            owned.delete(m.session);
+            return;
+          }
+          if (m.op === 'click') {
+            inputReceived();
+            return;
+          } // Lost after dispatch: never replay.
+          if (m.op === 'open') owned.add(m.session);
+          nativeProcess.stdin.write(
+            nativeFrame({
+              id: m.id,
+              ...(owned.has(m.session)
+                ? { result: { opened: true } }
+                : { error: 'No owned tab; call lane_open' }),
+            }),
+          );
+        });
+      });
+    }
+    try {
+      const client = new Client({ name: 'recovery-test', version: '1.0' });
+      transport = new StdioClientTransport({
+        command: process.execPath,
+        args: [resolve('src/mcp.js')],
+        env: { ...process.env, AGENTLANE_STATE_DIR: dir },
+      });
+      await client.connect(transport);
+      const open = () =>
+        client.callTool({ name: 'lane_open', arguments: { url: 'https://example.com' } });
+      const absent = await open();
+      assert(absent.isError);
+      assert.match(absent.content[0].text, /Browser bridge unavailable/);
+      await startHost();
+      assert(!(await open()).isError, 'same MCP process connects after human setup');
+      const firstSession = observed.find((m) => m.op === 'open').session;
+      const pending = client.callTool({
+        name: 'lane_click',
+        arguments: { frame: 'a4d5cc8b-b291-4684-a9eb-38fc7f57cb73', x: 10, y: 10 },
+      });
+      await interrupted;
+      await stopHost();
+      const lost = await pending;
+      assert(lost.isError);
+      assert.match(lost.content[0].text, /outcome is unknown; it was not retried/);
+      await startHost();
+      const stale = await client.callTool({ name: 'lane_screenshot', arguments: {} });
+      assert(stale.isError);
+      assert.match(stale.content[0].text, /No owned tab/);
+      assert(!(await open()).isError, 'same MCP process recovers after native host restart');
+      const opens = observed.filter((m) => m.op === 'open');
+      assert.equal(opens.length, 2);
+      assert.notEqual(opens[1].session, firstSession, 'reconnect gets a fresh host-owned identity');
+      assert.equal(
+        observed.filter((m) => m.op === 'click').length,
+        1,
+        'interrupted input is never replayed',
+      );
+      await client.close();
+    } finally {
+      await transport?.close();
+      await stopHost();
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+);
