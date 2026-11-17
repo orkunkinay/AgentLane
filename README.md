@@ -1,5 +1,7 @@
 # AgentLane
 
+<img src="extension/icons/logo.png" alt="AgentLane logo" width="120">
+
 **Keep using your logged-in Chrome while an AI agent works in its own visual lane.**
 
 AgentLane is a Chrome extension and local MCP server. It gives the agent a separate
@@ -264,7 +266,8 @@ Regenerate the five documentation screenshots with:
 node scripts/capture-docs.mjs
 ```
 
-The toolbar PNG icons are generated from `extension/icons/agentlane.svg` with
+The logo and toolbar PNG icons are generated from the supplied artwork in
+`extension/icons/agentlane.png` with
 `node scripts/render-icons.mjs`.
 
 The screenshot generator uses a disposable Chrome for Testing profile and a temporary
