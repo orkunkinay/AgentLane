@@ -1,0 +1,26 @@
+Give your AI agent a separate visual workspace in the Chrome profile where you are already signed in.
+
+AgentLane is an experimental Chrome extension with a separately installed local bridge and MCP server. It lets an MCP-compatible AI client work through screenshots, clicks, scrolling and typing in a dedicated agent window while you use your usual window.
+
+WHAT IT DOES
+• Uses your existing Chrome profile and logins without copying the profile or exporting cookies.
+• Gives each MCP connection its own created tab; the tools cannot choose pre-existing human tabs.
+• Lets you choose Selected websites or explicitly choose Any website for HTTP(S) opening and navigation.
+• Returns real page screenshots with single-use frame tokens for visual input.
+• Renders standard select dropdowns inside the page, including supported child-frame controls.
+• Reconnects an existing MCP process after bridge loss. Recreate the lane through the extension, then call lane_open for a fresh owned tab.
+
+SEPARATE LOCAL SETUP IS REQUIRED
+This extension does not work by itself. You need macOS, Chrome 134+, Node.js 22+, the AgentLane native messaging host/local MCP server, and an MCP-compatible AI client. Store installation replaces loading the unpacked extension; it does not install the local helper. Follow the setup guide on the project website. Windows is unsupported; other browsers and Linux are unverified.
+
+DATA AND CONTROL
+Screenshots, requested URLs and typed text pass through your local MCP client and may be sent to its configured AI provider. Screenshots can contain private or sensitive information visible in the page. Review the privacy policy and accept the in-product disclosure before connecting. AgentLane does not operate a hosted AI, advertising, analytics or screenshot collection service.
+
+Selected websites restricts direct opening and navigation by exact origin. Links and redirects can lead elsewhere. This is not a comprehensive website-access boundary.
+
+EXPERIMENTAL BETA
+Keep the agent window open, restored and unfocused. AgentLane pauses input while that window is focused or minimized. Browser-native dialogs, permission sheets, popups, closed shadow-root pickers and arbitrary sites are not universally isolated. Separate input still shares account/server-side effects; account changes can affect your own session. Never treat the lane as a security sandbox.
+
+Documentation: https://orkunkinay.github.io/AgentLane/docs/
+Privacy: https://orkunkinay.github.io/AgentLane/privacy/
+Source and support: https://github.com/orkunkinay/AgentLane

@@ -1,0 +1,26 @@
+{
+  "name": "AgentLane",
+  "language": "English",
+  "category": "Developer Tools",
+  "visibility": "Unlisted",
+  "summary": "Give your AI agent a separate visual workspace in your logged-in Chrome. Requires the local AgentLane bridge and an MCP client.",
+  "website": "https://orkunkinay.github.io/AgentLane/",
+  "support": "https://github.com/orkunkinay/AgentLane/issues",
+  "privacyPolicy": "https://orkunkinay.github.io/AgentLane/privacy/",
+  "singlePurpose": "Provide a user-directed visual browser workspace for an MCP-compatible AI client in a separate window of the user's existing Chrome profile, using screenshots and tab-targeted input without sharing the physical keyboard or mouse.",
+  "permissions": {
+    "debugger": "Required to capture the owned tab's rendered page pixels and deliver coordinate clicks, text, scrolls and a restricted key set through chrome.debugger. It also configures the viewport, intercepts file choosers and renders standard select menus inside the page to reduce native-window interference. Fixed packaged code performs these operations only on tabs created for that MCP connection and their child frames. The MCP interface exposes no human-tab selection, cookie extraction or arbitrary JavaScript/CDP commands. Debugger access is broad at the Chrome permission level; this is disclosed in setup and the security model.",
+    "nativeMessaging": "Required to connect the extension to org.agentlane.browser, a separately installed local Node.js native messaging host. It relays tool requests/results between the extension and a locally running MCP client over an owner-only Unix socket. It does not open a remote-debugging TCP port. Store installation alone does not install this helper or MCP server.",
+    "storage": "Required to persist the user-selected starting-website policy and accepted screenshot/input disclosure version in chrome.storage.local. Selected websites and explicit Any website modes remain distinct. No browsing history, screenshot history or analytics are stored in extension storage."
+  },
+  "remoteCode": false,
+  "remoteCodeExplanation": "All extension logic, including the fixed isolated-world select presentation bootstrap, is included in the ZIP. Native messages contain requests for a fixed set of tool operations, never executable scripts or CDP methods. The separate native host and MCP server are source-available local software. Pages visited by the user-directed workflow load their own normal site resources; these are not remotely hosted extension logic.",
+  "dataHandling": {
+    "websiteContent": "Screenshots of the owned tab can contain visible site content, forms and documents.",
+    "userActivity": "The local bridge handles requested clicks, scrolls, keys and text for the user-directed task, not physical desktop input monitoring.",
+    "webHistory": "Requested URLs and visible page addresses are handled for the owned task. General browsing history is not read.",
+    "sensitiveCategories": "Visible screenshots and user-directed text may contain personally identifiable information, personal communications, authentication information, financial/payment information, health information and location information. The pipeline does not redact or classify these pixels, so disclose these potential categories rather than claiming they cannot be handled. No cookie/password-store extraction API is exposed.",
+    "recipients": "The user's local MCP client and any AI/model providers it is configured to use; websites receive normal browsing and submitted actions. No developer-hosted collection/analytics/model endpoint is operated by this extension.",
+    "saleAdvertisingCredit": false
+  }
+}

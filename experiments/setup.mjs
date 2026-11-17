@@ -10,7 +10,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 const profile = await mkdtemp(join(tmpdir(), 'agentlane-setup-'));
 const stateDir = join(profile, 'bridge');
-const extension = resolve('extension');
+const extension = resolve(process.env.AGENTLANE_TEST_EXTENSION || 'extension');
 let context;
 let client;
 const fixture = createServer((req, res) => {
