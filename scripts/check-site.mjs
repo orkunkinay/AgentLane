@@ -34,7 +34,8 @@ for (const page of pages) {
       problems.push(`${page}: unexpected external link ${ref}`);
       continue;
     }
-    const [path, hash] = ref.split('#');
+    const [pathWithQuery, hash] = ref.split('#');
+    const path = pathWithQuery.split('?')[0];
     const target = path ? normalize(join(dirname(page), path)) : page;
     const file = (await exists(target)) && target.endsWith('/') ? target : target;
     const resolved = /\.[a-z0-9]+$/i.test(file) ? file : join(file, 'index.html');

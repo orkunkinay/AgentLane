@@ -2146,53 +2146,56 @@ h2 .tag {
   margin: 4px 0 18px;
   font: 13px var(--mono);
 }
-.marquee {
-  display: flex;
-  width: 100%;
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-}
-.track-m {
-  display: flex;
-  flex: none;
-  min-width: 100%;
-  justify-content: space-around;
-  gap: 0;
-  margin: 0;
+.spin {
+  position: relative;
+  height: 120px;
+  margin: 8px auto 0;
   padding: 0;
   list-style: none;
-  animation: marquee 26s linear infinite;
+  perspective: 700px;
 }
-.track-m li {
-  flex: none;
-  width: 132px;
+.spin li {
+  position: absolute;
+  inset: 0;
   display: grid;
   justify-items: center;
-  align-content: start;
-  gap: 10px;
-  text-align: center;
+  align-content: center;
+  gap: 12px;
+  opacity: 0;
+  animation: spin-slot 16s linear infinite backwards;
+  animation-delay: calc(var(--i) * 2s);
 }
-.track-m .logo {
-  width: 40px;
-  height: 40px;
+.spin .logo {
+  width: 56px;
+  height: 56px;
+  flex: none;
   fill: var(--ink);
-  opacity: 0.8;
-  transition: opacity 0.2s;
 }
-.track-m li:hover .logo {
-  opacity: 1;
-}
-.track-m span {
-  display: block;
-  width: 100%;
-  text-align: center;
-  font: 600 12px var(--mono);
+.spin span {
+  font: 600 13px var(--mono);
   color: var(--ink-2);
+  text-align: center;
 }
-@keyframes marquee {
-  to {
-    transform: translateX(-100%);
+@keyframes spin-slot {
+  0% {
+    opacity: 0;
+    transform: rotateY(90deg);
+  }
+  2.5% {
+    opacity: 1;
+    transform: rotateY(0);
+  }
+  10% {
+    opacity: 1;
+    transform: rotateY(0);
+  }
+  12.5% {
+    opacity: 0;
+    transform: rotateY(-90deg);
+  }
+  100% {
+    opacity: 0;
+    transform: rotateY(-90deg);
   }
 }
 .foot .tm {
