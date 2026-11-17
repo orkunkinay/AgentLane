@@ -50,7 +50,7 @@ const x = z.number().min(0).max(1099);
 const y = z.number().min(0).max(759);
 tool(
   'lane_open',
-  'Create your own tab in a human-prepared lane, using the existing profile. Never use native computer tools for this workflow.',
+  'Create your own tab in a human-prepared lane, using the existing profile and setup navigation policy (Selected websites or Any website). Never use native computer tools for this workflow.',
   { url: z.string().url() },
   'open',
 );
@@ -97,7 +97,7 @@ tool(
 );
 tool(
   'lane_navigate',
-  'Navigate your owned target to a setup-approved starting origin. This does not restrict redirects or links.',
+  'Navigate your owned target to an HTTP(S) URL permitted by setup: Selected websites checks exact origins; Any website permits HTTP(S). Links and redirects can lead elsewhere.',
   { url: z.string().url() },
   'navigate',
 );

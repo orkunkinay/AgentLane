@@ -41,10 +41,13 @@ Do not retry uncertain page input or focus the lane to recover.
 A target_closed event can reattach only to the same validated owned tab. Other
 detach reasons require closing the session and creating a fresh one. Do not attach to a human tab or bypass Chrome’s restriction on another extension URL.
 
-**Starting websites:** this is a starting-URL check, not a website blocklist.
-Links, redirects and page requests can reach other websites. To change the list,
-finish agent sessions, edit **Starting websites** and click **Save starting websites**.
-Reloading the extension is not required for this setting.
+**Starting websites:** **Selected websites** restricts direct opening and navigation
+by protocol, hostname and port. Links and redirects can lead elsewhere; page requests
+are not filtered. **Any website** explicitly permits any HTTP(S) address without
+embedded credentials. To change either mode or list, finish agent sessions and click
+**Save starting websites**. No reload is needed. Settings persist across restarts;
+older empty/invalid lists stay selected and require at least one valid website.
+Only installations without saved configuration prefill Google.
 
 **Stale frame:** the rejected input was not dispatched. Take a fresh screenshot
 before each click/type/key/scroll. Navigation or a prior input invalidates the token;

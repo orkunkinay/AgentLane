@@ -104,19 +104,32 @@ replacing anything. [Recovery instructions.](docs/TROUBLESHOOTING.md)
 ### 4. Create the agent lane
 
 Click **AgentLane** in Chrome's toolbar, or open it through the puzzle-piece extensions
-menu. Under **Starting websites**, enter where the agent may open a task, one website
-per line. For example:
+menu. Under **Where can your agent start browsing?**, choose:
+
+- **Selected websites** (default): direct opening and navigation must match a listed
+  website. Fresh installations prefill `https://www.google.com`. Enter at least one
+  HTTP(S) address, one per line.
+- **Any website**: “Your agent can open any website using your existing logins.”
+  Direct opening and navigation accept any HTTP(S) address without embedded credentials.
+
+For Selected websites, an example list is:
 
 ```text
 https://www.google.com
 http://127.0.0.1:8741
 ```
 
+The mode and websites are saved locally and survive popup reopening and browser
+restarts. Existing saved lists are preserved. Empty or invalid older settings stay
+in Selected websites mode and require a valid address; they never enable Any website.
+
 You can enter a domain such as `www.google.com` or a full address. AgentLane adds
 `https://` to a bare domain and saves just the website part of a page address.
 The protocol, hostname and port must match; `localhost` and `127.0.0.1` differ.
 
-<img src="docs/images/lane-setup.png" alt="Compact AgentLane setup showing Starting websites, a notice that links and redirects can leave them, and Create agent window." width="384">
+<img src="docs/images/lane-setup.png" alt="AgentLane setup with Selected websites chosen, editable starting addresses, and the direct navigation policy explained." width="384">
+
+<img src="docs/images/lane-setup-any.png" alt="AgentLane setup with Any website chosen and the existing-logins explanation." width="384">
 
 Click **Create agent window**. You should see a separate Chrome window titled
 **AgentLane workspace**. Keep that window restored and switch back to your own window.
@@ -126,9 +139,10 @@ is incomplete, the panel shows **Not connected** and offers a retry.
 
 ![The redesigned empty agent window with instructions to keep it open and return to your usual window.](docs/images/agent-window.png)
 
-**Starting websites controls where tasks start, not where the agent can browse.**
-Pages can still link or redirect to other websites. This is not a network sandbox;
-iframes and other page requests are not blocked by this setting.
+**Selected websites restricts direct opening (`lane_open`) and navigation
+(`lane_navigate`). Links and redirects can lead elsewhere.** Iframes and other page
+requests are not filtered by this setting. Any website changes only the direct
+navigation policy; tab ownership and focus protections still apply.
 
 ### 5. Connect Codex to AgentLane
 
@@ -169,7 +183,7 @@ node scripts/demo-server.mjs
 
 1. In **your own Chrome window**, visit `http://127.0.0.1:8741/seed`. This establishes
    a synthetic localhost HttpOnly session and opens your typing workspace.
-2. Ensure `http://127.0.0.1:8741` is included in the lane's setup origins.
+2. Add `http://127.0.0.1:8741` under **Selected websites**, or choose **Any website**.
 3. In a fresh Codex conversation, paste:
 
    ```text
@@ -210,7 +224,7 @@ pointer, window/Space, authentication, visual workflow, durability and ownership
 | Starting a task | Ask for `$agentlane-browser` in a conversation with AgentLane tools available. |
 | Finishing a task | The agent calls `lane_close`; the empty lane stays available. |
 | Lane focused or minimized | Switch to your own window or restore the lane manually. The agent must not activate it. |
-| Adding another website | Finish/close agent sessions, open AgentLane, edit **Starting websites**, and click **Save starting websites**. The existing window is reused; no reload is needed. |
+| Changing browsing policy | Finish/close agent sessions, open AgentLane, choose **Selected websites** or **Any website**, edit the list if selected, and click **Save starting websites**. The existing window is reused; no reload is needed. |
 | Agent reports stale frame | Take a fresh screenshot before the next input. |
 | Missing host or renderer timeout | Follow [troubleshooting](docs/TROUBLESHOOTING.md); do not copy cookies or switch to desktop input. |
 | Native authentication, permission sheet or popup | Stop at that unsupported boundary and hand off as appropriate. |
@@ -260,7 +274,7 @@ Check the setup UI, including missing-connection recovery and saving websites:
 node experiments/setup.mjs
 ```
 
-Regenerate the five documentation screenshots with:
+Regenerate the six documentation screenshots with:
 
 ```sh
 node scripts/capture-docs.mjs

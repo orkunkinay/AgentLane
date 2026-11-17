@@ -18,6 +18,14 @@ review the extension before granting debugger access to a real profile.
 - Moved tabs are detached, uncertain ownership fails closed, timeouts poison the lane,
   and disconnected queued mutations are cancelled. No best-effort focus restoration.
 
+Browsing policy is stored locally as an explicit `selected` or `any` mode. Only a
+fresh installation without saved configuration receives a selected Google default.
+Older empty or invalid configurations remain selected with no permitted addresses
+until corrected. The extension rejects non-HTTP(S) URLs and embedded credentials in
+both modes. Links and redirects can lead elsewhere; this policy does not filter
+page requests. Changing modes requires no active sessions. Worker restart preserves
+settings but never restores tab ownership.
+
 ## Authority retained and risks
 
 | Threat | Mitigation | Residual risk |
@@ -29,7 +37,7 @@ review the extension before granting debugger access to a real profile.
 | Local unauthorized process | 0700 directory, 0600 socket, manifest allowlist | Any process with the same UID is within the trust boundary |
 | Stale screenshot click | Single-use token, navigation invalidation | Dynamic layout and check/dispatch races remain |
 | Renderer/extension failure | Timeouts, detach, poison and explicit reset | Orphaned tabs/windows, stale socket after crash |
-| Cross-origin exposure | Setup-approved requested navigation only | Redirects, links, iframes, resources and popups are not filtered |
+| Cross-origin exposure | Selected websites checks direct opening/navigation by exact origin; explicit Any website permits HTTP(S) | Redirects, links, iframes, resources and popups are not filtered |
 | Download/upload | File chooser interception, no upload tool | Downloads are not suppressed; page code may trigger other browser UI |
 | Permission/auth flow | Stop and hand to human | Browser UI may already have activated before the stop |
 

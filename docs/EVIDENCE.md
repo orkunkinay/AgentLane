@@ -324,3 +324,31 @@ Chrome for Testing 159.0.8154.6 profiles, not the personal profile.
 Regenerated five documentation screenshots, icons and the renamed overview diagram
 from disposable/synthetic sources. Current screenshots show AgentLane; this is not
 an assertion that a live legacy worker or historical experiment changed its name.
+
+## E13: explicit browsing policy and persistent setup, 2026-11-17
+
+Inspection found starting websites held only in worker memory. Added local policy
+storage with explicit selected/any modes; absent configuration prefills selected
+Google, legacy lists remain selected, and empty or malformed settings fail closed.
+Worker restart still discards window/tab capabilities. Both direct opening and
+navigation use the same policy check; links and redirects can lead elsewhere.
+
+27 automated tests passed, covering policy migration/defaults, selected-origin
+checks, unrestricted HTTP(S), unsafe schemes/credentials, unknown modes, owned tabs,
+focus/minimization, stale frames, cancellation, transport and installation migration.
+The disposable setup experiment passed empty/invalid validation, Google prefill,
+native radio keyboard selection, both modes across popup reopening and full browser
+restarts, legacy list preservation, legacy empty settings, bridge recovery and
+active-session locking. The connected selected-mode panel measured 591.2 px high.
+
+Full MCP/native/Chrome integration passed 30 interleaved rounds in both headless and
+headed Chrome for Testing 159.0.8154.6. Human fixture input and selected tab were
+preserved. The headed macOS observer recorded zero foreground, pointer, window or
+Space changes during the measured workload. Explicit Any website cross-origin HTTP
+opening/navigation and unsafe-URL refusals also passed. These are automated fixture
+tests, not physical human participation or real-account authentication checks.
+
+Regenerated six README screenshots, including both setup modes, using disposable
+profiles and synthetic data. Updated repository documentation and bundled skill;
+the personal Chrome installation and installed skill were not modified. Applying
+the extension update requires manual reload, setup and a fresh MCP conversation.

@@ -19,8 +19,9 @@ flowchart LR
 ## Lifecycle
 
 1. Human loads the extension, registers its exact origin with the native host and
-   chooses starting websites through the popup. The label describes a starting-URL
-   check, not a site-access boundary. Setup creates a separate unfocused
+   chooses Selected websites (default) or explicit Any website through the popup.
+   Selected websites checks direct opening and navigation against exact origins;
+   links and redirects can lead elsewhere. Setup creates a separate unfocused
    window containing an anchor. No automatic Chrome restart or launch-flag change.
 2. A native port starts `src/native-host.js`. It creates a 0700 directory and 0600
    Unix socket, then sends a readiness handshake. Setup reports a connection only
@@ -80,6 +81,14 @@ continue mutating after an uncertain in-flight command. Only a transient inactiv
 Malformed/oversized messages are bounded; outbound native messages are under 1 MiB,
 inbound native responses under 16 MiB, socket requests under 64 KiB.
 
+The local `startingPolicy` stores `{ mode: 'selected' | 'any', websites: [...] }`.
+A truly absent configuration prefills selected Google. Legacy `websites`/`origins`
+lists remain selected; empty or malformed data yields an empty selected policy
+requiring correction. Any website is enabled only by an explicit `any` mode, never
+by an empty list or wildcard. Both `open` and `navigate` use the same HTTP(S),
+credential and policy validation. Only the setup page can save policy, and active
+sessions prevent changes. Settings are saved even if the bridge connection fails.
+
 Worker restart intentionally does not adopt tabs from storage: a mistaken adoption
 could capture a human tab. Old tabs/anchor windows may remain for manual cleanup.
 A crash can leave a socket; after confirming its host process is gone, remove only
@@ -99,6 +108,6 @@ activate a desktop window, whose popup descendants inherit ownership, and whose
 modal surfaces are rendered into the lane. Such a change should live upstream;
 after-the-fact focus restoration is interference and is not an acceptable substitute.
 
-The setup popup can read its own lane/bridge state and update starting websites
+The setup popup can read its own lane/bridge state and update the mode and starting websites
 when there are no active sessions. Saving reuses the existing window. This user-only
 setup channel adds no agent-facing methods and cannot enumerate human tabs.
