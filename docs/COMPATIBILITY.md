@@ -7,6 +7,7 @@
 | Existing authenticated real account | One safe Google page verified | Signed-in avatar in agent screenshot, no login/cookie export; other sites unverified |
 | Physical human activity | User reported no interference during a short real run | User confirmed active Chrome use without interference during corrected 120.7 s / 138-round run; individual Spaces/dialog cases not certified |
 | Codex MCP | Full protocol path tested; globally registered | Used official SDK client in this conversation; native backend not replaced |
+| Claude Code MCP (2.1.326) | Tested bounded workflow | `claude mcp add` stdio registration, `claude mcp get` Connected, eight tools discovered, `lane_open`/`lane_screenshot`/`lane_close` against the real lane; skill loading in Claude Code unchecked |
 | Codex native Computer Use/extension | Not replaced | Browser host unavailable in this session |
 | Other stdio MCP agents | Expected, untested | Standard tool/image content; coordinate interpretation depends on model |
 | Linux Chromium | Expected, untested | Set custom manifest directory and short owner-only AGENTLANE_STATE_DIR |

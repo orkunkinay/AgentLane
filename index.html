@@ -331,7 +331,7 @@ npm test</code></pre><button type="button" class="copy" data-copy>Copy</button><
                 <h3>Connect your agent</h3>
                 <div class="tabs" role="tablist" aria-label="Agent client">
                   <button type="button" role="tab" aria-selected="true" aria-controls="p-codex" id="t-codex">Codex <small>verified</small></button>
-                  <button type="button" role="tab" aria-selected="false" aria-controls="p-claude" id="t-claude" tabindex="-1">Claude Code <small>untested</small></button>
+                  <button type="button" role="tab" aria-selected="false" aria-controls="p-claude" id="t-claude" tabindex="-1">Claude Code <small>verified</small></button>
                   <button type="button" role="tab" aria-selected="false" aria-controls="p-json" id="t-json" tabindex="-1">Other (JSON) <small>untested</small></button>
                   <button type="button" role="tab" aria-selected="false" aria-controls="p-toml" id="t-toml" tabindex="-1">Other (TOML) <small>untested</small></button>
                 </div>
@@ -344,11 +344,11 @@ codex mcp get agentlane</code></pre><button type="button" class="copy" data-copy
                   <p class="note">The last command should show an enabled <b>stdio</b> server named <code>agentlane</code> pointing at <code>src/mcp.js</code>. Install the bundled skill too: <code>node scripts/install-skill.mjs</code> <button type="button" class="copy inline" data-copy-text="node scripts/install-skill.mjs">copy</button></p>
                 </div>
                 <div role="tabpanel" id="p-claude" aria-labelledby="t-claude" hidden>
-                  <p>Same stdio server, registered with Claude Code. This is the standard <code>claude mcp add</code> form; AgentLane's own tests have not been run against Claude Code.</p>
+                  <p>Same stdio server, registered with Claude Code. Verified with Claude Code 2.1.326: <code>claude mcp get</code> reports Connected, all eight tools are discovered, and <code>lane_open</code> → <code>lane_screenshot</code> → <code>lane_close</code> ran against a real lane.</p>
                   <div class="code"><pre><code>AGENTLANE_NODE="$(node -p 'process.execPath')"
 AGENTLANE_PROJECT="$(pwd)"
 claude mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
-                  <p class="note">Optional: copy the skill into Claude Code's skills folder with <code>node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser</code> <button type="button" class="copy inline" data-copy-text="node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser">copy</button></p>
+                  <p class="note">The MCP tools work without the skill. Optionally copy the skill folder with <code>node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser</code> <button type="button" class="copy inline" data-copy-text="node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser">copy</button></p>
                 </div>
                 <div role="tabpanel" id="p-json" aria-labelledby="t-json" hidden>
                   <p>For clients configured with an <code>mcpServers</code> JSON object. Use absolute paths (<code>node -p 'process.execPath'</code> prints yours).</p>

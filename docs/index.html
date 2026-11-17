@@ -73,6 +73,7 @@
               <tr><td>macOS + Google Chrome</td><td><span class="tag ok">Supported</span></td><td>Tested on Chrome 157 (normal profile) and Chrome for Testing 159 (disposable).</td></tr>
               <tr><td>Node.js</td><td><span class="tag ok">Supported</span></td><td>22 or newer.</td></tr>
               <tr><td>Codex (MCP, stdio)</td><td><span class="tag ok">Supported</span></td><td>Full protocol path tested. Does not replace Codex's native computer use.</td></tr>
+              <tr><td>Claude Code (MCP, stdio)</td><td><span class="tag ok">Supported</span></td><td>Verified on 2.1.326: registration, tool discovery and an open → screenshot → close run.</td></tr>
               <tr><td>Other stdio MCP clients</td><td><span class="tag unk">Untested</span></td><td>Expected to work: standard tool and image content. Coordinate reading depends on the model.</td></tr>
               <tr><td>Standard HTML selects</td><td><span class="tag ok">Supported</span></td><td>Rendered in-page; requires Chrome 134+ (<code>appearance: base-select</code>).</td></tr>
               <tr><td>Linux Chromium</td><td><span class="tag unk">Untested</span></td><td>Needs a custom manifest directory and a short owner-only <code>AGENTLANE_STATE_DIR</code>.</td></tr>
@@ -149,11 +150,11 @@ codex mcp get agentlane</code></pre><button type="button" class="copy" data-copy
           <p>The last command should report an enabled <b>stdio</b> server named <code>agentlane</code> whose arguments end in <code>src/mcp.js</code>. Install the bundled skill, which teaches the agent the operating rules (it refuses to overwrite an existing skill):</p>
           <div class="code"><pre><code>node scripts/install-skill.mjs</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
           <p>This copies <code>skills/agentlane-browser</code> to <code>~/.codex/skills/agentlane-browser</code> (or under <code>$CODEX_HOME</code>). The skill does not create a browser connection by itself.</p>
-          <h3>Claude Code <span class="tag unk">Untested</span></h3>
+          <h3>Claude Code <span class="tag ok">Supported</span></h3>
           <div class="code"><pre><code>AGENTLANE_NODE="$(node -p 'process.execPath')"
 AGENTLANE_PROJECT="$(pwd)"
 claude mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
-          <p>Optionally pass a destination to the skill installer: <code>node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser</code>. This uses Claude Code's documented <code>mcp add</code> form; it has not been exercised by AgentLane's tests.</p>
+          <p>Check it with <code>claude mcp get agentlane</code>; it should report <b>Connected</b>. Verified with Claude Code 2.1.326: the eight <code>lane_*</code> tools (shown as <code>mcp__agentlane__lane_*</code>) are discovered, and <code>lane_open</code> → <code>lane_screenshot</code> → <code>lane_close</code> completed against a real lane. The tools work without the skill. The skill folder can optionally be copied with <code>node scripts/install-skill.mjs ~/.claude/skills/agentlane-browser</code> (the copy works; whether Claude Code loads it has not been checked). Without the skill, just ask for the lane tools by name.</p>
           <h3>Other MCP clients <span class="tag unk">Untested</span></h3>
           <div class="code"><pre><code>{
   "mcpServers": {

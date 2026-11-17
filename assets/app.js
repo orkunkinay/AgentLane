@@ -27,7 +27,7 @@
     you: ['You', 'Typing, clicking, scrolling and switching apps as normal. Nothing in AgentLane reads or replaces your physical input.', ''],
     os: ['Keyboard + pointer', 'Operating-system input goes to the window you are using. AgentLane does not inject OS input, so it cannot steal your keystrokes or move your pointer.', 'SECURITY.md'],
     win: ['Your Chrome window', 'Your usual window, with your tabs. The agent toolset has no way to enumerate, select or read these tabs.', 'SECURITY.md'],
-    agent: ['Coding agent', 'Any MCP client that can start a stdio server and use image results. Tested end to end with Codex; other clients are expected to work but are untested. Models must read coordinates from screenshots.', 'docs/COMPATIBILITY.md'],
+    agent: ['Coding agent', 'Any MCP client that can start a stdio server and use image results. Tested end to end with Codex and Claude Code; other clients are expected to work but are untested. Models must read coordinates from screenshots.', 'docs/COMPATIBILITY.md'],
     mcp: ['MCP server', 'A local stdio process exposing eight tools: lane_open, lane_screenshot, lane_click, lane_type, lane_key, lane_scroll, lane_navigate, lane_close. It reconnects to the browser bridge after loss and never replays an interrupted action.', 'src/mcp.js'],
     sock: ['Unix socket', 'A local socket in an owner-only directory (0700, socket 0600). No TCP port is opened and no remote debugging port is needed.', 'src/native-host.js'],
     host: ['Native messaging host', 'Registered with Chrome as org.agentlane.browser and allowed only for your extension ID. It stamps every connection with a host-assigned session ID, overwriting anything the caller supplies.', 'scripts/install-host.mjs'],
