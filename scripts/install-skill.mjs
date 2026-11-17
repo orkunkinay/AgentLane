@@ -16,6 +16,6 @@ try {
 }
 await mkdir(dirname(destination), { recursive: true });
 await cp(source, destination, { recursive: true, errorOnExist: true, force: false });
-console.log(`Installed AgentLane Browser skill at ${destination}`);
+console.log(`Installed AgentLane skill at ${destination}`);
 console.log('Start a fresh Codex conversation and invoke $agentlane-browser.');
 console.log('The AgentLane MCP server must be configured separately.');
