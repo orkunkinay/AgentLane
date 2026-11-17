@@ -2147,27 +2147,22 @@ h2 .tag {
   font: 13px var(--mono);
 }
 .spin {
-  position: relative;
-  height: 120px;
-  margin: 8px auto 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 28px 12px;
+  margin: 12px auto 0;
   padding: 0;
   list-style: none;
-  perspective: 700px;
 }
 .spin li {
-  position: absolute;
-  inset: 0;
   display: grid;
   justify-items: center;
-  align-content: center;
+  align-content: start;
   gap: 12px;
-  opacity: 0;
-  animation: spin-slot 16s linear infinite backwards;
-  animation-delay: calc(var(--i) * 2s);
 }
 .spin .logo {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   flex: none;
   fill: var(--ink);
 }
@@ -2176,26 +2171,9 @@ h2 .tag {
   color: var(--ink-2);
   text-align: center;
 }
-@keyframes spin-slot {
-  0% {
-    opacity: 0;
-    transform: rotateY(90deg);
-  }
-  2.5% {
-    opacity: 1;
-    transform: rotateY(0);
-  }
-  10% {
-    opacity: 1;
-    transform: rotateY(0);
-  }
-  12.5% {
-    opacity: 0;
-    transform: rotateY(-90deg);
-  }
-  100% {
-    opacity: 0;
-    transform: rotateY(-90deg);
+@media (max-width: 520px) {
+  .spin {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 .foot .tm {
