@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import assert from 'node:assert/strict';
 
-const profile = await mkdtemp(join(tmpdir(), 'still-setup-'));
+const profile = await mkdtemp(join(tmpdir(), 'agentlane-setup-'));
 const stateDir = join(profile, 'bridge');
 const extension = resolve('extension');
 let context;
@@ -53,14 +53,14 @@ try {
   const quote = (s) => "'" + s.replaceAll("'", "'\\''") + "'";
   await writeFile(
     launcher,
-    `#!/bin/sh\nSTILL_STATE_DIR=${quote(stateDir)} exec ${quote(process.execPath)} ${quote(resolve('src/native-host.js'))} "$@"\n`,
+    `#!/bin/sh\nAGENTLANE_STATE_DIR=${quote(stateDir)} exec ${quote(process.execPath)} ${quote(resolve('src/native-host.js'))} "$@"\n`,
     { mode: 0o700 },
   );
   await chmod(launcher, 0o700);
   await writeFile(
-    join(hosts, 'org.still.browser.json'),
+    join(hosts, 'org.agentlane.browser.json'),
     JSON.stringify({
-      name: 'org.still.browser',
+      name: 'org.agentlane.browser',
       description: 'Disposable UI test',
       path: launcher,
       type: 'stdio',
@@ -106,7 +106,7 @@ try {
   await page.locator('#connection-label').getByText('Connected', { exact: true }).waitFor();
   assert.equal((await windows()).length, originalCount + 1);
 
-  process.env.STILL_STATE_DIR = stateDir;
+  process.env.AGENTLANE_STATE_DIR = stateDir;
   const { BrowserClient } = await import('../src/client.js');
   client = new BrowserClient();
   await client.connect();

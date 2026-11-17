@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();
-  await page.goto(pathToFileURL(resolve('extension/icons/still.svg')).href);
+  await page.goto(pathToFileURL(resolve('extension/icons/agentlane.svg')).href);
   for (const size of [16, 32, 48, 128]) {
     await page.setViewportSize({ width: size, height: size });
     await page.evaluate((size) => {

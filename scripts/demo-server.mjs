@@ -3,7 +3,7 @@ const html = ({
   human = false,
   authenticated = false,
   next = false,
-}) => `<!doctype html><meta charset="utf-8"><title>Still ${human ? 'human' : 'agent'} demo</title>
+}) => `<!doctype html><meta charset="utf-8"><title>AgentLane ${human ? 'human' : 'agent'} demo</title>
 <style>body{font:20px system-ui;margin:40px;background:#f2f5f4;color:#18342e}main{max-width:850px}input,textarea,button{font:inherit;padding:12px;margin:8px 0}textarea{width:95%;height:300px}button{cursor:pointer}#menu{padding:20px;background:white}#result{padding:18px;background:#d5e9dd}canvas{display:block;margin-top:24px}footer{margin-top:800px}</style><main>
 <h1>${human ? 'Your independent workspace' : 'Agent visual workspace'}</h1>
 <p>Local synthetic authentication: <strong>${authenticated ? 'recognized' : 'not set; visit /seed first'}</strong></p>
@@ -12,20 +12,21 @@ ${human ? '<p>Keep typing here while the agent works in its own window. Switch t
 const server = createServer((req, res) => {
   if (req.url === '/seed') {
     res.writeHead(302, {
-      'Set-Cookie': 'still_demo_session=synthetic-only; HttpOnly; SameSite=Lax; Path=/',
+      'Set-Cookie': 'agentlane_demo_session=synthetic-only; HttpOnly; SameSite=Lax; Path=/',
       Location: '/human',
     });
     res.end();
     return;
   }
-  const authenticated = req.headers.cookie?.includes('still_demo_session=synthetic-only') || false;
+  const authenticated =
+    req.headers.cookie?.includes('agentlane_demo_session=synthetic-only') || false;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store');
   res.end(html({ human: req.url === '/human', next: req.url === '/next', authenticated }));
 });
-const port = Number(process.env.STILL_DEMO_PORT || 8741);
+const port = Number(process.env.AGENTLANE_DEMO_PORT || 8741);
 server.listen(port, '127.0.0.1', () =>
   console.log(
-    `Still local demo: http://127.0.0.1:${port}/seed\nApprove starting origin http://127.0.0.1:${port} in extension setup.`,
+    `AgentLane local demo: http://127.0.0.1:${port}/seed\nApprove starting origin http://127.0.0.1:${port} in extension setup.`,
   ),
 );

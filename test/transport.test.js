@@ -14,10 +14,10 @@ test(
   'real host socket and MCP stdio exchange preserve ownership and screenshot blocks',
   { timeout: 15000 },
   async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'still-ipc-'));
+    const dir = await mkdtemp(join(tmpdir(), 'agentlane-ipc-'));
     const path = join(dir, 'browser.sock');
     const host = spawn(process.execPath, ['src/native-host.js'], {
-      env: { ...process.env, STILL_STATE_DIR: dir },
+      env: { ...process.env, AGENTLANE_STATE_DIR: dir },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     const decoder = new NativeDecoder();
@@ -73,14 +73,28 @@ test(
       await response;
       attacker.destroy();
       assert.notEqual(observed[0].session, 'human-tab-id');
-      const client = new Client({ name: 'still-test', version: '1.0' });
+      const client = new Client({ name: 'agentlane-test', version: '1.0' });
       transport = new StdioClientTransport({
         command: process.execPath,
         args: [resolve('src/mcp.js')],
-        env: { ...process.env, STILL_STATE_DIR: dir },
+        env: { ...process.env, AGENTLANE_STATE_DIR: dir },
       });
       await client.connect(transport);
+      assert.equal(client.getServerVersion().name, 'agentlane');
       const tools = await client.listTools();
+      assert.deepEqual(
+        tools.tools.map((tool) => tool.name).sort(),
+        [
+          'lane_open',
+          'lane_screenshot',
+          'lane_click',
+          'lane_type',
+          'lane_key',
+          'lane_scroll',
+          'lane_navigate',
+          'lane_close',
+        ].sort(),
+      );
       assert.equal(tools.tools.length, 8);
       assert(!tools.tools.some((t) => /eval|cookie|target/i.test(t.name)));
       const open = await client.callTool({

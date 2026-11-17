@@ -1,9 +1,9 @@
 {
-  "name": "still-browser",
+  "name": "agentlane",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Visual browser input lanes sharing authentication without OS input injection",
+  "description": "AgentLane: visual AI browser lanes in your authenticated Chrome without sharing desktop input",
   "license": "MIT",
   "engines": {
     "node": ">=22"

@@ -10,16 +10,18 @@ import { spawn } from 'node:child_process';
 const fixture = `<!doctype html><style>body{margin:0;font:24px system-ui}input{position:absolute;left:40px;top:60px;width:320px;height:40px}button{position:absolute;left:40px;top:140px;width:180px;height:50px}canvas{position:absolute;top:250px}#result{position:absolute;top:210px}#long{height:2500px}</style><input aria-label="Text"><button onclick="document.querySelector('#result').textContent='Saved '+document.querySelector('input').value">Save</button><div id="result"></div><button id="menu" style="left:400px;top:60px;width:220px" onclick="document.querySelector('#option').hidden=false">Open actions</button><button id="option" hidden style="left:400px;top:140px;width:220px" onclick="document.querySelector('#result').textContent='Ready';this.hidden=true">Mark ready</button><a style="position:absolute;left:750px;top:70px" href="/next">Continue</a><canvas width="300" height="150"></canvas><div id="long"></div><script>window.trusted=[];for(const t of ['click','keydown','input','wheel'])addEventListener(t,e=>trusted.push({type:t,trusted:e.isTrusted}));let c=document.querySelector('canvas').getContext('2d');c.fillStyle='teal';c.fillRect(0,0,300,150);c.fillStyle='white';c.fillText('Real compositor pixels',20,60);</script>`;
 const server = createServer((req, res) => {
   if (req.url === '/seed') {
-    res.setHeader('Set-Cookie', 'still_fixture=local-session; HttpOnly; SameSite=Lax; Path=/');
+    res.setHeader('Set-Cookie', 'agentlane_fixture=local-session; HttpOnly; SameSite=Lax; Path=/');
     res.end('Synthetic human session established');
   } else if (req.url === '/auth') {
     res.end(
-      req.headers.cookie?.includes('still_fixture=local-session') ? 'AUTHENTICATED' : 'LOGGED OUT',
+      req.headers.cookie?.includes('agentlane_fixture=local-session')
+        ? 'AUTHENTICATED'
+        : 'LOGGED OUT',
     );
   } else if (req.url === '/next') {
     res.setHeader('Content-Type', 'text/html');
     res.end(
-      req.headers.cookie?.includes('still_fixture=local-session')
+      req.headers.cookie?.includes('agentlane_fixture=local-session')
         ? '<h1>Authenticated next page</h1>'
         : 'Logged out',
     );
@@ -30,7 +32,7 @@ const server = createServer((req, res) => {
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const origin = `http://127.0.0.1:${server.address().port}`;
-const profile = await mkdtemp(join(tmpdir(), 'still-experiment-'));
+const profile = await mkdtemp(join(tmpdir(), 'agentlane-experiment-'));
 let context;
 let bridge;
 let observer;
@@ -45,13 +47,13 @@ await (async () => {
       '\nglobalThis.testLane = lane; globalThis.testConnect = connect; globalThis.testPort = () => port; chrome.runtime.onConnect.addListener(()=>{}); // Instrumented disposable test build only\n',
     );
     const opts = {
-      headless: !process.env.STILL_HEADED,
+      headless: !process.env.AGENTLANE_HEADED,
       channel: 'chromium',
       args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
     };
-    if (process.env.STILL_CHROME) {
+    if (process.env.AGENTLANE_CHROME) {
       delete opts.channel;
-      opts.executablePath = process.env.STILL_CHROME;
+      opts.executablePath = process.env.AGENTLANE_CHROME;
     }
     context = await chromium.launchPersistentContext(profile, opts);
     const human = context.pages()[0];
@@ -77,7 +79,7 @@ await (async () => {
       },
       { origin },
     );
-    if (process.env.STILL_NATIVE || process.env.STILL_MCP) {
+    if (process.env.AGENTLANE_NATIVE || process.env.AGENTLANE_MCP) {
       const id = new URL(worker.url()).host;
       const hosts = join(profile, 'NativeMessagingHosts');
       await mkdir(hosts, { recursive: true });
@@ -86,14 +88,14 @@ await (async () => {
       const quote = (s) => "'" + s.replaceAll("'", "'\\''") + "'";
       await writeFile(
         launcher,
-        `#!/bin/sh\nSTILL_STATE_DIR=${quote(state)} exec ${quote(process.execPath)} ${quote(resolve('src/native-host.js'))} \"$@\"\n`,
+        `#!/bin/sh\nAGENTLANE_STATE_DIR=${quote(state)} exec ${quote(process.execPath)} ${quote(resolve('src/native-host.js'))} \"$@\"\n`,
         { mode: 0o700 },
       );
       await chmod(launcher, 0o700);
       await writeFile(
-        join(hosts, 'org.still.browser.json'),
+        join(hosts, 'org.agentlane.browser.json'),
         JSON.stringify({
-          name: 'org.still.browser',
+          name: 'org.agentlane.browser',
           description: 'Disposable test host',
           path: launcher,
           type: 'stdio',
@@ -116,16 +118,16 @@ await (async () => {
       }
       const nativeError = await worker.evaluate(() => globalThis.testNativeError);
       if (nativeError) throw Error('Native connect: ' + nativeError);
-      process.env.STILL_STATE_DIR = state;
-      if (process.env.STILL_MCP) {
+      process.env.AGENTLANE_STATE_DIR = state;
+      if (process.env.AGENTLANE_MCP) {
         const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
         const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
-        const protocol = new Client({ name: 'still-live-test', version: '1.0' });
+        const protocol = new Client({ name: 'agentlane-live-test', version: '1.0' });
         await protocol.connect(
           new StdioClientTransport({
             command: process.execPath,
             args: [resolve('src/mcp.js')],
-            env: { ...process.env, STILL_STATE_DIR: state },
+            env: { ...process.env, AGENTLANE_STATE_DIR: state },
           }),
         );
         bridge = {
@@ -149,7 +151,7 @@ await (async () => {
       }
     }
     const call = async (op, args = {}) => {
-      if (process.env.STILL_VERBOSE) process.stderr.write('experiment: ' + op + '\n');
+      if (process.env.AGENTLANE_VERBOSE) process.stderr.write('experiment: ' + op + '\n');
       let deadline;
       try {
         const result = await Promise.race([
@@ -164,7 +166,7 @@ await (async () => {
             deadline = setTimeout(() => reject(Error('Timed out: ' + op)), 8000);
           }),
         ]);
-        if (process.env.STILL_HEADED)
+        if (process.env.AGENTLANE_HEADED)
           operationStates.push({
             op,
             windows: await worker.evaluate(() => chrome.windows.getAll()),
@@ -175,8 +177,8 @@ await (async () => {
       }
     };
     // Real native/OS focus is outside a headless experiment's observable surface.
-    if (process.env.STILL_OBSERVER) {
-      observer = spawn(resolve(process.env.STILL_OBSERVER), [], {
+    if (process.env.AGENTLANE_OBSERVER) {
+      observer = spawn(resolve(process.env.AGENTLANE_OBSERVER), [], {
         stdio: ['ignore', 'pipe', 'inherit'],
       });
       let partial = '';
@@ -235,7 +237,7 @@ await (async () => {
     await mkdir('artifacts', { recursive: true });
     await writeFile('artifacts/workflow.png', Buffer.from(visibleShot.data, 'base64'));
     const navigationProbes = [];
-    if (process.env.STILL_NAVIGATION_PROBE) {
+    if (process.env.AGENTLANE_NAVIGATION_PROBE) {
       for (const kind of ['iframe', 'history']) {
         // Inject a real navigation just after capture, in a disposable test build only.
         // The production event handler must observe it and recapture before issuing a token.
@@ -275,7 +277,7 @@ await (async () => {
     }
     await act('scroll', { x: 600, y: 450, deltaX: 0, deltaY: 300 });
     await agent.waitForFunction(() => scrollY > 0, {}, { timeout: 5000 });
-    if (process.env.STILL_KEY_PROBE) {
+    if (process.env.AGENTLANE_KEY_PROBE) {
       const keyResults = [];
       for (const key of ['Enter', 'Escape', 'Backspace', 'ArrowDown', 'Tab']) {
         await worker.evaluate(
@@ -302,11 +304,11 @@ await (async () => {
     const trusted = await agent.evaluate(() => window.trusted);
     assert(trusted.some((e) => e.type === 'click' && e.trusted));
     assert(trusted.some((e) => e.type === 'input' && e.trusted));
-    const rounds = Number(process.env.STILL_ROUNDS || 30);
+    const rounds = Number(process.env.AGENTLANE_ROUNDS || 30);
     assert(Number.isInteger(rounds) && rounds > 0 && rounds <= 10000);
     let recreatedTabs = 0;
     for (let i = 0; i < rounds; i++) {
-      if (process.env.STILL_DURABILITY && i > 0 && i % 25 === 0) {
+      if (process.env.AGENTLANE_DURABILITY && i > 0 && i % 25 === 0) {
         await call('close');
         await call('open', { url: origin + '/' });
         recreatedTabs++;
@@ -319,7 +321,7 @@ await (async () => {
         }
         assert(agent, 'Recreated owned target discovered');
         await agent.waitForLoadState();
-      } else if (process.env.STILL_DURABILITY && i > 0 && i % 10 === 0) {
+      } else if (process.env.AGENTLANE_DURABILITY && i > 0 && i % 10 === 0) {
         await call('navigate', { url: origin + '/?round=' + i });
         await agent.waitForURL(origin + '/?round=' + i);
         await agent.waitForLoadState();
@@ -361,7 +363,7 @@ await (async () => {
       ...init,
       mode: opts.headless ? 'headless' : 'headed',
       backend: bridge
-        ? process.env.STILL_MCP
+        ? process.env.AGENTLANE_MCP
           ? 'MCP stdio + native messaging + Unix socket + real chrome.debugger'
           : 'native messaging + Unix socket + real chrome.debugger'
         : 'real chrome.debugger extension API',

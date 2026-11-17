@@ -9,13 +9,13 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const directory = resolve('docs/images');
 await mkdir(directory, { recursive: true });
-const profile = await mkdtemp(join(tmpdir(), 'still-docs-'));
+const profile = await mkdtemp(join(tmpdir(), 'agentlane-docs-'));
 const reservation = createServer();
 await new Promise((resolve) => reservation.listen(0, '127.0.0.1', resolve));
 const port = reservation.address().port;
 await new Promise((resolve) => reservation.close(resolve));
 const demo = spawn(process.execPath, ['scripts/demo-server.mjs'], {
-  env: { ...process.env, STILL_DEMO_PORT: String(port) },
+  env: { ...process.env, AGENTLANE_DEMO_PORT: String(port) },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 let demoError = '';
@@ -27,7 +27,7 @@ try {
     if (demo.exitCode !== null) throw Error(`Demo exited: ${demoError}`);
     try {
       const response = await fetch(origin);
-      if ((await response.text()).includes('<title>Still agent demo</title>')) break;
+      if ((await response.text()).includes('<title>AgentLane agent demo</title>')) break;
     } catch {}
     if (attempt === 99) throw Error('Disposable demo server did not become ready');
     await delay(50);
@@ -47,7 +47,7 @@ try {
   const toggle = page.locator('#devMode');
   if ((await toggle.getAttribute('aria-pressed')) !== 'true') await toggle.click();
   await page.getByRole('button', { name: 'Load unpacked', exact: true }).waitFor();
-  await page.getByRole('heading', { name: 'Still — visual browser lane', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'AgentLane', exact: true }).waitFor();
   // Let Chrome's developer-mode drawer finish its own transition for documentation.
   await delay(350);
   await page.screenshot({

@@ -9,7 +9,7 @@ function connect() {
   if (connectionAttempt) return connectionAttempt;
   bridge = 'connecting';
   connectionAttempt = new Promise((resolve, reject) => {
-    const connection = chrome.runtime.connectNative('org.still.browser');
+    const connection = chrome.runtime.connectNative('org.agentlane.browser');
     port = connection;
     const timer = setTimeout(() => {
       connection.disconnect();
@@ -17,7 +17,9 @@ function connect() {
         port = null;
         bridge = 'disconnected';
       }
-      reject(Error('Still did not hear back from Chrome. Check the setup guide, then try again.'));
+      reject(
+        Error('AgentLane did not hear back from Chrome. Check the setup guide, then try again.'),
+      );
     }, 5000);
     connection.onMessage.addListener(async (m) => {
       if (port !== connection) return;
@@ -49,7 +51,7 @@ function connect() {
         bridge = 'disconnected';
       }
       reject(
-        Error('Still could not connect to Chrome. Finish the one-time setup, then try again.'),
+        Error('AgentLane could not connect to Chrome. Finish the one-time setup, then try again.'),
       );
     });
   })
@@ -88,7 +90,7 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
   if (m.op === 'prepare') {
     (async () => {
       if (lane.failed)
-        throw Error('Reload Still from the Chrome extensions page to reset the agent window.');
+        throw Error('Reload AgentLane from the Chrome extensions page to reset the agent window.');
       const origins = parseStartingWebsites(m.origins);
       const current = await setupState();
       const changed = JSON.stringify(origins) !== JSON.stringify(lane.origins);

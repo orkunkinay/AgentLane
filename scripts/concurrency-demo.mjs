@@ -8,7 +8,7 @@ const origin = process.argv[2] || 'http://127.0.0.1:8741';
 const seconds = Number(process.argv[3] || 120);
 if (!Number.isFinite(seconds) || seconds < 1 || seconds > 1800)
   throw Error('Duration must be 1–1800 seconds');
-const client = new Client({ name: 'still-concurrency-demo', version: '0.1.0' });
+const client = new Client({ name: 'agentlane-concurrency-demo', version: '0.1.0' });
 await client.connect(
   new StdioClientTransport({
     command: process.execPath,

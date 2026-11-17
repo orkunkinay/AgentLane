@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Still \u2014 visual browser lane",
+  "name": "AgentLane",
   "version": "0.1.0",
   "description": "Experimental target-scoped visual input in a dedicated authenticated window.",
   "permissions": ["debugger", "nativeMessaging", "storage"],

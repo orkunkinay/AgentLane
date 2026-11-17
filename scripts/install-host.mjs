@@ -9,14 +9,14 @@ const dir = resolve(
   process.argv[3] ||
     join(homedir(), 'Library/Application Support/Google/Chrome/NativeMessagingHosts'),
 );
-const target = join(dir, 'org.still.browser.json');
+const target = join(dir, 'org.agentlane.browser.json');
 try {
   await access(target, constants.F_OK);
   throw Error('Manifest exists; inspect it and remove it manually before replacing');
 } catch (e) {
   if (e.code !== 'ENOENT') throw e;
 }
-const runtime = join(homedir(), '.still');
+const runtime = join(homedir(), '.agentlane');
 await mkdir(runtime, { recursive: true, mode: 0o700 });
 const info = await lstat(runtime);
 if (!info.isDirectory() || info.isSymbolicLink() || info.uid !== process.getuid())
@@ -35,8 +35,8 @@ await writeFile(
   target,
   JSON.stringify(
     {
-      name: 'org.still.browser',
-      description: 'Still local visual browser bridge',
+      name: 'org.agentlane.browser',
+      description: 'AgentLane local visual browser bridge',
       path: launcher,
       type: 'stdio',
       allowed_origins: [`chrome-extension://${id}/`],

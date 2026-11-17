@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { BrowserClient } from './client.js';
-const server = new McpServer({ name: 'still', version: '0.1.0' });
+const server = new McpServer({ name: 'agentlane', version: '0.1.0' });
 const client = new BrowserClient();
 let connected = false;
 let queue = Promise.resolve();

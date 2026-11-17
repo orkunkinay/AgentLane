@@ -62,7 +62,7 @@ function render() {
   button.setAttribute('aria-busy', String(connecting));
   if (state.needsReload) {
     error.textContent =
-      'Reload Still on the Chrome extensions page, then create a new agent window.';
+      'Reload AgentLane on the Chrome extensions page, then create a new agent window.';
     error.hidden = false;
   }
   document.querySelector('#ready-note').hidden = !connected;
@@ -70,13 +70,13 @@ function render() {
     ? 'Restore the agent window manually, then switch back to your usual window.'
     : state.focused
       ? 'Switch back to your usual Chrome window so the agent can continue.'
-      : 'Use Still in a fresh agent chat. Keep the agent window open and unminimized.';
+      : 'Use AgentLane in a fresh agent chat. Keep the agent window open and unminimized.';
 }
 async function refresh(initial = false) {
   try {
     const next = await chrome.runtime.sendMessage({ op: 'status' });
     if (!next || next.error)
-      throw Error(next?.error || 'Still could not check the browser connection.');
+      throw Error(next?.error || 'AgentLane could not check the browser connection.');
     state = next;
     if (initial) input.value = state.websites.join('\n');
     render();
@@ -112,11 +112,11 @@ form.addEventListener('submit', async (event) => {
   try {
     const result = await chrome.runtime.sendMessage({ op: 'prepare', origins: websites });
     if (!result || result.error)
-      throw Error(result?.error || 'Still could not prepare the agent window.');
+      throw Error(result?.error || 'AgentLane could not prepare the agent window.');
     state = result;
     input.value = result.websites.join('\n');
     input.removeAttribute('aria-invalid');
-    feedback.textContent = 'Ready for a fresh agent conversation. Use the Still lane tools.';
+    feedback.textContent = 'Ready for a fresh agent conversation. Use the AgentLane lane tools.';
     feedback.hidden = false;
   } catch (e) {
     error.textContent = e.message;
