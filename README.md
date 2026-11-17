@@ -31,7 +31,7 @@ are not universally isolated. [Read the evidence and failures.](docs/EVIDENCE.md
 3. Paste a task such as:
 
    ```text
-   Use $agentlane-browser. Open https://www.google.com and search for
+   Use the agentlane-browser skill. Open https://www.google.com and search for
    “Chrome DevTools Protocol”. Use AgentLane lane tools and screenshots only.
    Show me the result, then close your owned tab.
    ```
@@ -40,12 +40,14 @@ The bundled skill teaches the agent the product and its operating rules. If you
 installed only the extension/MCP server, install the skill from this checkout:
 
 ```sh
-node scripts/install-skill.mjs
+node scripts/install-skill.mjs                    # Codex: ~/.codex/skills/agentlane-browser
+node scripts/install-skill.mjs --target claude    # Claude Code: ~/.claude/skills/agentlane-browser
 ```
 
-That installs a copy in your Codex skills directory (`~/.codex/skills/agentlane-browser`
-by default). It refuses to overwrite an existing skill. For another skills-compatible
-agent, pass its destination directory explicitly or copy the
+The skill is invoked as `$agentlane-browser` in Codex and `/agentlane-browser` in Claude
+Code; either agent also picks it up from a plain request such as the prompt above. The
+installer refuses to overwrite an existing skill. For another skills-compatible agent,
+pass its destination directory explicitly or copy the
 [skill folder](skills/agentlane-browser). The skill needs the AgentLane MCP tools; it does
 not create a browser connection by itself.
 
@@ -160,7 +162,17 @@ codex mcp get agentlane
 ```
 
 The last command should report an enabled **stdio** server named `agentlane` whose
-arguments point to `src/mcp.js`. For another MCP client, configure an equivalent
+arguments point to `src/mcp.js`.
+
+For **Claude Code** (verified on 2.1.326), register the same server and check it reports
+`Connected`:
+
+```sh
+claude mcp add agentlane -- "$AGENTLANE_NODE" "$AGENTLANE_PROJECT/src/mcp.js"
+claude mcp get agentlane
+```
+
+For another MCP client, configure an equivalent
 stdio server with your absolute Node and script paths:
 
 ```toml
@@ -190,7 +202,7 @@ node scripts/demo-server.mjs
 3. In a fresh Codex conversation, paste:
 
    ```text
-   Use $agentlane-browser to open http://127.0.0.1:8741/task.
+   Use the agentlane-browser skill to open http://127.0.0.1:8741/task.
    Confirm the synthetic session is recognized from the screenshot.
    Enter “independent visual input”, open Actions, save the note,
    scroll to the footer, then follow Continue workflow.
@@ -224,7 +236,7 @@ pointer, window/Space, authentication, visual workflow, durability and ownership
 
 | Situation | What to do |
 |---|---|
-| Starting a task | Ask for `$agentlane-browser` in a conversation with AgentLane tools available. |
+| Starting a task | Ask for the `agentlane-browser` skill (`$agentlane-browser` in Codex, `/agentlane-browser` in Claude Code) in a conversation with AgentLane tools available. |
 | Finishing a task | The agent calls `lane_close`; the empty lane stays available. |
 | Lane focused or minimized | Switch to your own window or restore the lane manually. The agent must not activate it. |
 | Changing browsing policy | Finish/close agent sessions, open AgentLane, choose **Selected websites** or **Any website**, edit the list if selected, and click **Save starting websites**. The existing window is reused; no reload is needed. |
