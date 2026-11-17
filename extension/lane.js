@@ -203,7 +203,7 @@ export class Lane {
         new Promise((_, reject) => {
           timer = setTimeout(() => {
             const failure =
-              'Renderer command timed out (a covered, minimized or other-Space agent window is a common cause); keep the agent window visible, then recreate it or reload the extension';
+              'Renderer command timed out (a covered, minimized or other-Space agent window is a common cause); keep the agent window visible, then recreate the agent window or reload extension';
             if (generation === this.generation) this.failed = failure;
             this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
             reject(Error(failure));
