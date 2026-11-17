@@ -1,4 +1,4 @@
-import { parseStartingWebsites } from './starting-websites.js';
+import { parseStartingPolicy } from './starting-websites.js';
 
 const form = document.querySelector('#setup-form');
 const input = document.querySelector('#origins');
@@ -6,13 +6,16 @@ const button = document.querySelector('#prepare');
 const buttonLabel = document.querySelector('#button-label');
 const error = document.querySelector('#form-error');
 const feedback = document.querySelector('#status');
+const modes = [...document.querySelectorAll('input[name="website-mode"]')];
+const selectedMode = () => modes.find((radio) => radio.checked).value;
 let state;
 let pending = false;
 
 function edited() {
   try {
     return (
-      JSON.stringify(parseStartingWebsites(input.value)) !== JSON.stringify(state?.websites || [])
+      JSON.stringify(parseStartingPolicy(selectedMode(), input.value)) !==
+      JSON.stringify({ mode: state?.mode, websites: state?.websites })
     );
   } catch {
     return true;
@@ -38,13 +41,17 @@ function render() {
         : state.windowOpen
           ? 'Not connected'
           : 'Setup needed';
-  document.querySelector('#heading').textContent = connected
-    ? 'A window of its own.'
-    : 'Room for your agent.';
   document.querySelector('#intro-copy').textContent = connected
     ? 'Your agent has a workspace. Keep browsing in your usual Chrome window.'
     : 'A separate Chrome window for your agent, with the logins you already use.';
-  input.disabled = connecting || state.activeSessions > 0 || state.needsReload;
+  const locked = connecting || state.activeSessions > 0 || state.needsReload;
+  for (const radio of modes) radio.disabled = locked;
+  const selected = selectedMode() === 'selected';
+  input.disabled = locked || !selected;
+  input.required = selected;
+  document.querySelector('#selected-websites').hidden = !selected;
+  document.querySelector('#any-website-help').hidden = selected;
+  document.querySelector('#policy-help').hidden = !selected;
   document.querySelector('#session-note').hidden = !state.activeSessions;
   buttonLabel.textContent = state.needsReload
     ? 'Reload needed'
@@ -78,7 +85,10 @@ async function refresh(initial = false) {
     if (!next || next.error)
       throw Error(next?.error || 'AgentLane could not check the browser connection.');
     state = next;
-    if (initial) input.value = state.websites.join('\n');
+    if (initial) {
+      input.value = state.websites.join('\n');
+      for (const radio of modes) radio.checked = radio.value === state.mode;
+    }
     render();
   } catch (e) {
     error.textContent = e.message;
@@ -86,20 +96,22 @@ async function refresh(initial = false) {
     button.disabled = false;
   }
 }
-input.addEventListener('input', () => {
+function changed() {
   error.hidden = true;
   input.removeAttribute('aria-invalid');
   feedback.hidden = true;
   render();
-});
+}
+input.addEventListener('input', changed);
+for (const radio of modes) radio.addEventListener('change', changed);
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (pending) return;
   error.hidden = true;
   feedback.hidden = true;
-  let websites;
+  let policy;
   try {
-    websites = parseStartingWebsites(input.value);
+    policy = parseStartingPolicy(selectedMode(), input.value);
   } catch (e) {
     error.textContent = e.message;
     error.hidden = false;
@@ -110,7 +122,11 @@ form.addEventListener('submit', async (event) => {
   pending = true;
   render();
   try {
-    const result = await chrome.runtime.sendMessage({ op: 'prepare', origins: websites });
+    const result = await chrome.runtime.sendMessage({
+      op: 'prepare',
+      mode: policy.mode,
+      origins: policy.websites,
+    });
     if (!result || result.error)
       throw Error(result?.error || 'AgentLane could not prepare the agent window.');
     state = result;

@@ -17,15 +17,26 @@ try {
     viewport: { width: 1280, height: 800 },
     args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
   });
-  const worker = context.serviceWorkers()[0] || (await context.waitForEvent('serviceworker'));
+  let worker = context.serviceWorkers()[0] || (await context.waitForEvent('serviceworker'));
   const id = new URL(worker.url()).host;
-  const page = context.pages()[0];
+  let page = context.pages()[0];
   const url = `chrome-extension://${id}/setup.html`;
   await page.goto(url);
   const windows = () => worker.evaluate(() => chrome.windows.getAll());
   const originalWindows = await windows();
   const originalCount = originalWindows.length;
   await page.getByRole('button', { name: 'Create agent window', exact: true }).waitFor();
+  assert.equal(await page.locator('#origins').inputValue(), 'https://www.google.com');
+  assert.equal(
+    await page.getByRole('radio', { name: 'Selected websites', exact: true }).isChecked(),
+    true,
+  );
+  await page.locator('#origins').fill('');
+  await page.locator('#prepare').click();
+  await page
+    .getByRole('alert')
+    .getByText(/at least one/)
+    .waitFor();
   await page.locator('#origins').fill('file:///private');
   await page.locator('#prepare').click();
   await page
@@ -87,6 +98,30 @@ try {
     'https://www.google.com\nhttps://example.com',
   );
 
+  const any = page.getByRole('radio', { name: 'Any website', exact: true });
+  await page.getByRole('radio', { name: 'Selected websites', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await any.isChecked(), true, 'native keyboard selection');
+  assert.equal(await page.locator('#origins').isVisible(), false);
+  await page
+    .getByText('Your agent can open any website using your existing logins.', { exact: true })
+    .waitFor();
+  await page.getByRole('button', { name: 'Save starting websites', exact: true }).click();
+  await page.getByRole('button', { name: 'Websites saved', exact: true }).waitFor();
+  await page.reload();
+  await page.getByRole('button', { name: 'Websites saved', exact: true }).waitFor();
+  assert.equal(await any.isChecked(), true, 'mode survives reopening');
+  assert.deepEqual(
+    await worker.evaluate(
+      async () => (await chrome.storage.local.get('startingPolicy')).startingPolicy,
+    ),
+    { mode: 'any', websites: [] },
+  );
+  await page.getByRole('radio', { name: 'Selected websites', exact: true }).check();
+  await page.locator('#origins').fill('https://www.google.com\nhttps://example.com');
+  await page.getByRole('button', { name: 'Save starting websites', exact: true }).click();
+  await page.getByRole('button', { name: 'Websites saved', exact: true }).waitFor();
+
   const laneWindow = (await windows()).find(
     (w) => !originalWindows.some((original) => original.id === w.id),
   );
@@ -120,6 +155,50 @@ try {
   await client.call('close');
   client.close();
   client = null;
+  // A full browser restart preserves policy but must not adopt old tabs or capabilities.
+  const restart = async () => {
+    await context.close();
+    context = await chromium.launchPersistentContext(profile, {
+      headless: true,
+      channel: 'chromium',
+      args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
+    });
+    worker = context.serviceWorkers()[0] || (await context.waitForEvent('serviceworker'));
+    page = await context.newPage();
+    await page.goto(url);
+    await page.getByRole('button', { name: 'Create agent window', exact: true }).waitFor();
+  };
+  await restart();
+  assert.equal(
+    await page.locator('#origins').inputValue(),
+    'https://www.google.com\nhttps://example.com',
+  );
+  assert.equal(
+    await page.getByRole('radio', { name: 'Selected websites', exact: true }).isChecked(),
+    true,
+  );
+  await page.getByRole('radio', { name: 'Any website', exact: true }).check();
+  await page.locator('#prepare').click();
+  await page.locator('#connection-label').getByText('Connected', { exact: true }).waitFor();
+  await restart();
+  assert.equal(
+    await page.getByRole('radio', { name: 'Any website', exact: true }).isChecked(),
+    true,
+  );
+  assert.equal(await page.locator('#origins').isVisible(), false);
+  // Older stored lists are preserved, including empty lists that must fail closed.
+  for (const websites of [['https://legacy.example'], []]) {
+    await worker.evaluate(async (websites) => {
+      await chrome.storage.local.remove('startingPolicy');
+      await chrome.storage.local.set({ websites });
+    }, websites);
+    await restart();
+    assert.equal(
+      await page.getByRole('radio', { name: 'Selected websites', exact: true }).isChecked(),
+      true,
+    );
+    assert.equal(await page.locator('#origins').inputValue(), websites.join('\n'));
+  }
   console.log(
     JSON.stringify(
       {
@@ -128,7 +207,12 @@ try {
         missingBridgeReported: true,
         readyAfterHandshakeOnly: true,
         retryAndSaveReuseWindow: true,
+        freshInstallGoogleDefault: true,
+        nativeRadioKeyboardSupport: true,
         settingsSurvivePopupReopen: true,
+        bothModesSurviveBrowserRestart: true,
+        legacyWebsitesPreserved: true,
+        legacyEmptyFailsClosed: true,
         activeSessionChangesRejected: true,
         focusedWindowShowsPaused: true,
         closedWindowRecreated: true,

@@ -29,7 +29,7 @@ a {
   display: none !important;
 }
 .panel {
-  padding: 23px 24px 19px;
+  padding: 20px 24px 16px;
 }
 .header {
   display: flex;
@@ -86,7 +86,7 @@ a {
   border-color: #f2e2bf;
 }
 .intro {
-  margin: 27px 0 19px;
+  margin: 20px 0 16px;
 }
 h1 {
   font-size: 26px;
@@ -101,72 +101,6 @@ h1 {
   color: #687068;
   margin: 0;
   max-width: 300px;
-}
-.workspace-preview {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin: 0 0 25px;
-}
-.mini-window {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid #e0e5dc;
-  border-radius: 8px;
-  background: white;
-  overflow: hidden;
-  box-shadow: 0 1px 2px #25302505;
-}
-.mini-toolbar {
-  display: flex;
-  gap: 3px;
-  padding: 7px 8px 6px;
-  border-bottom: 1px solid #ecefe7;
-  background: #f6f7f3;
-}
-.mini-toolbar i {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: #cbd2c4;
-}
-.window-name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px;
-  font-size: 10px;
-  font-weight: 550;
-  color: #5a665b;
-}
-.window-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 2px;
-}
-.human-dot {
-  background: #9ba7bb;
-}
-.agent-dot {
-  background: #7b9d6d;
-}
-.agent-window {
-  border-color: #c9d9bf;
-  background: #f3f7ee;
-}
-.agent-window .mini-toolbar {
-  background: #e8f0df;
-  border-color: #dbe6d1;
-}
-.agent-window .mini-toolbar i {
-  background: #adbf9e;
-}
-.parallel-icon {
-  flex-shrink: 0;
-  stroke: #a0aa9a;
-  stroke-width: 1.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 .field-heading {
   display: flex;
@@ -397,4 +331,50 @@ summary:focus-visible {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.website-mode {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 0 14px;
+  min-width: 0;
+  border: 1px solid #e2e7df;
+  border-radius: 10px;
+  background: #f2f4ee;
+}
+.website-mode label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 6px;
+  padding: 8px 4px;
+  border-radius: 7px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.website-mode label:has(:checked) {
+  background: #fff;
+  box-shadow: 0 1px 3px #20292415;
+}
+.website-mode input {
+  margin: 0;
+  accent-color: #263f34;
+}
+.website-mode label:has(:focus-visible) {
+  outline: 2px solid #43876c;
+  outline-offset: 1px;
+}
+.website-mode label:has(:disabled) {
+  cursor: default;
+  opacity: 0.65;
 }
