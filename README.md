@@ -297,6 +297,20 @@ three 1280 × 800 screenshots, 128px icon and 440 × 280 promotional tile.
 and [reviewer setup](docs/store/reviewer-instructions.md) are maintained with source.
 A prepared package is not a claim that the item is submitted or approved.
 
+## Reproducible benchmarks
+
+The [benchmark suite](docs/benchmarks/README.md) measures real MCP latency, scripted
+fixture tasks and controlled renderer concurrency in disposable profiles. It includes
+raw observations, confidence intervals, JSON/CSV export and a local interactive
+dashboard. [Recorded findings and limitations](docs/benchmarks/FINDINGS.md) include
+an authentication compatibility failure. Native Codex comparison and physical human
+productivity remain unverified; the suite makes no native speed or overhead claim.
+
+```sh
+npm run bench -- all --samples 30 --out artifacts/benchmarks/local
+open artifacts/benchmarks/local/dashboard.html
+```
+
 ## Development and reproducibility
 
 ```sh

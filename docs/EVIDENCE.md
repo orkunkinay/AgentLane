@@ -431,3 +431,36 @@ recovery and dropdown tests passed. The latest headless MCP/native integration a
 passed 30 rounds, including iframe/history recapture and selected/any URL policy
 checks; human fixture input and selected tab were preserved. No claim of a clean
 final desktop-wide observer run is made.
+
+## 2026-11-17 — Reproducible latency and controlled concurrency suite
+
+Added an isolated benchmark CLI and local dashboard; production extension, host and
+MCP contracts are unchanged. The native `cua_repl` inventory returned no browser
+providers and “The browser access host is unavailable.” Native idle/active latency,
+reliability, physical concurrency and productivity comparison remain unmeasured.
+No CDP diagnostic is labeled native Codex.
+
+At clean revision `5ef000f`, Chrome for Testing 159.0.8154.6 on an Apple M4 Pro
+completed 270 measured micro trials (30 per supported operation), 21 scripted task
+replays and 42 counterbalanced idle/active concurrency replays without failures.
+Screenshot client latency P50/P95 was 197.44/216.42 ms; click-call latency was
+3.37/8.20 ms, excluding prerequisite screenshots. The active trials completed 159
+renderer-controlled human-surrogate cycles with no observed fixture text/navigation/
+selected-tab interference. This headless result does not establish physical input
+isolation, human productivity or model-guided task performance.
+
+A separate Strict-cookie configuration failed all six AgentLane authentication
+checks, while a direct CDP diagnostic passed six. A synthetic request witness
+observed cross-site direct navigation without Strict-session recognition through
+AgentLane, versus successful same-origin renderer-link navigation. The Chromium
+root cause is not established, and broader authentication claims are unwarranted.
+The main Lax-cookie configuration and these failures are retained separately.
+
+[Full findings](benchmarks/FINDINGS.md), [protocol](benchmarks/METHODOLOGY.md),
+[reproduction/report commands](benchmarks/README.md) and
+[compressed synthetic raw evidence](benchmarks/data/2026-11-17.json.gz) include
+cold-profile checks, resources, diagnostic controls and failed pilots. Report
+regeneration from identical main-run inputs was byte-identical. Local validation:
+54 Node tests, format check and the existing 30-round MCP/native/navigation-probe
+browser regression passed. Dashboard desktop/mobile rendering was inspected.
+Native OS observer and real physical human trials were not run.

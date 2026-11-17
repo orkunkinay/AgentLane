@@ -179,3 +179,38 @@ assertion is inappropriate. Retain contaminated runs and identify them.
 This suite has no hidden hosted model cost. No API key is needed. To answer the
 full performance/productivity question still requires native availability, paired
 model-guided runs, a controlled headed operator protocol and repeated full runs.
+
+## Rebuild the published evidence
+
+The committed gzip contains raw observations and metadata, not screenshots or
+browser sessions. Its adjacent `.sha256` file records the archive hash. Pilots are
+labeled and remain separate. Restore it using the Python standard library:
+
+```sh
+python3 - <<'PY'
+import gzip, json
+from pathlib import Path
+archive = Path('docs/benchmarks/data/2026-11-17.json.gz')
+evidence = json.loads(gzip.decompress(archive.read_bytes()))
+for name, run in evidence['runs'].items():
+    assert '/' not in name and name not in ('.', '..')
+    directory = Path('artifacts/benchmarks/published') / name
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / 'metadata.json').write_text(json.dumps(run['metadata'], indent=2) + '\n')
+    (directory / 'observations.jsonl').write_text(
+        ''.join(json.dumps(row) + '\n' for row in run['raw']))
+PY
+npm run bench -- report --out artifacts/benchmarks/published/main
+open artifacts/benchmarks/published/main/dashboard.html
+```
+
+The original measurement revision and input hashes remain in metadata; generating
+an HTML report with a later renderer does not mean the underlying benchmark was
+rerun. Strict-session probe observations are in `diagnostics.strictNavigation`.
+
+The auth probe is a separate, sequential browser diagnostic, not a timed/native
+benchmark. Run it without another benchmark on the machine:
+
+```sh
+node experiments/benchmark/auth-probe.mjs artifacts/benchmarks/auth-probe
+```
