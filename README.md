@@ -278,6 +278,11 @@ Read the [security model](SECURITY.md) before using sensitive workflows.
 
 ## Chrome Web Store release materials
 
+Version 0.1.1 is **pending Chrome Web Store review** as an unlisted beta. It will
+publish automatically after approval. Until then, use the unpacked installation
+steps above. [Recorded submission](docs/store/submission-status.json).
+
+
 The beta submission package contains only extension files; the local native bridge
 and MCP server remain separate prerequisites. Build and review the upload bundle:
 

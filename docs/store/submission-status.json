@@ -1,0 +1,20 @@
+{
+  "version": "0.1.1",
+  "extensionId": "mpiigaljakpfmmihkahppdaaccmpgmmk",
+  "publisher": "orkunkinay",
+  "submissionDate": "2026-11-17",
+  "dashboardStatus": "Pending review",
+  "visibility": "Unlisted",
+  "publishAutomaticallyAfterApproval": true,
+  "approved": false,
+  "published": false,
+  "packageSha256": "abe95cd5938d6ab9006f699f5d8a3fceff95164d8f7d6d7b7dcf1f3e670e9b26",
+  "confirmation": "Chrome Web Store displayed Your extension was submitted for review, then Status: Pending review.",
+  "storeAssets": {
+    "icon": true,
+    "screenshots": 3,
+    "smallPromoTile": true
+  },
+  "reviewerInstructionsSaved": true,
+  "privacyPolicy": "https://orkunkinay.github.io/AgentLane/privacy/"
+}

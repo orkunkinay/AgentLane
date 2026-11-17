@@ -1,5 +1,15 @@
 # Chrome Web Store beta submission
 
+## Recorded submission
+
+Version 0.1.1 was submitted on 17 November 2026. Google confirmed submission and
+reported **Pending review** for item `mpiigaljakpfmmihkahppdaaccmpgmmk`.
+Distribution is **Unlisted**, with automatic publication enabled after approval.
+This is not yet an approval or published-install claim. The icon, three screenshots,
+small promo tile, privacy declarations, policy URL and reviewer setup were saved.
+See [submission-status.json](submission-status.json) for the package hash and status.
+
+
 Target: AgentLane 0.1.1, English, unlisted beta, Developer Tools category.
 The listing must disclose macOS, Chrome 134+, Node.js 22+, the separately installed
 native messaging host/MCP server, and an MCP-compatible client. AI provider costs
