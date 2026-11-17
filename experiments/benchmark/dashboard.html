@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>AgentLane · Benchmark Observatory</title>
+  <style>
+    :root {
+      font: 15px/1.5 system-ui;
+      color: #dbe5f5;
+      background: #080e1b;
+      color-scheme: dark;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+    }
+    main {
+      max-width: 1440px;
+      margin: auto;
+      padding: 40px 36px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: start;
+    }
+    .eyebrow {
+      color: #79dec7;
+      letter-spacing: 0.15em;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: clamp(30px, 4vw, 48px);
+      letter-spacing: -0.04em;
+      margin: 8px 0;
+    }
+    h2 {
+      font-size: 20px;
+      margin: 0 0 16px;
+    }
+    p {
+      color: #98aac5;
+      max-width: 900px;
+    }
+    .badge {
+      border: 1px solid #344462;
+      padding: 8px 14px;
+      border-radius: 24px;
+      white-space: nowrap;
+      color: #f3ca80;
+    }
+    .notice {
+      border-left: 3px solid #f3ca80;
+      background: #172033;
+      padding: 16px 20px;
+      margin: 24px 0;
+      color: #e6d0a8;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 24px 0;
+    }
+    label {
+      color: #98aac5;
+    }
+    select,
+    button {
+      background: #142038;
+      color: #dbe5f5;
+      border: 1px solid #344462;
+      border-radius: 7px;
+      padding: 9px;
+    }
+    button {
+      cursor: pointer;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card,
+    .panel {
+      background: #101a2c;
+      border: 1px solid #26344b;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card strong {
+      display: block;
+      font-size: 28px;
+      margin: 8px 0;
+    }
+    .card span {
+      color: #9aafcc;
+      font-size: 13px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .panel {
+      min-width: 0;
+      margin-bottom: 20px;
+    }
+    .wide {
+      grid-column: 1/-1;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+    }
+    svg text {
+      fill: #a9b9d0;
+      font: 12px system-ui;
+    }
+    .legend {
+      font-size: 12px;
+      color: #98aac5;
+    }
+    .legend b {
+      color: #79dec7;
+    }
+    .scroll {
+      overflow: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th,
+    td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #29374d;
+      white-space: nowrap;
+    }
+    th {
+      color: #9cafd0;
+    }
+    td {
+      font-variant-numeric: tabular-nums;
+    }
+    .muted {
+      color: #8fa2bd;
+    }
+    details {
+      margin: 16px 0;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #9aafcc;
+    }
+    footer {
+      color: #8fa2bd;
+      font-size: 13px;
+      padding: 20px 0;
+    }
+    @media (max-width: 850px) {
+      main {
+        padding: 24px 16px;
+      }
+      .cards {
+        grid-template-columns: 1fr 1fr;
+      }
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      header {
+        display: block;
+      }
+      .badge {
+        display: inline-block;
+      }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .panel {
+        animation: appear 0.3s ease;
+      }
+      @keyframes appear {
+        from {
+          opacity: 0.6;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+    }
+  </style>
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">AgentLane / Research tools</div>
+        <h1>Benchmark Observatory</h1>
+        <p>
+          Execution cost. Reliability. Concurrent work.<br />Every calculated metric links back to
+          retained observations.
+        </p>
+      </div>
+      <div class="badge">Local evidence · no external assets</div>
+    </header>
+    <div class="notice" id="notice"></div>
+    <div class="controls">
+      <label
+        >Mode
+        <select id="mode">
+          <option value="all">All modes</option>
+          <option>micro</option>
+          <option>tasks</option>
+          <option>concurrency</option>
+        </select></label
+      ><label
+        >Condition
+        <select id="condition">
+          <option value="all">All conditions</option>
+          <option>idle</option>
+          <option>active</option>
+          <option>human_only</option>
+        </select></label
+      ><label
+        >Cache
+        <select id="cache">
+          <option value="all">All cache states</option>
+          <option>warm</option>
+          <option>cold</option>
+        </select></label
+      ><button id="download">Export filtered raw JSON</button>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="grid">
+      <section class="panel">
+        <h2>Tool execution latency</h2>
+        <p class="legend"><b>● P50</b> · whisker to P95 · successful trials only · milliseconds</p>
+        <div id="latency"></div>
+      </section>
+      <section class="panel">
+        <h2>Task completion distribution</h2>
+        <p class="legend">
+          Each dot is a retained task attempt. Failures are amber. Scripted replay excludes model
+          reasoning.
+        </p>
+        <div id="tasks"></div>
+      </section>
+      <section class="panel">
+        <h2>Human responsiveness & interference</h2>
+        <div id="human"></div>
+      </section>
+      <section class="panel">
+        <h2>Concurrent work throughput</h2>
+        <div id="throughput"></div>
+      </section>
+      <section class="panel wide">
+        <h2>Resource footprint</h2>
+        <p class="legend">
+          Browser process tree includes native host. CPU is OS-reported lifetime average; RSS sums
+          may double count shared memory.
+        </p>
+        <div id="resources"></div>
+      </section>
+      <section class="panel wide">
+        <h2>Calculated metrics & coverage</h2>
+        <p class="legend">
+          P99 requires n ≥ 100. CI is descriptive bootstrap 95%; failures use Wilson intervals.
+          Unavailable trials are never zeros.
+        </p>
+        <div class="scroll" id="table"></div>
+      </section>
+    </div>
+    <details>
+      <summary>Environment & provenance</summary>
+      <pre id="meta"></pre>
+    </details>
+    <details>
+      <summary>Raw observations (first 100 filtered rows)</summary>
+      <div class="scroll" id="raw"></div>
+    </details>
+    <footer>
+      Independent verification uses synthetic fixtures. Headless renderer activity does not
+      establish physical input isolation. Missing native measurements prevent any native overhead or
+      productivity conclusion.
+    </footer>
+  </main>
+  <script>
+    const D=/*BENCHMARK_DATA*/;
+    const $=id=>document.getElementById(id),esc=s=>String(s??'unavailable').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),fmt=n=>n==null?'unavailable':Number(n).toFixed(1),percent=n=>n==null?'unavailable':(n*100).toFixed(1)+'%';
+    const table=(headers,rows)=>'<table><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+    function graph(rows){if(!rows.length)return '<p>No comparable observations available.</p>';const max=Math.max(1,...rows.map(r=>r.latency.p95)),h=rows.length*45+32;return '<svg role="img" aria-label="Median and P95 latency, milliseconds" viewBox="0 0 620 '+h+'">'+rows.map((r,i)=>{const y=20+i*45,a=245+r.latency.p50/max*325,b=245+r.latency.p95/max*325;return '<text x="0" y="'+y+'">'+esc(r.backend+' / '+r.operation+' / '+r.condition)+'</text><line stroke="#577a94" stroke-width="4" x1="245" x2="'+b+'" y1="'+(y+12)+'" y2="'+(y+12)+'"/><circle fill="#79dec7" cx="'+a+'" cy="'+(y+12)+'" r="5"/><text x="'+Math.min(b+8,580)+'" y="'+(y+16)+'">'+fmt(r.latency.p95)+'</text>';}).join('')+'</svg>';}
+    function render(){const match=r=>['mode','condition','cache'].every(k=>$(k).value==='all'||r[k]===$(k).value);const s=D.summary.filter(match),r=D.raw.filter(match),trials=r.filter(x=>x.kind==='trial'&&!x.warmup),ok=trials.filter(x=>x.status==='ok'),attempts=trials.filter(x=>['ok','failed','timeout'].includes(x.status));
+    $('notice').textContent=D.metadata.nativeAvailability?.available?'Native provenance supplied. Compare only matching boundaries and environments.':'Native Chrome comparator unavailable in this run. No AgentLane-versus-native latency delta can be calculated. CDP control, if present, is diagnostic only.';
+    $('cards').innerHTML=[['Measured trials',attempts.length,'Warmups excluded'],['Verified success',percent(attempts.length?ok.length/attempts.length:null),ok.length+' verified / '+attempts.length+' attempts'],['Unavailable',trials.filter(x=>x.status==='unavailable').length,'Retained as missing measurements'],['Native overhead','Unavailable','Requires a matched native baseline']].map(x=>'<div class="card">'+x[0]+'<strong>'+x[1]+'</strong><span>'+x[2]+'</span></div>').join('');
+    $('latency').innerHTML=graph(s.filter(x=>x.mode==='micro'&&x.latency.n));
+    const tasks=trials.filter(x=>x.mode!=='micro'&&x.durationMs!=null),max=Math.max(1,...tasks.map(x=>x.durationMs));
+    $('tasks').innerHTML=tasks.length?'<svg role="img" aria-label="Task durations" viewBox="0 0 620 '+(tasks.length*22+25)+'">'+tasks.map((x,i)=>'<text x="0" y="'+(18+i*22)+'">'+esc(x.backend+'/'+x.operation+'/'+x.condition)+'</text><circle fill="'+(x.status==='ok'?'#79dec7':'#f3ca80')+'" cx="'+(280+x.durationMs/max*290)+'" cy="'+(14+i*22)+'" r="4"><title>'+fmt(x.durationMs)+' ms; '+x.status+'</title></circle>').join('')+'</svg>':'<p>No task measurements.</p>';
+    const human=r.filter(x=>x.kind==='human'&&!x.warmup),hs=human.filter(x=>x.status==='ok').map(x=>x.durationMs).sort((a,b)=>a-b),q=p=>hs.length?hs[Math.floor((hs.length-1)*p)]:null;
+    const humanGroups=[...new Set(human.map(x=>x.backend+' / '+x.condition))];
+    $('human').innerHTML=table(['Backend / condition','n','P50 / P95 ms','Failed cycles','Schedule lag P95 ms'],humanGroups.map(k=>{const h=human.filter(x=>x.backend+' / '+x.condition===k),v=h.filter(x=>x.status==='ok').map(x=>x.durationMs).sort((a,b)=>a-b),lags=h.map(x=>x.lagMs).sort((a,b)=>a-b),q=(a,p)=>a.length?a[Math.floor((a.length-1)*p)]:null;return [k,h.length,fmt(q(v,.5))+' / '+fmt(q(v,.95)),h.filter(x=>x.status!=='ok').length,fmt(q(lags,.95))];}))+table(['Fixture interference','Observed events'],[['Wrong human text',trials.reduce((n,x)=>n+(x.human?.wrongText??0),0)],['Wrong human navigation',trials.reduce((n,x)=>n+(x.human?.wrongNavigation??0),0)],['Unexpected human selection',trials.reduce((n,x)=>n+(x.human?.unexpectedTabSwitch??0),0)]])+'<p class="legend">Physical input latency, focus steals, interruptions and recovery: unavailable. Renderer checks are proxies.</p>';
+    $('throughput').innerHTML=table(['Task / condition','Agent tasks','Human cycles','Overlap seconds','Combined units/s'],trials.filter(x=>x.human).map(x=>{const agent=x.condition==='human_only'?0:(x.status==='ok'?1:0);return [x.operation+' / '+x.condition,agent,x.human.cycles,fmt(x.human.elapsedMs/1000),fmt((agent+x.human.cycles)*1000/x.human.elapsedMs)];}));
+    const resources=r.filter(x=>x.kind==='resource'&&!x.warmup),resourceGroups=[...new Set(resources.map(x=>x.backend+' / '+x.condition))];
+    $('resources').innerHTML=table(['Backend / condition','Samples','Browser RSS max MiB','Browser CPU max %','MCP RSS max MiB','Browser processes max'],resourceGroups.map(k=>{const rs=resources.filter(x=>x.backend+' / '+x.condition===k),max=(group,key,scale=1)=>rs.some(x=>x[group])?fmt(Math.max(...rs.map(x=>x[group]?.[key]??0))/scale):'unavailable';return [k,rs.length,max('browserTree','rssKiB',1024),max('browserTree','cpuPercent'),max('mcpTree','rssKiB',1024),max('browserTree','processes')];}));
+    $('table').innerHTML=table(['Backend','Mode / operation','Condition / cache','n / planned','P50 ms','P95 ms','P99 ms','Mean ± SD','P50 CI95','Failures / timeouts','Success','Missing'],s.map(x=>[x.backend,x.mode+' / '+x.operation,x.condition+' / '+x.cache,x.latency.n+' / '+x.planned,fmt(x.latency.p50),fmt(x.latency.p95),fmt(x.latency.p99),fmt(x.latency.mean)+' ± '+fmt(x.latency.sd),x.latency.ci95?.p50.map(fmt).join('–')??'unavailable',x.failed+' / '+x.timeouts,percent(x.successRate),x.unavailable]));
+    $('meta').textContent=JSON.stringify(D.metadata,null,2);$('raw').innerHTML=table(['Kind','Backend','Operation','Status','Duration ms','Trial'],r.slice(0,100).map(x=>[x.kind,x.backend,x.operation,x.status,fmt(x.durationMs),x.trialId]));
+    $('download').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(r,null,2)],{type:'application/json'}));a.download='filtered-observations.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};}
+    ['mode','condition','cache'].forEach(k=>$(k).onchange=render);render();
+  </script>
+</html>
