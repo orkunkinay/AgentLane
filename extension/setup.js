@@ -29,7 +29,7 @@ function render() {
   const pill = document.querySelector('#connection');
   pill.dataset.tone = connected ? (paused ? 'warning' : 'ready') : 'neutral';
   document.querySelector('#connection-label').textContent = state.needsReload
-    ? 'Reload needed'
+    ? 'Reset needed'
     : connecting
       ? 'Connecting…'
       : connected
@@ -54,7 +54,7 @@ function render() {
   document.querySelector('#policy-help').hidden = !selected;
   document.querySelector('#session-note').hidden = !state.activeSessions;
   buttonLabel.textContent = state.needsReload
-    ? 'Reload needed'
+    ? 'Reset needed'
     : connecting
       ? 'Connecting…'
       : !state.windowOpen
@@ -69,7 +69,7 @@ function render() {
   button.setAttribute('aria-busy', String(connecting));
   if (state.needsReload) {
     error.textContent =
-      'Reload AgentLane on the Chrome extensions page, then create a new agent window.';
+      'Close the agent window and create it again, or reload AgentLane, to reset the failed lane.';
     error.hidden = false;
   }
   document.querySelector('#ready-note').hidden = !connected;
@@ -77,13 +77,14 @@ function render() {
     ? 'Restore the agent window manually, then switch back to your usual window.'
     : state.focused
       ? 'Switch back to your usual Chrome window so the agent can continue.'
-      : 'Use AgentLane in a fresh agent chat. Keep the agent window open and unminimized.';
+      : 'Use AgentLane in your conversation. Keep this window open and unminimized.';
 }
 async function refresh(initial = false) {
   try {
     const next = await chrome.runtime.sendMessage({ op: 'status' });
     if (!next || next.error)
       throw Error(next?.error || 'AgentLane could not check the browser connection.');
+    if (state?.needsReload && !next.needsReload) error.hidden = true;
     state = next;
     if (initial) {
       input.value = state.websites.join('\n');
@@ -132,7 +133,7 @@ form.addEventListener('submit', async (event) => {
     state = result;
     input.value = result.websites.join('\n');
     input.removeAttribute('aria-invalid');
-    feedback.textContent = 'Ready for a fresh agent conversation. Use the AgentLane lane tools.';
+    feedback.textContent = 'Connected. Your agent can continue in the same conversation.';
     feedback.hidden = false;
   } catch (e) {
     error.textContent = e.message;

@@ -94,6 +94,21 @@ could capture a human tab. Old tabs/anchor windows may remain for manual cleanup
 A crash can leave a socket; after confirming its host process is gone, remove only
 that stale socket. There is no silent profile fallback or automatic focus repair.
 
+The MCP client checks its actual socket rather than a one-time connected flag. If
+the bridge is absent, later calls retry connecting; if it disconnects, a later call
+can connect to a replacement host without restarting MCP. A broken in-flight call
+returns an unknown-outcome error and is never replayed. New native connections get
+new host-assigned session identities and must call `lane_open` for a new owned tab.
+On native-port loss the worker cancels only previously owned sessions.
+
+Removing the prepared window immediately revokes its session map and frame tokens.
+Recreating it through the setup panel establishes a new generation. Queued work,
+in-flight command continuations, asynchronous window checks and late timeouts from
+the previous generation cannot act on or poison the replacement. Starting policy
+persists. No window enumeration/adoption or automatic focus repair is added to MCP;
+only the human's extension setup creates the replacement window. Merely opening
+`anchor.html` does not create a browser bridge.
+
 ## Select picker presentation
 
 A native HTML select menu can change macOS window ordering while Chrome still

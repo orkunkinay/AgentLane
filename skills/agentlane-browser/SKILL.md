@@ -105,9 +105,17 @@ Screenshots may contain private data and reach the configured model provider.
 - **Tab-drag lock:** the backend skips redundant tab edits and waits boundedly for
   Chrome's explicit edit refusal. A long drag may still return an error. Reobserve
   before resuming; do not repeat uncertain page input.
-- **Lane focused/minimized, missing host or renderer timeout:** report the precise
-  error. Let the human switch away, restore or reprepare as appropriate. A poisoned
-  lane needs extension reload/setup and a fresh MCP connection; no native fallback.
+- **Window closed/recreated:** have the human use AgentLane's **Create agent window**.
+  After **Connected**, call `lane_open` in this conversation. Old tabs/tokens are
+  revoked; never attempt to adopt an anchor tab or a human tab.
+- **Browser bridge unavailable/disconnected:** the human can use **Connect browser**
+  in AgentLane. The MCP client reconnects on its next call without a new conversation.
+  Call `lane_open` for fresh ownership. Never replay an interrupted action: its
+  outcome may be unknown. Do not delete a live socket or start another profile.
+- **Lane focused/minimized or renderer timeout:** report the precise error. Let the
+  human switch away, restore or recreate the lane as appropriate. After recreating
+  a failed lane, call `lane_open` in the same conversation; no native fallback.
+  Loading new source code still requires one extension/MCP restart.
 - **Unapproved starting origin:** identify the required origin, including its port.
   The human can add it under **Selected websites** in the AgentLane panel, or explicitly
   choose **Any website**, after closing active sessions, then click **Save starting websites**.

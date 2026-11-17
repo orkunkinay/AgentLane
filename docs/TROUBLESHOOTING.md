@@ -8,6 +8,19 @@ not inherit your
 shell PATH; the installer pins the absolute Node path. Moving the checkout requires
 re-registering the manifest after reviewing/removing the old one.
 
+**Window exists but “No browser connection” / “Browser bridge unavailable”:** the
+Chrome window and the extension/native/MCP connection are separate. Open AgentLane
+and click **Connect browser** or **Create agent window**, then leave the lane
+unfocused. With the updated MCP code, retry `lane_open` in the same conversation;
+the client reconnects instead of retaining a permanently disconnected flag. If the
+window was recreated or host restarted, old tab ownership and frame tokens are
+invalid. Reopening the anchor URL alone does not establish the connection.
+
+If a tool was interrupted during dispatch, its outcome is unknown. The backend does
+not replay it. Inspect the website's state before deciding whether to repeat any
+consequential action. Persistent bridge errors still require checking host registration
+and socket ownership below; the client never starts Chrome or deletes a live socket.
+
 **Native host not found / forbidden:** Chrome's native messaging manifest must name
 `org.agentlane.browser`, have an absolute executable launcher path and exactly the extension
 origin. The default installer targets normal macOS Google Chrome. For another browser,
@@ -29,8 +42,9 @@ Other Spaces and full occlusion need explicit validation. Never substitute a DOM
 snapshot and call visual capture verified, or bring Chrome forward as a fallback.
 
 **Renderer timeout:** command deadline detaches the debugger and poisons the lane.
-Reload the extension, close recognizable orphaned lane windows manually and prepare
-again. Restart the MCP connection. A hung command is not automatically retried.
+Close the identified AgentLane window, then use the extension to create a new one
+(or reload the extension). Call `lane_open` in the same conversation. Work from the
+old window cannot continue in its replacement; a hung command is not replayed.
 
 **Tab drag lock:** Chrome can refuse tab edits across all windows in a profile
 while the human drags a tab. Already-staged actions avoid edits; create/switch/close
@@ -59,7 +73,9 @@ navigation event. Do not blindly replay a potentially completed input.
 **Applying a source update:** unpacked extension workers keep their loaded code.
 Finish existing sessions, click AgentLane’s Reload control at `chrome://extensions`,
 prepare a fresh lane with the full origin list, and use a fresh MCP connection.
-Changing files on disk alone does not update the running worker.
+Changing files on disk alone does not update the running worker or MCP process.
+This one-time code reload differs from routine window recovery: after the update is
+loaded, closing/reopening the window does not require a new MCP process or chat.
 
 **Tab key rejected:** this is intentional. Headed Chrome focus traversal activated the
 agent window in the fixture. Click the next field or control using screenshot coordinates.

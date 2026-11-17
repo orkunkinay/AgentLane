@@ -386,3 +386,48 @@ was not changed and its paid/live API was not invoked. Closed shadow roots, arbi
 custom widgets and other native picker types are not certified by this fix. The
 personal installation was not reloaded or modified; manual extension reload and
 fresh lane/MCP setup are needed to apply the code.
+
+## E15: recovery in the existing MCP process, 2026-11-17
+
+Inspection found an MCP-local connected flag that never reset after socket loss.
+The extension could recreate its window/native host while the existing MCP process
+continued reporting No browser connection forever. Window existence and bridge
+connectivity were independent, and reopening an anchor URL established neither a
+new owned capability nor a fresh native connection.
+
+Removed the permanent connected flag. BrowserClient now checks/reestablishes the
+actual socket for later calls. An in-flight disconnect reports unknown outcome and
+never retries its action. A replacement native host supplies fresh session identities;
+callers must use lane_open for a new owned tab. Native-port loss cancels old owned
+sessions. No human tabs are adopted, and live sockets are never deleted for recovery.
+
+Window removal now clears ownership and frame tokens and establishes a new generation
+when setup recreates it. Old queued operations, asynchronous window checks, in-flight
+command continuations and late timeouts cannot act on or poison the replacement.
+Saved starting policy persists, and focus/minimization protections remain in place.
+
+36 automated tests passed, including missing bridge at MCP startup, host restart with
+the same stdio MCP process, fresh host-owned routing, interrupted-click non-replay,
+window recreation, old-token rejection, queued work rejection and delayed-timeout
+isolation. The real setup integration used one persistent MCP process through three
+human-initiated lane close/reopen cycles and a native-host SIGTERM/reconnect. It
+successfully opened/screenshot/closed fresh owned tabs after recovery. That test killed
+only its own disposable-profile native host, identified by a test launcher PID file.
+All existing setup/policy persistence and lock checks also passed.
+
+Updated setup feedback and bundled skill/documentation to describe recovery in the
+same conversation. Loading this code update still requires one extension reload and
+MCP-process restart; routine window recovery after that requires neither a new chat
+nor tab adoption. Tests used disposable Chrome for Testing 159.0.8154.6 profiles;
+the personal Chrome installation and existing MCP processes were not modified.
+
+The headed MCP/native/navigation-probe integration passed 30 rounds with zero native
+observer transitions after the core recovery changes. A final headed rerun after
+additional queue/window-check hardening failed the desktop-wide idle assertion:
+36 samples included 22 distinct pointer x positions, 29 y positions, three foreground
+PIDs and five window IDs. The harness counts all desktop activity, so that run cannot
+isolate application-caused transitions from concurrent human activity. Functional
+recovery and dropdown tests passed. The latest headless MCP/native integration also
+passed 30 rounds, including iframe/history recapture and selected/any URL policy
+checks; human fixture input and selected tab were preserved. No claim of a clean
+final desktop-wide observer run is made.

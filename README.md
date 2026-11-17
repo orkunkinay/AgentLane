@@ -24,7 +24,8 @@ are not universally isolated. [Read the evidence and failures.](docs/EVIDENCE.md
 1. Leave the **AgentLane workspace** window open, **unminimized and unfocused**. Work in
    your usual Chrome window. The agent lane is an ordinary separate window; it is not
    an invisible desktop.
-2. Start a **fresh Codex conversation** with the AgentLane MCP server enabled.
+2. Use a conversation with the AgentLane MCP tools enabled. After first-time
+   installation, start a fresh conversation to discover the tools.
 3. Paste a task such as:
 
    ```text
@@ -225,9 +226,17 @@ pointer, window/Space, authentication, visual workflow, durability and ownership
 | Finishing a task | The agent calls `lane_close`; the empty lane stays available. |
 | Lane focused or minimized | Switch to your own window or restore the lane manually. The agent must not activate it. |
 | Changing browsing policy | Finish/close agent sessions, open AgentLane, choose **Selected websites** or **Any website**, edit the list if selected, and click **Save starting websites**. The existing window is reused; no reload is needed. |
+| Lane window was closed | Reopen AgentLane, click **Create agent window**, leave it unfocused, then ask for `lane_open` in the same conversation. Previous tabs and screenshot tokens are gone. |
+| Browser bridge disconnected | Click **Connect browser** in AgentLane. The existing MCP process reconnects on its next call; use `lane_open` for a fresh owned tab. Interrupted actions are never replayed. |
 | Agent reports stale frame | Take a fresh screenshot before the next input. |
 | Missing host or renderer timeout | Follow [troubleshooting](docs/TROUBLESHOOTING.md); do not copy cookies or switch to desktop input. |
 | Native authentication, permission sheet or popup | Stop at that unsupported boundary and hand off as appropriate. |
+
+The lane window and browser bridge are separate. Opening the anchor page by itself
+does not prepare a lane or connect its bridge; use the extension controls and wait
+for **Connected**. Routine window/bridge recovery works in the same conversation.
+After installing this source update, reload the extension and restart the MCP server
+once to load the new code. An already-running MCP process keeps its old implementation.
 
 AgentLane supplies `lane_open`, `lane_screenshot`, `lane_click`, `lane_type`, `lane_key`,
 `lane_scroll`, `lane_navigate` and `lane_close`. Each connection owns one tab.

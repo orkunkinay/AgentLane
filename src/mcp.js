@@ -45,7 +45,7 @@ const x = z.number().min(0).max(1099);
 const y = z.number().min(0).max(759);
 tool(
   'lane_open',
-  'Create your own tab in a human-prepared lane, using the existing profile and setup navigation policy (Selected websites or Any website). Never use native computer tools for this workflow.',
+  'Create your own tab in a human-prepared lane, using the existing profile and setup navigation policy (Selected websites or Any website). After the human recreates the lane or reconnects the bridge, call this again in the same conversation for a fresh owned tab. Never use native computer tools for this workflow.',
   { url: z.string().url() },
   'open',
 );
