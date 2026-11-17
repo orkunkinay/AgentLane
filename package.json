@@ -15,7 +15,9 @@
     "format": "prettier --write src extension scripts experiments test package.json",
     "format:check": "prettier --check src extension scripts experiments test package.json",
     "check": "node scripts/check.mjs",
-    "pretest": "npm run check"
+    "pretest": "npm run check",
+    "check:site": "node scripts/check-site.mjs",
+    "site": "python3 -m http.server 4173"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.0",
