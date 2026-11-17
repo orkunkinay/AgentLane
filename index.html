@@ -212,6 +212,59 @@
           </ul>
         </div>
       </section>
+
+      <section class="see" id="see" aria-labelledby="see-title">
+        <div class="wrap">
+          <p class="eyebrow">See it</p>
+          <h2 id="see-title">Screenshot. Token. <em>One action.</em></h2>
+          <p class="lede">
+            The agent works like a careful person with a remote screen: look, then act once, then
+            look again. Try the loop below. It is a small model of the protocol, not the real
+            extension.
+          </p>
+
+          <div class="play" id="play">
+            <div class="play-view">
+              <div class="vp-bar"><span>AgentLane workspace · owned tab</span><span id="vp-state">no screenshot yet</span></div>
+              <div class="vp" id="vp" tabindex="0" role="application" aria-label="Model of the agent's tab. Click to simulate lane_click.">
+                <h4>Agent visual workspace</h4>
+                <p class="vp-sub">Synthetic session: <b>recognized</b></p>
+                <label>Task note</label>
+                <div class="vp-field" id="vp-field" data-x="0"><span id="vp-text"></span><i class="vp-caret"></i></div>
+                <div class="vp-btn" id="vp-save">Save note</div>
+                <div class="vp-saved" id="vp-saved">Saved: <span id="vp-saved-text"></span></div>
+              </div>
+              <div class="play-actions">
+                <button type="button" class="btn primary" id="act-shot">lane_screenshot</button>
+                <button type="button" class="btn ghost" id="act-type">lane_type “independent visual input”</button>
+                <button type="button" class="btn ghost" id="act-reset">Reset</button>
+              </div>
+              <p class="play-hint" id="play-hint">Start with <code>lane_screenshot</code>. Then click the note field or the Save button in the tab above.</p>
+            </div>
+            <div class="play-log">
+              <div class="log-head">Tool calls <span id="tok">frame: none</span></div>
+              <ol id="log" class="log" aria-live="polite"></ol>
+            </div>
+          </div>
+
+          <h3 class="real-title">The real thing</h3>
+          <div class="shots">
+            <figure>
+              <img src="assets/img/lane-setup.png" width="384" height="523" loading="lazy" alt="AgentLane setup popup with Selected websites chosen, a list of starting websites and a Create agent window button." />
+              <figcaption>Setup popup: you choose where the agent may start browsing.</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/img/agent-window.png" width="1280" height="800" loading="lazy" alt="The empty AgentLane workspace window with instructions to keep it open and return to your usual window." />
+              <figcaption>The AgentLane workspace window. Leave it open, restored and unfocused.</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/img/agent-workspace.png" width="1280" height="800" loading="lazy" alt="A demo page in the agent's tab showing a saved note, a link and a canvas animation." />
+              <figcaption>A page the agent drove: note typed, saved, link followed.</figcaption>
+            </figure>
+          </div>
+          <p class="shots-note">Real screenshots from a disposable Chrome profile with a synthetic demo session. They are not a recording of simultaneous use; test results are in the <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/EVIDENCE.md" rel="noopener">evidence log</a>.</p>
+        </div>
+      </section>
     </main>
 
     <script src="assets/app.js" defer></script>

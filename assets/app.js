@@ -60,4 +60,111 @@
     });
     show('ext');
   }
+
+  /* ---- protocol playground: screenshot -> single-use frame token -> one input ---- */
+  const vp = document.getElementById('vp');
+  if (vp) {
+    const log = document.getElementById('log');
+    const tok = document.getElementById('tok');
+    const hint = document.getElementById('play-hint');
+    const state = document.getElementById('vp-state');
+    const textEl = document.getElementById('vp-text');
+    const field = document.getElementById('vp-field');
+    const saved = document.getElementById('vp-saved');
+    let frame = null;
+    let spentFrame = null;
+    let focused = false;
+    let text = '';
+    const id = () => Math.random().toString(16).slice(2, 10);
+    const add = (cls, msg) => {
+      const li = document.createElement('li');
+      li.className = cls;
+      li.textContent = msg;
+      log.append(li);
+      log.scrollTop = log.scrollHeight;
+    };
+    const setFrame = (f) => {
+      if (!f && frame) spentFrame = frame;
+      frame = f;
+      tok.textContent = f ? 'frame: ' + f : 'frame: none';
+      state.textContent = f ? 'screenshot ' + f + ' ready' : 'token spent: take a screenshot';
+    };
+    const need = (name) => {
+      if (frame) return true;
+      add('err', spentFrame ? '← ' + name + ' refused: stale frame ' + spentFrame + ' (already spent). Input was not dispatched. Take a fresh lane_screenshot.' : '← ' + name + ' refused: no frame yet. Input was not dispatched. Take lane_screenshot first.');
+      hint.textContent = 'Every input needs a fresh screenshot. That is the rule that stops stale clicks.';
+      return false;
+    };
+    const render = () => {
+      textEl.textContent = text;
+      field.classList.toggle('on', focused);
+    };
+    const reset = () => {
+      log.textContent = '';
+      frame = null; spentFrame = null; focused = false; text = '';
+      saved.classList.remove('on');
+      tok.textContent = 'frame: none';
+      state.textContent = 'no screenshot yet';
+      hint.innerHTML = 'Start with <code>lane_screenshot</code>. Then click the note field or the Save button in the tab above.';
+      render();
+    };
+    document.getElementById('act-shot').addEventListener('click', () => {
+      const f = id();
+      add('call', '→ lane_screenshot {}');
+      add('ok', '← image 1100×760 · frame ' + f);
+      setFrame(f);
+      hint.textContent = 'You hold one token. Spend it on exactly one click, key, scroll or text.';
+    });
+    document.getElementById('act-type').addEventListener('click', () => {
+      add('call', '→ lane_type {frame: "' + (frame || '…') + '", text: "independent visual input"}');
+      if (!need('lane_type')) return;
+      const spent = frame;
+      setFrame(null);
+      if (!focused) {
+        add('ok', '← ok · frame ' + spent + ' spent (no field was focused, so nothing was typed)');
+        hint.textContent = 'Typing goes to whatever your previous click focused. Click the field first.';
+        return;
+      }
+      text = 'independent visual input';
+      render();
+      add('ok', '← ok · frame ' + spent + ' spent');
+      hint.innerHTML = 'Now take another screenshot, then click <b>Save note</b>.';
+    });
+    document.getElementById('act-reset').addEventListener('click', reset);
+    vp.addEventListener('click', (e) => {
+      const r = vp.getBoundingClientRect();
+      const x = Math.round(((e.clientX - r.left) / r.width) * 1099);
+      const y = Math.round(((e.clientY - r.top) / r.height) * 759);
+      add('call', '→ lane_click {frame: "' + (frame || '…') + '", x: ' + x + ', y: ' + y + '}');
+      if (!need('lane_click')) return;
+      const spent = frame;
+      setFrame(null);
+      const hit = (el) => {
+        const b = el.getBoundingClientRect();
+        return e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom;
+      };
+      if (hit(field)) {
+        focused = true;
+        add('ok', '← ok · frame ' + spent + ' spent · clicked the note field');
+        hint.innerHTML = 'Field focused. Take a screenshot, then <code>lane_type</code>.';
+      } else if (hit(document.getElementById('vp-save'))) {
+        focused = false;
+        if (text) {
+          document.getElementById('vp-saved-text').textContent = text;
+          saved.classList.add('on');
+          add('ok', '← ok · frame ' + spent + ' spent · clicked Save note');
+          hint.textContent = 'Done. Verify from the next screenshot: a success response is not proof the page saved.';
+        } else {
+          add('ok', '← ok · frame ' + spent + ' spent · clicked Save note (empty note)');
+        }
+      } else {
+        focused = false;
+        add('ok', '← ok · frame ' + spent + ' spent · clicked empty space');
+      }
+      render();
+    });
+    vp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
+    });
+  }
 })();
