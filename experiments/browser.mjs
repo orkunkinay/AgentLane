@@ -385,6 +385,32 @@ await (async () => {
     console.log(JSON.stringify(report, null, 2));
     await writeFile('artifacts/browser-report.json', JSON.stringify(report, null, 2) + '\n');
     await call('close');
+    await worker.evaluate(() =>
+      globalThis.testLane.configure(globalThis.testLane.windowId, [], 'any'),
+    );
+    const otherOrigin = origin.replace('127.0.0.1', 'localhost');
+    for (const url of [
+      'file:///private',
+      'chrome://settings',
+      'javascript:alert(1)',
+      'https://user:pass@example.com',
+    ]) {
+      await assert.rejects(call('open', { url }));
+    }
+    await call('open', { url: otherOrigin + '/' });
+    await call('navigate', { url: origin + '/any-mode' });
+    for (const url of [
+      'file:///private',
+      'chrome://settings',
+      'data:text/html,hi',
+      'https://user:pass@example.com',
+    ]) {
+      await assert.rejects(call('navigate', { url }));
+    }
+    await call('close');
+    console.log(
+      'Explicit any policy: cross-origin HTTP open/navigation passed; unsafe URLs rejected.',
+    );
   } catch (e) {
     await mkdir('artifacts', { recursive: true });
     let windows;

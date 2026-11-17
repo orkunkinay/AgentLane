@@ -23,3 +23,37 @@ test('setup rejects credentials, non-web schemes and missing websites', () => {
   ])
     assert.throws(() => parseStartingWebsites(input));
 });
+
+test('only absent settings get Google; legacy and malformed settings never grant any access', async () => {
+  const { restoreStartingPolicy, parseStartingPolicy } =
+    await import('../extension/starting-websites.js');
+  assert.deepEqual(restoreStartingPolicy({}), {
+    mode: 'selected',
+    websites: ['https://www.google.com'],
+  });
+  for (const saved of [
+    { origins: [] },
+    { websites: [] },
+    { startingPolicy: null },
+    { startingPolicy: { mode: 'unknown' } },
+    { startingPolicy: { websites: [] } },
+    { startingPolicy: { mode: 'selected', websites: ['file:///private'] } },
+  ])
+    assert.deepEqual(restoreStartingPolicy(saved), { mode: 'selected', websites: [] });
+  for (const saved of [
+    { origins: ['https://example.com'] },
+    { websites: ['https://example.com'] },
+    { startingPolicy: { mode: 'selected', websites: ['https://example.com'] } },
+  ])
+    assert.deepEqual(restoreStartingPolicy(saved), {
+      mode: 'selected',
+      websites: ['https://example.com'],
+    });
+  assert.deepEqual(restoreStartingPolicy({ startingPolicy: { mode: 'any' } }), {
+    mode: 'any',
+    websites: [],
+  });
+  assert.throws(() => parseStartingPolicy(undefined, []));
+  assert.throws(() => parseStartingPolicy('selected', []));
+  assert.throws(() => parseStartingPolicy('selected', ['https://*']));
+});

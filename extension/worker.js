@@ -1,6 +1,12 @@
 import { Lane } from './lane.js';
-import { parseStartingWebsites } from './starting-websites.js';
+import { parseStartingPolicy, restoreStartingPolicy } from './starting-websites.js';
 export const lane = new Lane(chrome);
+let settings = { mode: 'selected', websites: [] };
+const settingsReady = chrome.storage.local
+  .get(['startingPolicy', 'websites', 'origins'])
+  .then((saved) => {
+    settings = restoreStartingPolicy(saved);
+  });
 let port;
 let bridge = 'disconnected';
 let connectionAttempt;
@@ -65,6 +71,7 @@ function connect() {
   return connectionAttempt;
 }
 async function setupState() {
+  await settingsReady;
   let window;
   if (lane.windowId !== null) {
     try {
@@ -76,7 +83,8 @@ async function setupState() {
     bridge,
     focused: Boolean(window?.focused),
     minimized: window?.state === 'minimized',
-    websites: lane.origins,
+    websites: settings.websites,
+    mode: settings.mode,
     activeSessions: lane.sessions.size,
     needsReload: Boolean(lane.failed),
   };
@@ -91,9 +99,12 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
     (async () => {
       if (lane.failed)
         throw Error('Reload AgentLane from the Chrome extensions page to reset the agent window.');
-      const origins = parseStartingWebsites(m.origins);
+      await settingsReady;
+      const policy = parseStartingPolicy(m.mode ?? 'selected', m.origins);
+      const origins = policy.websites;
       const current = await setupState();
-      const changed = JSON.stringify(origins) !== JSON.stringify(lane.origins);
+      const changed =
+        policy.mode !== lane.mode || JSON.stringify(origins) !== JSON.stringify(lane.origins);
       if (lane.sessions.size && changed)
         throw Error('Wait for the agent to finish before changing starting websites.');
       if (!current.windowOpen) {
@@ -109,10 +120,12 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
           width: 1100,
           height: 760,
         });
-        lane.configure(w.id, origins);
+        lane.configure(w.id, origins, policy.mode);
       } else if (changed) {
-        lane.configure(lane.windowId, origins);
+        lane.configure(lane.windowId, origins, policy.mode);
       }
+      await chrome.storage.local.set({ startingPolicy: policy });
+      settings = policy;
       // A failed bridge can be retried using the same window, without creating duplicates.
       await connect();
       return { prepared: true, ...(await setupState()) };

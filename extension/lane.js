@@ -1,3 +1,5 @@
+import { parseStartingPolicy } from './starting-websites.js';
+
 // Only this module holds real Chrome tab IDs. Never accept one from an agent.
 export class Lane {
   constructor(api, commandTimeoutMs = 10000) {
@@ -7,14 +9,17 @@ export class Lane {
     this.captureSettleMs = 150;
     this.windowId = null;
     this.origins = [];
+    this.mode = 'selected';
     this.sessions = new Map();
     this.cancelled = new Set();
     this.tail = Promise.resolve();
   }
-  configure(windowId, origins) {
+  configure(windowId, origins, mode = 'selected') {
     if (this.sessions.size) throw Error('Close all sessions before reconfiguring');
+    const policy = parseStartingPolicy(mode, origins);
     this.windowId = windowId;
-    this.origins = origins.map((o) => new URL(o).origin);
+    this.mode = policy.mode;
+    this.origins = policy.websites;
   }
   url(value) {
     const u = new URL(value);
@@ -22,9 +27,9 @@ export class Lane {
       !['http:', 'https:'].includes(u.protocol) ||
       u.username ||
       u.password ||
-      !this.origins.includes(u.origin)
+      (this.mode !== 'any' && !this.origins.includes(u.origin))
     )
-      throw Error('Initial navigation origin is not approved in extension setup');
+      throw Error('Direct navigation URL is not approved in extension setup');
     return u.href;
   }
   run(message) {

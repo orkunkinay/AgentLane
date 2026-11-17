@@ -229,3 +229,52 @@ test('continuous navigation returns a bounded observation error instead of a fal
   assert.equal(captures, 8);
   assert.equal(f.lane.sessions.get('a').frame, null);
 });
+
+test('selected policy checks open and navigate; explicit any permits HTTP(S) only', async () => {
+  const f = fixture();
+  await assert.rejects(f.run('a', 'open', { url: 'https://other.example/' }), /approved/);
+  assert.equal(f.tabs.size, 0);
+  await f.run('a', 'open', { url: 'https://example.com/' });
+  await assert.rejects(f.run('a', 'navigate', { url: 'http://example.com/' }), /approved/);
+  await assert.rejects(f.run('a', 'navigate', { url: 'https://example.com:8443/' }), /approved/);
+  await f.run('a', 'navigate', { url: 'https://example.com/path' });
+  await f.run('a', 'close');
+  f.lane.configure(7, [], 'any');
+  for (const url of [
+    'file:///private',
+    'chrome://settings',
+    'javascript:alert(1)',
+    'data:text/html,hi',
+    'https://user:pass@example.com/',
+  ]) {
+    await assert.rejects(f.run('a', 'open', { url }));
+  }
+  assert.equal(f.tabs.size, 0);
+  await f.run('a', 'open', { url: 'https://other.example/' });
+  await f.run('a', 'navigate', { url: 'http://another.example:8080/path' });
+  for (const url of [
+    'file:///private',
+    'chrome://settings',
+    'javascript:alert(1)',
+    'data:text/html,hi',
+    'https://user:pass@example.com/',
+  ]) {
+    await assert.rejects(f.run('a', 'navigate', { url }));
+  }
+  await assert.rejects(
+    f.run('human', 'navigate', { url: 'https://example.com/', tabId: 1 }),
+    /No owned/,
+  );
+  f.window.focused = true;
+  await assert.rejects(f.run('a', 'navigate', { url: 'https://example.com/' }), /paused/);
+  f.window.focused = false;
+  f.tabs.values().next().value.windowId = 99;
+  await assert.rejects(f.run('a', 'navigate', { url: 'https://example.com/' }), /revoked/);
+});
+
+test('empty or unknown policy cannot reconfigure a lane to unrestricted access', () => {
+  const f = fixture();
+  assert.throws(() => f.lane.configure(7, []));
+  assert.throws(() => f.lane.configure(7, ['https://example.com'], 'unknown'));
+  assert.equal(f.lane.mode, 'selected');
+});
