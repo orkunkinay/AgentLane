@@ -87,9 +87,9 @@ else if (!html['docs/index.html'].includes(`${viewport[1]}×${viewport[2]}`))
 const nodeMajor = pkg.engines.node.match(/\d+/)[0];
 for (const page of ['index.html', 'docs/index.html'])
   if (
-    !new RegExp(`Node(?:\\.js)?\\s*${nodeMajor}\\+|Node(?:\\.js)? ${nodeMajor} or newer`).test(
-      html[page],
-    )
+    !new RegExp(
+      `Node(?:\\.js)?\\s*${nodeMajor}(?:\\.13)?\\+|Node(?:\\.js)? ${nodeMajor}(?:\\.13)? or newer`,
+    ).test(html[page])
   )
     problems.push(`${page}: Node ${nodeMajor} requirement missing or outdated`);
 const manifest = JSON.parse(await readFile('extension/manifest.json', 'utf8'));

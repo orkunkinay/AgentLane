@@ -8,7 +8,7 @@ Use a disposable Chrome profile and the included synthetic demo. Do not use real
 
 ## Local prerequisites
 
-- macOS, Chrome 134+ and Node.js 22+.
+- macOS, Chrome 134+ and Node.js 22.13+.
 - A terminal and an MCP-compatible client. The project documents Codex and Claude Code,
   but any client supporting stdio MCP tools/images can use the server.
 - Source: https://github.com/orkunkinay/AgentLane (MIT). Version 0.1.1 is declared

@@ -57,7 +57,7 @@ server enabled. Do not switch to native Computer Use as a fallback for this task
 
 ## First-time installation
 
-You need **macOS, Google Chrome 134+ and Node.js 22+**. The supported integration is MCP;
+You need **macOS, Google Chrome 134+ and Node.js 22.13+**. The supported integration is MCP;
 AgentLane does not replace Codex's native Computer Use backend. Linux and other browser
 support remain unverified; Windows is not supported in this build.
 

@@ -20,9 +20,9 @@ const exists = (p, mode = constants.F_OK) =>
     () => false,
   );
 
-const major = Number(process.versions.node.split('.')[0]);
-if (major >= 22) ok(`Node.js ${process.versions.node}`);
-else bad(`Node.js ${process.versions.node} is too old`, 'install Node.js 22 or newer');
+const [major, minor] = process.versions.node.split('.').map(Number);
+if (major > 22 || (major === 22 && minor >= 13)) ok(`Node.js ${process.versions.node}`);
+else bad(`Node.js ${process.versions.node} is too old`, 'install Node.js 22.13 or newer');
 
 if (process.platform === 'darwin') ok('macOS');
 else bad(`${process.platform} is not supported`, 'AgentLane supports macOS with Chrome');

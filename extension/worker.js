@@ -8,7 +8,7 @@ const settingsReady = chrome.storage.local
   .get(['startingPolicy', 'websites', 'origins', 'accessConsentVersion'])
   .then((saved) => {
     settings = restoreStartingPolicy(saved);
-    accessConsent = saved.accessConsentVersion === 1;
+    accessConsent = saved.accessConsentVersion === 2;
   });
 let port;
 let bridge = 'disconnected';
@@ -33,6 +33,7 @@ function connect() {
     connection.onMessage.addListener(async (m) => {
       if (port !== connection) return;
       if (m.event === 'ready') {
+        connection.postMessage({ event: 'disclosure', version: 2 });
         clearTimeout(timer);
         bridge = 'connected';
         resolve();
@@ -136,7 +137,7 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
       } else if (changed) {
         lane.configure(lane.windowId, origins, policy.mode);
       }
-      await chrome.storage.local.set({ startingPolicy: policy, accessConsentVersion: 1 });
+      await chrome.storage.local.set({ startingPolicy: policy, accessConsentVersion: 2 });
       accessConsent = true;
       settings = policy;
       // A failed bridge can be retried using the same window, without creating duplicates.

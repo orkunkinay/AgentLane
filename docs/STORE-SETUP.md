@@ -1,6 +1,6 @@
 # Set up AgentLane from the Chrome Web Store
 
-Use macOS, Google Chrome 134+ and Node.js 22+. The store download installs the
+Use macOS, Google Chrome 134+ and Node.js 22.13+. The store download installs the
 **extension only**. You also need the source checkout, local native bridge and an
 MCP client on the same Mac. Keep the checkout at its installed path.
 

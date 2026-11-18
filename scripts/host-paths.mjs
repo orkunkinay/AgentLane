@@ -15,8 +15,9 @@ export const browsers = () => ({
 });
 
 export function requireNode(version = process.versions.node) {
-  if (Number(version.split('.')[0]) < 22)
+  const [major, minor] = version.split('.').map(Number);
+  if (major < 22 || (major === 22 && minor < 13))
     throw Error(
-      `AgentLane needs Node.js 22 or newer; this is ${version}. Upgrade Node, then retry.`,
+      `AgentLane needs Node.js 22.13 or newer; this is ${version}. Upgrade Node, then retry.`,
     );
 }

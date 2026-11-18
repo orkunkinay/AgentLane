@@ -39,6 +39,20 @@ when conflicting styles would use native UI; unsupported browsers fail before ta
 navigation. In-page listboxes and human tabs are left unchanged. Closed shadow-root
 pickers and other native controls remain unverified escape paths.
 
+## Local recovery metadata (0.2.0 source)
+
+The 0.2.0 extension enables journaling only after the updated disclosure is accepted.
+An older extension remains compatible but operates without journal retention; its
+response metadata reports `coordination.journal: false`. The native host uses Node.js 22.13+ built-in SQLite for a kernel-held singleton lock
+and a synchronous, bounded operation journal. A dead process releases its lock;
+startup does not infer ownership from PID liveness. Journal records contain opaque
+IDs, operation names, timestamps and outcomes, never arguments, URLs, screenshots
+or typed text. On restart an interrupted dispatch is marked OUTCOME_UNKNOWN; it is
+not replayed. COMPLETED means browser acknowledgement, not confirmed website effect.
+Duplicate IDs are suppressed within the retained journal window (4,096 records),
+not an exactly-once website guarantee. Owner-only files remain within the same-UID
+trust boundary. Corruption fails closed; preserve the file for explicit review.
+
 ## Authority retained and risks
 
 | Threat | Mitigation | Residual risk |

@@ -8,7 +8,7 @@ permissions and the socket, and prints a fix for each failure.
 nvm/asdf shims are not on its PATH. The installer records the exact Node that ran it;
 the launcher falls back to Homebrew locations and then PATH if that file is gone, and
 otherwise exits with a one-line message. Re-run `scripts/install-host.mjs` after
-changing Node versions. Node.js 22 or newer is required.
+changing Node versions. Node.js 22.13 or newer is required.
 
 **Other Chromium browsers:** `--browser=chrome-beta|chrome-canary|chromium|brave|edge`
 selects the manifest directory; any other directory can be passed explicitly. Only

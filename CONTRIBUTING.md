@@ -4,7 +4,7 @@ Start with README, SECURITY.md and docs/EVIDENCE.md. This is an experimental pub
 reference implementation. Preserve the distinction between measured behavior and
 hypotheses; never turn a partial test into a general no-interference claim.
 
-Use Node 22 or newer, `npm ci`, `npm test` and `npm run format:check`. Source syntax
+Use Node 22.13 or newer, `npm ci`, `npm test` and `npm run format:check`. Source syntax
 checks run before tests. For browser changes also run the disposable profile harness;
 for focus/rendering changes run the headed observer and human acceptance protocol.
 Do not compensate for a failed test by activating Chrome, restoring focus afterward,

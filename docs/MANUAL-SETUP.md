@@ -5,7 +5,7 @@ A manual unpacked installation lets you try repository changes before a store
 release. Those changes may not have completed Chrome Web Store review and can be
 less stable. Manual installs do not update automatically.
 
-Both options require macOS, Chrome 134+, Node.js 22+, the local native bridge and
+Both options require macOS, Chrome 134+, Node.js 22.13+, the local native bridge and
 an MCP client. Installing the extension alone is not enough.
 
 ## Download and load

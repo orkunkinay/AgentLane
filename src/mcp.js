@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFile } from 'node:fs/promises';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -11,7 +12,8 @@ const instructions = [
   'Take a screenshot before every input; each frame token works once. A login wall, CAPTCHA or two-factor prompt needs the human: report it and stop.',
   'Always call lane_close when finished.',
 ].join(' ');
-const server = new McpServer({ name: 'agentlane', version: '0.1.0' }, { instructions });
+const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+const server = new McpServer({ name: 'agentlane', version }, { instructions });
 const client = new BrowserClient();
 let queue = Promise.resolve();
 function serial(fn) {
