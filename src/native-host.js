@@ -95,6 +95,19 @@ const server = net.createServer((socket) => {
             { mayHaveExecuted: m.id === client.requestId },
           );
         if (typeof m.id !== 'string' || m.id.length > 100) throw Error('Invalid request ID');
+        if (m.op === '__hello') {
+          socket.write(
+            JSON.stringify({
+              id: m.id,
+              result: {
+                protocol: 2,
+                connectionGeneration: store.generation,
+                journal: journalEnabled,
+              },
+            }) + '\n',
+          );
+          continue;
+        }
         if (m.op === '__resume') {
           if (client.persistent || client.used) throw Error('Session identity is already bound');
           if (!journalEnabled)
@@ -152,6 +165,8 @@ const server = net.createServer((socket) => {
         }, 30000);
         // Session and routing ID are host-owned; caller cannot impersonate a lane.
         pending.set(id, { socket, timer, requestId, client, session, op: m.op });
+        if (m.protocol === 2 && journalEnabled)
+          socket.write(JSON.stringify({ id: m.id, event: 'accepted', operationId: id }) + '\n');
         send({
           id,
           session,

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, readFile, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { openBrokerStore } from '../src/broker-store.js';
 
 test('kernel lock prevents a second broker and journal restart preserves uncertain effects', async () => {
@@ -24,6 +26,14 @@ test('kernel lock prevents a second broker and journal restart preserves uncerta
       /different browser/,
     );
     const uncertain = first.start('session', 'request', 'click');
+    const diagnostic = JSON.parse(
+      execFileSync(process.execPath, [resolve('scripts/operation-status.mjs'), uncertain], {
+        env: { ...process.env, AGENTLANE_STATE_DIR: dir },
+        encoding: 'utf8',
+      }),
+    );
+    assert.equal(diagnostic.id, uncertain);
+    assert.equal(diagnostic.state, 'RUNNING');
     const read = first.start('session', 'read', 'screenshot');
     const completed = first.start('session', 'completed', 'type');
     first.finish(completed, 'COMPLETED');
