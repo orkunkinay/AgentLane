@@ -11,6 +11,7 @@ export class Lane {
     this.captureSettleMs = 150;
     this.windowId = null;
     this.generation = 0;
+    this.focusEpoch = 0;
     this.origins = [];
     this.mode = 'selected';
     this.sessions = new Map();
@@ -65,6 +66,7 @@ export class Lane {
       id: message.id || crypto.randomUUID(),
       dispatched: false,
       active: true,
+      focusEpoch: this.focusEpoch,
       expectedOwner: owner,
       expectedEpoch: epoch,
     };
@@ -126,6 +128,12 @@ export class Lane {
       );
     if (this.cancelled.has(owner.session)) throw Error('Session disconnected');
     if (owner.failed) throw Error(owner.failed);
+    if (owner.operation?.active && owner.operation.focusEpoch !== this.focusEpoch)
+      throw new CoordinationError(
+        'FOCUS_ISOLATION_UNSUPPORTED',
+        'Human focus changed during the operation; remaining input was fenced. Take a fresh screenshot after returning to your usual window.',
+        { humanActionRequired: true },
+      );
     if (
       owner.control !== 'AGENT_CONTROL' ||
       (owner.operation?.active && owner.operation.epoch !== owner.controlEpoch)
@@ -321,6 +329,14 @@ export class Lane {
       clearTimeout(timer);
     }
   }
+  focusChanged(windowId) {
+    if (windowId !== this.windowId) return;
+    this.focusEpoch++;
+    for (const s of this.sessions.values()) {
+      s.frame = null;
+      s.frameInvalidation = 'Human focused the lane';
+    }
+  }
   suspend(session) {
     const s = this.sessions.get(session);
     if (!s) return;
@@ -332,11 +348,12 @@ export class Lane {
   async pause(session) {
     const s = this.sessions.get(session);
     if (!s) throw Error('No owned tab');
-    if (s.control !== 'AGENT_CONTROL') throw Error('Session is already paused');
+    if (!['AGENT_CONTROL', 'DISCONNECTED'].includes(s.control))
+      throw Error('Session is already paused');
     s.controlEpoch++;
     s.control = 'HANDOFF_PENDING';
     s.frame = null;
-    const mayHaveExecuted = Boolean(s.operation?.dispatched);
+    const mayHaveExecuted = Boolean(s.operation?.active && s.operation.dispatched);
     await this.sessionTails.get(session);
     if (this.sessions.get(session) !== s) throw Error('Ownership changed during handoff');
     s.control = 'HUMAN_CONTROL';
@@ -349,7 +366,7 @@ export class Lane {
     if (this.sessions.get(session) !== s) throw Error('Ownership changed during handback');
     if (s.failed) throw Error(s.failed);
     s.controlEpoch++;
-    s.control = 'AGENT_CONTROL';
+    s.control = s.suspended ? 'DISCONNECTED' : 'AGENT_CONTROL';
     s.frame = null;
     s.frameInvalidation = 'Explicit human handback; fresh observation required';
     return { control: s.control, observationRequired: true };

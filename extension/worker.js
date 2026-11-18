@@ -225,7 +225,10 @@ chrome.windows.onRemoved.addListener((windowId) => {
   lane.windowRemoved(windowId);
   notifySetup();
 });
-chrome.windows.onFocusChanged.addListener(notifySetup);
+chrome.windows.onFocusChanged.addListener((windowId) => {
+  lane.focusChanged(windowId);
+  notifySetup();
+});
 chrome.windows.onBoundsChanged.addListener(notifySetup);
 chrome.tabs.onDetached.addListener((tabId) => {
   lane.tabDetached(tabId);

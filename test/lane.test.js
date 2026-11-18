@@ -744,3 +744,42 @@ test('lost persistent capability requires explicit acknowledgement instead of ta
   assert.equal(f.tabs.size, 0);
   assert((await f.lane.run({ session: 'a', op: 'close', recover: true })).sessionReset);
 });
+
+test('human focus during an asynchronous ownership check fences input even after focus returns', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  const shot = await f.run('a', 'screenshot');
+  const get = f.lane.api.tabs.get;
+  let checks = 0;
+  f.lane.api.tabs.get = async (id) => {
+    const tab = await get(id);
+    if (++checks === 2) f.lane.focusChanged(7);
+    return tab;
+  };
+  await assert.rejects(f.run('a', 'type', { frame: shot.frame, text: 'must-not-run' }));
+  assert(!f.calls.some(([method]) => method === 'Input.insertText'));
+});
+
+test('an orphaned persistent session can be taken by the human and handed back for reconnect', async () => {
+  const f = fixture();
+  await f.lane.run({
+    session: 'a',
+    op: 'open',
+    args: { url: 'https://example.com' },
+    persistent: true,
+  });
+  f.lane.suspend('a');
+  await f.lane.pause('a');
+  await f.lane.resume('a');
+  assert.equal(f.lane.sessions.get('a').control, 'DISCONNECTED');
+  assert(
+    (
+      await f.lane.run({
+        session: 'a',
+        op: 'open',
+        args: { url: 'https://example.com' },
+        recover: true,
+      })
+    ).recovered,
+  );
+});
