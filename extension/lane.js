@@ -1,3 +1,4 @@
+import { CoordinationError, describeFailure } from './errors.js';
 import { installSelectPicker } from './select-picker.js';
 import { parseStartingPolicy } from './starting-websites.js';
 
@@ -16,6 +17,8 @@ export class Lane {
     this.framePreparations = new Set();
     this.cancelled = new Set();
     this.tail = Promise.resolve();
+    this.queued = 0;
+    this.maxQueued = 128;
   }
   configure(windowId, origins, mode = 'selected') {
     if (this.sessions.size) throw Error('Close all sessions before reconfiguring');
@@ -46,16 +49,65 @@ export class Lane {
     return u.href;
   }
   run(message) {
+    if (this.queued >= this.maxQueued)
+      return Promise.reject(
+        new CoordinationError(
+          'QUEUE_FULL',
+          'Lane queue capacity exceeded; operation was not queued.',
+        ),
+      );
     const generation = this.generation;
-    const next = this.tail.then(() => {
-      if (message.op !== 'close' && generation !== this.generation)
-        throw Error(
-          'Lane was recreated while the action was queued; it was not dispatched. Call lane_open in the prepared window.',
-        );
-      return this.execute(message, generation);
-    });
+    const owner = this.sessions.get(message.session);
+    const epoch = owner?.controlEpoch;
+    const context = { id: crypto.randomUUID(), dispatched: false };
+    this.queued++;
+    const next = this.tail
+      .then(() => {
+        if (generation !== this.generation)
+          throw Error(
+            'Lane was recreated while the action was queued; it was not dispatched. Call lane_open in the prepared window.',
+          );
+        if (this.cancelled.has(message.session) && message.op !== 'close')
+          throw Error('Session disconnected');
+        if (owner && (this.sessions.get(message.session) !== owner || owner.controlEpoch !== epoch))
+          throw new CoordinationError(
+            'OPERATION_CANCELLED',
+            'Ownership changed while queued; action was not dispatched.',
+          );
+        return this.execute({ ...message, context }, generation);
+      })
+      .catch((error) => {
+        error.details = describeFailure(error, {
+          operationId: context.id,
+          mayHaveExecuted: context.dispatched,
+        });
+        if (context.dispatched) {
+          error.details.mayHaveExecuted = true;
+          error.details.retrySafe = false;
+          error.details.code = 'OPERATION_OUTCOME_UNKNOWN';
+        }
+        throw error;
+      })
+      .finally(() => {
+        this.queued--;
+      });
     this.tail = next.catch(() => {});
     return next;
+  }
+  assertOwner(s) {
+    const owner = s.owner || s;
+    if (owner.generation !== this.generation || this.sessions.get(owner.session) !== owner)
+      throw Error(
+        'Lane was recreated; the previous action was not continued. Call lane_open for a fresh owned tab.',
+      );
+    if (this.cancelled.has(owner.session)) throw Error('Session disconnected');
+    if (owner.control !== 'AGENT_CONTROL' || owner.operation?.epoch !== owner.controlEpoch)
+      throw new CoordinationError(
+        'HUMAN_CONTROL',
+        'Session is paused for human control; explicit handback is required.',
+        { humanActionRequired: true },
+      );
+    return owner;
   }
   async assertLane() {
     if (this.windowId === null) throw Error('Prepare a lane in the extension first');
@@ -171,7 +223,7 @@ export class Lane {
     const generation = owner.generation;
     const preparation = (async () => {
       await this.owned(id);
-      const frame = { tabId: source.tabId, childSessionId: params.sessionId, generation };
+      const frame = { tabId: source.tabId, childSessionId: params.sessionId, generation, owner };
       await this.preparePicker(frame);
       await this.owned(id);
       // Only child frames of an owned tab are resumed; never attach to another tab.
@@ -188,12 +240,23 @@ export class Lane {
   }
   async command(s, method, params = {}) {
     const generation = s.generation;
+    const owner = this.assertOwner(s);
+    await this.assertLane();
+    const tab = await this.api.tabs.get(s.tabId);
+    this.assertOwner(s);
+    if (tab.windowId !== this.windowId) {
+      this.sessions.delete(owner.session);
+      await this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
+      throw Error('Tab moved outside its lane; ownership revoked');
+    }
     if (generation !== this.generation)
       throw Error(
         'Lane was recreated; the previous action was not continued. Call lane_open for a fresh owned tab.',
       );
     let timer;
     try {
+      if (/^(Input\.|Page\.navigate$)/.test(method) && owner.operation)
+        owner.operation.dispatched = true;
       const result = await Promise.race([
         this.api.debugger.sendCommand(
           { tabId: s.tabId, ...(s.childSessionId ? { sessionId: s.childSessionId } : {}) },
@@ -214,15 +277,20 @@ export class Lane {
         throw Error(
           'Lane was recreated; the previous action was not continued. Call lane_open for a fresh owned tab.',
         );
+      this.assertOwner(s);
       return result;
     } catch (e) {
-      throw Error(method + ': ' + e.message);
+      const error = Error(method + ': ' + e.message);
+      error.details = e.details;
+      throw error;
     } finally {
       clearTimeout(timer);
     }
   }
   cancel(session) {
     this.cancelled.add(session);
+    const owner = this.sessions.get(session);
+    if (owner) owner.controlEpoch++;
     return this.run({ session, op: 'close' })
       .catch(() => {})
       .finally(() => this.cancelled.delete(session));
@@ -235,15 +303,30 @@ export class Lane {
       s.frameInvalidation = reason;
     }
   }
-  async execute({ session, op, args = {} }, generation = this.generation) {
+  async execute(
+    { session, op, args = {}, context = { id: crypto.randomUUID(), dispatched: false } },
+    generation = this.generation,
+  ) {
     if (this.cancelled.has(session) && op !== 'close') throw Error('Session disconnected');
     if (typeof session !== 'string' || !session) throw Error('Missing session');
     if (!['open', 'close', 'screenshot', 'click', 'type', 'key', 'scroll', 'navigate'].includes(op))
       throw Error('Unsupported operation');
     if (op === 'close') {
       const s = await this.owned(session, true);
+      if (s.control !== 'AGENT_CONTROL' && !this.cancelled.has(session))
+        throw new CoordinationError(
+          'HUMAN_CONTROL',
+          'Human-controlled tab cannot be closed by the agent.',
+        );
       await this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
-      await this.tabEdit(() => this.api.tabs.remove(s.tabId), session, true);
+      await this.tabEdit(
+        () => {
+          context.dispatched = true;
+          return this.api.tabs.remove(s.tabId);
+        },
+        session,
+        true,
+      );
       this.sessions.delete(session);
       return { closed: true };
     }
@@ -269,13 +352,20 @@ export class Lane {
         );
       const s = {
         tabId: tab.id,
+        session,
+        control: 'AGENT_CONTROL',
+        controlEpoch: 0,
+        operation: { ...context, epoch: 0 },
         frame: null,
         detached: false,
         navigationRevision: 0,
         generation,
       };
+      context.epoch = 0;
+      s.operation = context;
       this.sessions.set(session, s);
       try {
+        this.assertOwner(s);
         await this.api.debugger.attach({ tabId: tab.id }, '1.3');
         await this.prepareTarget(s);
         // Changes selection only inside the dedicated lane, never focuses its window.
@@ -295,6 +385,9 @@ export class Lane {
       }
     }
     const s = await this.owned(session);
+    context.epoch = s.controlEpoch;
+    s.operation = context;
+    this.assertOwner(s);
     await Promise.all([...this.framePreparations]);
     if (this.failed) throw Error(this.failed);
     // Stage only the exact owned tab; never touch the human's selected tab.

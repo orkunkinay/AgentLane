@@ -391,8 +391,16 @@ test('a delayed timeout from a closed lane does not poison the reopened lane', a
   await f.run('a', 'open', { url: 'https://example.com' });
   f.lane.commandTimeoutMs = 10;
   const send = f.lane.api.debugger.sendCommand;
-  f.lane.api.debugger.sendCommand = () => new Promise(() => {});
+  let entered;
+  const dispatched = new Promise((resolve) => {
+    entered = resolve;
+  });
+  f.lane.api.debugger.sendCommand = () => {
+    entered();
+    return new Promise(() => {});
+  };
   const pending = f.lane.command(f.lane.sessions.get('a'), 'Page.captureScreenshot');
+  await dispatched;
   f.lane.windowRemoved(7);
   f.lane.configure(7, ['https://example.com']);
   await assert.rejects(pending, /timed out/);
@@ -492,4 +500,98 @@ test('a retry after a timeout cannot repeat an input that may have been applied'
   await f.run('a', 'type', { frame: shot.frame, text: 'hello' });
   await assert.rejects(f.run('a', 'type', { frame: shot.frame, text: 'hello' }), /Stale/);
   assert.equal(f.calls.filter((c) => c[0] === 'Input.insertText').length, 1);
+});
+
+test('disconnect between mouse events fences the remaining input and reports uncertainty', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  const shot = await f.run('a', 'screenshot');
+  const send = f.lane.api.debugger.sendCommand;
+  let release, entered;
+  const dispatched = new Promise((resolve) => {
+    entered = resolve;
+  });
+  f.lane.api.debugger.sendCommand = async (target, method, params) => {
+    if (method === 'Input.dispatchMouseEvent' && params.type === 'mousePressed') {
+      entered();
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+    }
+    return send(target, method, params);
+  };
+  const click = f.run('a', 'click', { frame: shot.frame, x: 10, y: 10 });
+  await dispatched;
+  const cleanup = f.lane.cancel('a');
+  release();
+  await assert.rejects(
+    click,
+    (error) => error.details.code === 'OPERATION_OUTCOME_UNKNOWN' && error.details.mayHaveExecuted,
+  );
+  await cleanup;
+  assert(
+    !f.calls.some(
+      ([method, , params]) =>
+        method === 'Input.dispatchMouseEvent' && params.type === 'mouseReleased',
+    ),
+  );
+  assert.equal(f.tabs.size, 0);
+});
+
+test('moving a tab between input commands revokes ownership without touching the human tab', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  const shot = await f.run('a', 'screenshot');
+  const send = f.lane.api.debugger.sendCommand;
+  f.lane.api.debugger.sendCommand = async (target, method, params) => {
+    const result = await send(target, method, params);
+    if (method === 'Input.dispatchMouseEvent' && params.type === 'mouseMoved')
+      f.tabs.get(1).windowId = 99;
+    return result;
+  };
+  await assert.rejects(
+    f.run('a', 'click', { frame: shot.frame, x: 10, y: 10 }),
+    /ownership revoked/,
+  );
+  assert(
+    !f.calls.some(
+      ([method, , params]) =>
+        method === 'Input.dispatchMouseEvent' && params.type === 'mousePressed',
+    ),
+  );
+  assert(f.tabs.has(1));
+});
+
+test('an old queued close cannot close a replacement owner after recreation', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  let release;
+  f.lane.tail = new Promise((resolve) => {
+    release = resolve;
+  });
+  const close = f.run('a', 'close');
+  f.lane.windowRemoved(7);
+  f.lane.configure(7, ['https://example.com']);
+  release();
+  await assert.rejects(close, /queued/);
+  await f.run('a', 'open', { url: 'https://example.com' });
+  assert(f.tabs.has(2));
+});
+
+test('bounded queues reject overload before dispatch and recover capacity after errors', async () => {
+  const f = fixture();
+  let release;
+  f.lane.tail = new Promise((resolve) => {
+    release = resolve;
+  });
+  f.lane.maxQueued = 1;
+  const first = f.run('a', 'open', { url: 'https://example.com' });
+  await assert.rejects(
+    f.run('b', 'open', { url: 'https://example.com' }),
+    (e) => e.details.code === 'QUEUE_FULL' && !e.details.mayHaveExecuted,
+  );
+  release();
+  await first;
+  await f.run('a', 'close');
+  assert.equal(f.lane.queued, 0);
 });
