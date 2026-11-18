@@ -309,9 +309,10 @@ export class Lane {
           timer = setTimeout(() => {
             const failure =
               'Renderer command timed out (a covered, minimized or other-Space agent window is a common cause); keep the agent window visible, then recreate the agent window or reload extension';
-            if (generation === this.generation && this.sessions.get(owner.session) === owner)
+            if (generation === this.generation && this.sessions.get(owner.session) === owner) {
               owner.failed = failure;
-            this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
+              this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
+            }
             reject(Error(failure));
           }, this.commandTimeoutMs);
         }),

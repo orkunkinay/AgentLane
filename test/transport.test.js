@@ -218,3 +218,73 @@ test(
     }
   },
 );
+
+test(
+  'journalled duplicate requests never reach the browser twice and do not retain arguments',
+  { timeout: 15000 },
+  async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'al-dedupe-'));
+    const host = spawn(process.execPath, ['src/native-host.js'], {
+      env: { ...process.env, AGENTLANE_STATE_DIR: dir },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const decoder = new NativeDecoder();
+    host.stdout.pipe(decoder);
+    let forwarded = 0;
+    let ready;
+    const started = new Promise((r) => {
+      ready = r;
+    });
+    decoder.on('data', (m) => {
+      if (m.event === 'ready') {
+        host.stdin.write(
+          nativeFrame({
+            event: 'disclosure',
+            version: 2,
+            environmentId: '8f80cb12-32a2-4431-a576-178e200e860a',
+          }),
+        );
+        return;
+      }
+      if (m.event === 'disclosureAccepted') {
+        ready();
+        return;
+      }
+      if (m.op === 'disconnect') return;
+      forwarded++;
+      host.stdin.write(nativeFrame({ id: m.id, result: { performed: m.op } }));
+    });
+    let socket;
+    try {
+      await started;
+      socket = net.createConnection(join(dir, 'browser.sock'));
+      await once(socket, 'connect');
+      const request =
+        JSON.stringify({
+          id: 'duplicate-fixture',
+          op: 'type',
+          args: { text: 'MUST_NOT_APPEAR_IN_JOURNAL' },
+        }) + '\n';
+      let response = once(socket, 'data');
+      socket.write(request);
+      assert(!JSON.parse((await response)[0]).error);
+      response = once(socket, 'data');
+      socket.write(request);
+      const rejected = JSON.parse((await response)[0]);
+      assert.equal(rejected.details.code, 'OPERATION_ALREADY_RECORDED');
+      assert.equal(forwarded, 1);
+      const { readFile } = await import('node:fs/promises');
+      assert(
+        !(await readFile(join(dir, 'operations.sqlite'))).includes(
+          Buffer.from('MUST_NOT_APPEAR_IN_JOURNAL'),
+        ),
+      );
+    } finally {
+      socket?.destroy();
+      const exited = once(host, 'exit');
+      host.stdin.end();
+      await exited;
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+);

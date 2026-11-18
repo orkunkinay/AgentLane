@@ -392,6 +392,10 @@ test('an input interrupted by window recreation cannot continue or poison the re
 
 test('a delayed timeout from a closed lane does not poison the reopened lane', async () => {
   const f = fixture();
+  let detachments = 0;
+  f.lane.api.debugger.detach = async () => {
+    detachments++;
+  };
   await f.run('a', 'open', { url: 'https://example.com' });
   f.lane.commandTimeoutMs = 10;
   const send = f.lane.api.debugger.sendCommand;
@@ -409,6 +413,7 @@ test('a delayed timeout from a closed lane does not poison the reopened lane', a
   f.lane.configure(7, ['https://example.com']);
   await assert.rejects(pending, /timed out/);
   assert.equal(f.lane.failed, null);
+  assert.equal(detachments, 0, 'late timeout does not detach a replacement or reclaimed tab');
   f.lane.api.debugger.sendCommand = send;
   await f.run('a', 'open', { url: 'https://example.com' });
 });
