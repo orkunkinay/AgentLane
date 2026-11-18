@@ -100,7 +100,9 @@ navigation event. Do not blindly replay a potentially completed input.
 the Web Store. Editing or updating this checkout does not update that extension.
 For a local bridge/MCP source update, finish active tasks, restart the MCP server
 and reconnect the browser bridge if its host was still running old code. Keep the
-store origin pinned; do not replace the store extension with an unpacked copy.
+store origin pinned while using the store copy. To opt into repository updates,
+follow the [manual switching guide](MANUAL-SETUP.md#switching-between-store-and-manual-installs)
+instead of changing the registered origin without reviewing active sessions.
 
 **Extension development only — applying a source update:** unpacked extension workers keep their loaded code.
 Finish existing sessions, click AgentLane’s Reload control at `chrome://extensions`,

@@ -10,6 +10,10 @@ does not update the native-host registration. Developer mode is not required for
 the store installation, and the legacy script below does not migrate the origin
 to the store ID.
 
+For a switch from the store version to a manual copy, follow the
+[manual switching guide](MANUAL-SETUP.md#switching-between-store-and-manual-installs).
+Both directions require the exact destination extension ID and finished sessions.
+
 ## Historical path: the former Still installation to AgentLane
 
 The remainder documents the earlier local rename of an unpacked development build.

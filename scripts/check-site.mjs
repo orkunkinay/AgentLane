@@ -58,15 +58,15 @@ for (const page of pages) {
     if (!/\salt="/.test(tag[0])) problems.push(`${page}: image without alt ${tag[0].slice(0, 60)}`);
 }
 
-// User setup stays on the published extension; unpacked setup belongs in CONTRIBUTING.
+// User setup retains the recommended store route and an explicit manual alternative.
 const storeId = 'mpiigaljakpfmmihkahppdaaccmpgmmk';
 for (const page of ['index.html', 'docs/index.html']) {
   if (!html[page].includes(`https://chromewebstore.google.com/detail/agentlane/${storeId}`))
     problems.push(`${page}: store installation link missing`);
   if (!html[page].includes(`node scripts/install-host.mjs ${storeId}`))
     problems.push(`${page}: store native-host command missing`);
-  if (/Load unpacked|chrome-extensions\.png/.test(html[page]))
-    problems.push(`${page}: developer installation leaked into user setup`);
+  if (!html[page].includes('manual-install'))
+    problems.push(`${page}: optional manual installation link/section missing`);
 }
 
 const mcp = await readFile('src/mcp.js', 'utf8');

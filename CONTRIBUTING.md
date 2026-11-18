@@ -27,8 +27,8 @@ separately; Linux/browser compatibility remains subject to its results.
 ## Extension development
 
 Normal users install the [existing Chrome Web Store extension](https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk)
-and follow [store setup](docs/STORE-SETUP.md). Developer mode is only needed when
-working on extension source. The store download contains the extension; the local
+and follow [store setup](docs/STORE-SETUP.md). For repository updates before store release, users may choose the
+[manual installation route](docs/MANUAL-SETUP.md), which requires Developer mode. The store download contains the extension; the local
 native bridge and MCP server remain separate prerequisites.
 
 For an unpacked development build, use a disposable Chrome profile and synthetic data:
@@ -46,6 +46,6 @@ After an extension source edit, finish test sessions, reload the unpacked extens
 and create a fresh lane. Restart the test MCP process after MCP source changes.
 The store-installed extension does not load source changes from the checkout.
 
-Keep user setup pages focused on installing the existing store extension. Keep
-unpacked loading instructions, path-derived IDs and development screenshots here;
-retain dated experiment and submission evidence with its original context.
+Keep the store installation recommended and manual installation explicitly optional.
+Explain its own extension ID and manual update lifecycle. Retain dated experiment
+and submission evidence with its original context.

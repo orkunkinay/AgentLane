@@ -4,6 +4,10 @@ Use macOS, Google Chrome 134+ and Node.js 22+. The store download installs the
 **extension only**. You also need the source checkout, local native bridge and an
 MCP client on the same Mac. Keep the checkout at its installed path.
 
+Prefer repository changes before they reach the store? Use the optional
+[manual installation and update guide](MANUAL-SETUP.md). It requires Developer mode,
+its own extension ID and manual updates; the local bridge/MCP requirements remain.
+
 ## 1. Install the extension
 
 In the Chrome profile where you normally browse and sign in, open

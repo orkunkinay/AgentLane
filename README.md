@@ -74,9 +74,9 @@ node scripts/install-skill.mjs
 Keep the checkout at this location after installation: the native launcher and MCP
 configuration point to its files.
 
-### 2. Install from the Chrome Web Store
+### 2. Choose an extension installation
 
-In the **Chrome profile where you are already logged in**, open
+**Chrome Web Store (recommended).** In the Chrome profile where you are already logged in, open
 [AgentLane in the Chrome Web Store](https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk),
 click **Add to Chrome** and review Chrome's permission prompt. If the listing shows
 **Remove from Chrome**, it is already installed. Pin AgentLane through Chrome's
@@ -88,7 +88,14 @@ is not the whole setup: the checkout, local bridge and MCP server below are stil
 required. Follow the [illustrated store setup guide](docs/STORE-SETUP.md), including
 [repairing an older unpacked installation](docs/STORE-SETUP.md#switching-from-an-unpacked-extension).
 
-Extension developers can use the separate [contributor setup](CONTRIBUTING.md#extension-development).
+**Manual download (latest repository changes).** To try updates before they reach
+the store, [download the main-branch ZIP](https://github.com/orkunkinay/AgentLane/archive/refs/heads/main.zip)
+and follow the [manual installation and update guide](docs/MANUAL-SETUP.md).
+This route uses Developer mode and Load unpacked, requires manual updates, and may
+include changes that have not completed store review. Register its own extension ID,
+not the store ID. Both routes need the local bridge and MCP server.
+
+Extension developers can also use the [contributor setup](CONTRIBUTING.md#extension-development).
 
 Review the debugger permission before using a real profile. Chrome grants broad
 browser access to the extension even though AgentLane exposes a narrow toolset.

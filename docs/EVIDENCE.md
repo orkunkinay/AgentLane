@@ -523,3 +523,17 @@ visually inspected through AgentLane. No runtime implementation changed.
 The preceding GitHub-hosted Test run (44319301482) did not execute any steps: its
 annotation reports an account billing lock. Its Pages deployment succeeded. Local
 checks are not represented as a passing hosted test run.
+
+## 2026-11-18 — Optional manual update route
+
+Added an explicitly optional main-branch download and unpacked installation route
+alongside the recommended store installation. It documents actual manual IDs,
+bridge registration when switching either direction, permanent checkout paths,
+manual reloads and local-process restarts. Repository changes are not described as
+store-reviewed or automatically updated. No installed extension or runtime code was
+changed. The existing disposable-profile unpacked-install screenshot is reused.
+
+Site, formatting and whitespace checks passed. The manual section opened in
+390px/1280px disposable-browser checks without horizontal overflow; screenshots were
+visually inspected. The store route remains present and the site validator requires
+both installation options. No runtime/browser regression run was needed.

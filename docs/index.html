@@ -103,18 +103,29 @@ cd AgentLane
 npm ci
 npm test</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
           <p><code>npm test</code> runs syntax checks and the test suite (policy, framing, native transport, MCP over stdio, recovery). It does not open your Chrome profile.</p>
-          <h3 id="install-2">2. Install from the Chrome Web Store</h3>
+          <h3 id="install-2">2. Choose your extension installation</h3>
+          <p><b>Chrome Web Store — recommended.</b> Chrome delivers store updates automatically.</p>
           <ol>
             <li>In your usual signed-in Chrome profile, open <a href="https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk" rel="noopener">AgentLane in the Chrome Web Store</a>.</li>
             <li>Click <b>Add to Chrome</b> and review the permission prompt. <b>Remove from Chrome</b> means it is already installed.</li>
             <li>Open Chrome's puzzle-piece menu and pin AgentLane. Developer mode is not required.</li>
           </ol>
           <p>The store extension ID is <code>mpiigaljakpfmmihkahppdaaccmpgmmk</code>. The extension still needs the local bridge and MCP server below. See the <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/STORE-SETUP.md" rel="noopener">illustrated store setup and migration guide</a>.</p>
+          <details id="manual-install"><summary>Manual download — latest repository changes before store release</summary>
+            <p>Use this option to try repository updates before they reach the store. Changes may not have completed store review and can be less stable. Manual installations do not update automatically.</p>
+            <ol>
+              <li><a href="https://github.com/orkunkinay/AgentLane/archive/refs/heads/main.zip" rel="noopener">Download the latest main-branch ZIP</a>, extract it to a permanent folder, and run <code>npm ci</code> and <code>npm test</code> from its root. You can also use the Git checkout from step 1.</li>
+              <li>Open <code>chrome://extensions</code>, enable <b>Developer mode</b>, click <b>Load unpacked</b>, and select that folder's <code>extension/</code> subfolder.</li>
+              <li>Copy that card's own ID and use it in step 3 instead of the store ID. Both routes require the local bridge and MCP server.</li>
+            </ol>
+            <figure class="docfig"><img src="images/chrome-extensions.png" width="1280" height="460" loading="lazy" alt="Manual installation in a disposable profile: Developer mode, Load unpacked and an example AgentLane extension ID." /><figcaption>Copy your own manual extension ID, not this example or the store ID.</figcaption></figure>
+            <p>To update, finish active sessions, update the files in the same permanent folder, run <code>npm ci</code> and <code>npm test</code>, then click <b>Reload</b> on the extension card. Restart MCP and reconnect the bridge to load updated local code. See the <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/MANUAL-SETUP.md" rel="noopener">manual setup guide</a> for updates and safe switching between store and manual copies. Keep exactly one registered origin; do not delete a live socket.</p>
+          </details>
           <p class="warn">Chrome grants the extension broad debugger access, although AgentLane exposes only a narrow toolset. Review the extension before using it on a real profile. Screenshots may contain private information and reach your configured AI provider.</p>
           <h3 id="install-3">3. Register the native messaging host</h3>
           <div class="code"><pre><code>node scripts/install-host.mjs mpiigaljakpfmmihkahppdaaccmpgmmk</code></pre><button type="button" class="copy" data-copy>Copy</button></div>
           <p>The ID must be 32 letters from <code>a</code> to <code>p</code>. The script writes <code>org.agentlane.browser.json</code> into Chrome's <code>NativeMessagingHosts</code> directory (default: <code>~/Library/Application Support/Google/Chrome/NativeMessagingHosts</code>, overridable as the second argument) and a launcher at <code>~/.agentlane/native-host</code> that pins your absolute Node path. It <b>refuses to overwrite</b> existing files; finish any active sessions and follow the <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/STORE-SETUP.md#switching-from-an-unpacked-extension" rel="noopener">unpacked-to-store migration instructions</a>. Removing the old extension does not update this registration. Chrome's manifest allows only your exact extension origin.</p>
-          <p><b>Already installed the old unpacked extension?</b> Run <code>npm run doctor</code>. Its allowed extension origin must match the store ID above. An old ID can prevent connection even when the workspace window opens. Preserve an active host or another profile's registration.</p>
+          <p><b>Already installed the old unpacked extension?</b> Run <code>npm run doctor</code>. Its allowed extension origin must match the copy you chose: the store ID above or your manual copy’s own ID. An old ID can prevent connection even when the workspace window opens. Preserve an active host or another profile's registration.</p>
           <h3 id="install-4">4. Create the agent window</h3>
           <p>Click <b>AgentLane</b> in Chrome's toolbar (or the puzzle-piece menu), choose where the agent may start browsing (see <a href="#websites">Starting websites</a>) review and affirm the screenshot/input disclosure (see <a href="../privacy/">privacy</a>), and click <b>Create agent window</b>. A separate window titled <b>AgentLane workspace</b> appears. Keep it <b>restored and unfocused</b>; switch back to your own window. <b>Connected</b> only appears once the local connection is confirmed; otherwise the popup shows <b>Not connected</b> with a retry.</p>
           <div class="pair">
