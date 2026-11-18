@@ -1277,6 +1277,74 @@ em {
     background-position: -72px 0;
   }
 }
+.road-cap {
+  margin: 0 0 10px;
+  font: 500 13px var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.road-cap b {
+  color: var(--ink);
+}
+.roadway-with {
+  margin-top: 28px;
+}
+.road-surface-one {
+  grid-template-rows: 1fr;
+}
+.road-lane-shared {
+  display: block;
+}
+.car-jam {
+  top: 58%;
+  margin-top: -23px;
+  --t: 12s;
+  animation-name: car-stopgo;
+}
+.car-jam.car-you {
+  animation-delay: -1.9s;
+}
+.jam-badge {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  margin-top: 34px;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  background: var(--night);
+  color: var(--orange);
+  border: 2px solid var(--orange);
+  font: 600 11px var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: jam-blink 1.6s steps(2, jump-none) infinite;
+}
+@keyframes car-stopgo {
+  0% {
+    left: -240px;
+  }
+  25% {
+    left: 22%;
+  }
+  40% {
+    left: 22%;
+  }
+  65% {
+    left: 60%;
+  }
+  80% {
+    left: 60%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+@keyframes jam-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
 .road-key {
   margin: 36px 0 0;
   display: grid;
@@ -1337,6 +1405,15 @@ em {
   }
   .car-agent {
     left: 58%;
+  }
+  .car-jam {
+    left: 52%;
+  }
+  .car-jam-behind {
+    left: 30%;
+  }
+  .jam-badge {
+    animation: none;
   }
 }
 

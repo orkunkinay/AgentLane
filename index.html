@@ -186,7 +186,21 @@
             lane and take turns. With it, each gets a lane of its own.
           </p>
 
-          <figure class="roadway">
+          <figure class="roadway roadway-without">
+            <figcaption class="road-cap"><b>Without AgentLane</b> · one lane, taking turns</figcaption>
+            <div class="road-surface road-surface-one" role="img" aria-label="A road with a single lane. A grey car labeled You and an orange car labeled Agent are stuck in the same lane, bumper to bumper, stopping and starting together. Whoever is in front blocks the other.">
+              <span class="road-tag road-tag-top">One lane · one window · one keyboard focus</span>
+              <div class="road-lane road-lane-shared">
+                <div class="car car-you car-jam"><span>You</span></div>
+                <div class="car car-agent car-jam car-jam-behind"><span>Agent</span></div>
+                <span class="jam-badge" aria-hidden="true">wait your turn</span>
+              </div>
+              <span class="road-surface-label">Same road, same lane: the agent grabs focus and your typing gets interrupted</span>
+            </div>
+          </figure>
+
+          <figure class="roadway roadway-with">
+            <figcaption class="road-cap"><b>With AgentLane</b> · a lane each</figcaption>
             <div class="road-surface" role="img" aria-label="A road with two lanes driving the same direction on one shared surface. A grey car labeled You drives in the top lane, an orange car labeled Agent drives in the bottom lane. Neither blocks the other.">
               <span class="road-tag road-tag-top">Your lane · your window</span>
               <span class="road-tag road-tag-bottom">Agent lane · its own window</span>
