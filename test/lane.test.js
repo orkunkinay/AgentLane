@@ -801,3 +801,39 @@ test('closing and reopening cannot reset a human-selected observation policy', a
     (e) => e.details.code === 'CAPABILITY_DENIED',
   );
 });
+
+test('close and disconnect cleanup do not remove a human-focused owned tab', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  f.window.focused = true;
+  await assert.rejects(f.run('a', 'close'), /focused/);
+  await f.lane.cancel('a');
+  assert(f.tabs.has(1));
+  f.window.focused = false;
+  await f.lane.pause('a');
+  await f.lane.release('a');
+  assert(f.tabs.has(1));
+});
+
+test('recreation during close detachment cannot remove the old tab after human reclamation', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  let entered, release;
+  const detached = new Promise((r) => {
+    entered = r;
+  });
+  f.lane.api.debugger.detach = async () => {
+    entered();
+    await new Promise((r) => {
+      release = r;
+    });
+  };
+  const close = f.run('a', 'close');
+  await detached;
+  f.lane.windowRemoved(7);
+  f.tabs.get(1).windowId = 99;
+  f.lane.configure(7, ['https://example.com']);
+  release();
+  await assert.rejects(close, /recreated/);
+  assert(f.tabs.has(1));
+});

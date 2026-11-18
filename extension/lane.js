@@ -193,14 +193,24 @@ export class Lane {
     }
     return s;
   }
-  async tabEdit(operation, session, closing = false) {
-    const generation = this.generation;
+  async tabEdit(operation, session, closing = false, expectedOwner) {
+    const generation = expectedOwner?.generation ?? this.generation;
     for (let attempt = 0; attempt < 20; attempt++) {
-      if (!closing) {
-        if (this.cancelled.has(session)) throw Error('Session disconnected');
-        await this.assertLane();
+      if (
+        generation !== this.generation ||
+        (expectedOwner && this.sessions.get(session) !== expectedOwner)
+      )
+        throw Error('Lane was recreated; tab management was not dispatched.');
+      if (!closing && this.cancelled.has(session)) throw Error('Session disconnected');
+      await this.assertLane();
+      if (this.sessions.has(session)) {
+        const owner = await this.owned(session, true);
+        if (owner.operation?.active && owner.operation.focusEpoch !== this.focusEpoch)
+          throw new CoordinationError(
+            'FOCUS_ISOLATION_UNSUPPORTED',
+            'Human focus changed before tab management; operation was not dispatched.',
+          );
       }
-      if (this.sessions.has(session)) await this.owned(session, true);
       if (generation !== this.generation)
         throw Error('Lane was recreated; the tab edit was not dispatched. Call lane_open.');
       try {
@@ -308,7 +318,7 @@ export class Lane {
         new Promise((_, reject) => {
           timer = setTimeout(() => {
             const failure =
-              'Renderer command timed out (a covered, minimized or other-Space agent window is a common cause); keep the agent window visible, then recreate the agent window or reload extension';
+              'Renderer command timed out (a covered, minimized or other-Space agent window is a common cause); keep the agent window visible, then close this owned session and open a fresh tab; ask the human to release/reset it if cleanup fails. Interrupted input was not replayed';
             if (generation === this.generation && this.sessions.get(owner.session) === owner) {
               owner.failed = failure;
               this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
@@ -449,6 +459,9 @@ export class Lane {
       );
     }
     if (op === 'close') {
+      await this.assertLane();
+      if (generation !== this.generation)
+        throw Error('Lane was recreated; close was not dispatched.');
       const s = await this.owned(session, true);
       if (
         context.expectedOwner &&
@@ -460,6 +473,8 @@ export class Lane {
           'HUMAN_CONTROL',
           'Human-controlled tab cannot be closed by the agent.',
         );
+      context.epoch = s.controlEpoch;
+      s.operation = context;
       await this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
       await this.tabEdit(
         () => {
@@ -468,6 +483,7 @@ export class Lane {
         },
         session,
         true,
+        s,
       );
       this.sessions.delete(session);
       return { closed: true };
@@ -533,7 +549,12 @@ export class Lane {
         this.assertOwner(s);
         await this.api.debugger.attach({ tabId: tab.id }, '1.3');
         await this.prepareTarget(s);
-        await this.tabEdit(() => this.api.tabs.update(tab.id, { autoDiscardable: false }), session);
+        await this.tabEdit(
+          () => this.api.tabs.update(tab.id, { autoDiscardable: false }),
+          session,
+          false,
+          s,
+        );
         await this.command(s, 'Page.navigate', { url });
         return { opened: true, width: 1100, height: 760 };
       } catch (e) {
@@ -565,7 +586,12 @@ export class Lane {
       // Capture needs a visible tab surface; selection changes only in the lane.
       const stagedTab = await this.api.tabs.get(s.tabId);
       if (!stagedTab.active)
-        await this.tabEdit(() => this.api.tabs.update(s.tabId, { active: true }), session);
+        await this.tabEdit(
+          () => this.api.tabs.update(s.tabId, { active: true }),
+          session,
+          false,
+          s,
+        );
       s.frame = null;
       for (let attempt = 0; attempt < 8; attempt++) {
         const revision = s.navigationRevision;
