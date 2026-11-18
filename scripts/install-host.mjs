@@ -30,7 +30,7 @@ try {
 } catch (e) {
   if (e.code !== 'ENOENT') throw e;
 }
-const runtime = process.env.AGENTLANE_STATE_DIR || join(homedir(), '.agentlane');
+const runtime = resolve(process.env.AGENTLANE_STATE_DIR || join(homedir(), '.agentlane'));
 await mkdir(runtime, { recursive: true, mode: 0o700 });
 const info = await lstat(runtime);
 if (!info.isDirectory() || info.isSymbolicLink() || info.uid !== process.getuid())
@@ -42,6 +42,7 @@ const source = resolve('src/native-host.js');
 // Chrome starts the host without a shell profile, so nvm/asdf shims are not on PATH.
 // Prefer the exact Node that ran this installer, then well-known locations, then PATH.
 const script = `#!/bin/sh
+export AGENTLANE_STATE_DIR=${quote(runtime)}
 NODE=${quote(process.execPath)}
 if [ ! -x "$NODE" ]; then
   for candidate in /opt/homebrew/bin/node /usr/local/bin/node "$(command -v node)"; do

@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
+import { once } from 'node:events';
+import { NativeDecoder } from '../src/framing.js';
 import { mkdtemp, readFile, stat, writeFile, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -96,3 +98,44 @@ test('doctor reports a missing install and passes on a healthy one', async () =>
     await rm(home, { recursive: true, force: true });
   }
 });
+
+test(
+  'installed launcher pins the custom broker environment when Chrome omits the shell environment',
+  { timeout: 10000 },
+  async () => {
+    const home = await mkdtemp(join(tmpdir(), 'al-pin-'));
+    let host;
+    try {
+      const dir = join(home, 'hosts');
+      await install(home, ID, dir);
+      const manifest = JSON.parse(await readFile(join(dir, 'org.agentlane.browser.json'), 'utf8'));
+      host = spawn(manifest.path, [], {
+        env: { ...process.env, HOME: home, AGENTLANE_STATE_DIR: '' },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      const decoder = new NativeDecoder();
+      host.stdout.pipe(decoder);
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(Error('Pinned launcher did not become ready')), 5000);
+        decoder.once('data', (m) => {
+          clearTimeout(timer);
+          assert.equal(m.event, 'ready');
+          resolve();
+        });
+        host.once('exit', () => {
+          clearTimeout(timer);
+          reject(Error('Pinned launcher exited'));
+        });
+      });
+      assert((await stat(join(home, 'state', 'browser.sock'))).isSocket());
+      await assert.rejects(stat(join(home, '.agentlane', 'browser.sock')), /ENOENT/);
+    } finally {
+      if (host && host.exitCode === null && host.signalCode === null) {
+        const end = once(host, 'exit');
+        host.stdin.end();
+        await end;
+      }
+      await rm(home, { recursive: true, force: true });
+    }
+  },
+);
