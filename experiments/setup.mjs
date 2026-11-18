@@ -162,6 +162,11 @@ try {
   await page.locator('#connection-label').getByText('Connected', { exact: true }).waitFor();
   assert.equal((await windows()).length, originalCount + 1);
 
+  await page
+    .locator('#origins')
+    .fill('https://www.google.com\nhttps://example.com\n' + fixtureOrigin);
+  await page.getByRole('button', { name: 'Save starting websites', exact: true }).click();
+  await page.getByRole('button', { name: 'Websites saved', exact: true }).waitFor();
   const protocol = new Client({ name: 'setup-recovery-test', version: '1.0' });
   await protocol.connect(
     new StdioClientTransport({
@@ -178,10 +183,11 @@ try {
     },
     close: () => protocol.close(),
   };
-  await client.call('open', { url: 'https://example.com/' });
+  await client.call('open', { url: fixtureOrigin });
   await page.waitForFunction(() => document.querySelector('#origins').disabled);
   await page.getByRole('button', { name: 'Take control', exact: true }).click();
   await page.getByRole('button', { name: 'Hand back to agent', exact: true }).waitFor();
+  await page.locator('#sessions').screenshot({ path: 'artifacts/setup-handoff.png' });
   await assert.rejects(client.call('close'), /Human-controlled/);
   await page.getByRole('button', { name: 'Observe only', exact: true }).click();
   await page.getByRole('button', { name: 'Allow interaction', exact: true }).waitFor();
@@ -201,11 +207,6 @@ try {
   assert.match(locked.error, /agent to finish/);
   await client.call('close');
   await page.waitForFunction(() => !document.querySelector('#origins').disabled);
-  await page
-    .locator('#origins')
-    .fill('https://www.google.com\nhttps://example.com\n' + fixtureOrigin);
-  await page.getByRole('button', { name: 'Save starting websites', exact: true }).click();
-  await page.getByRole('button', { name: 'Websites saved', exact: true }).waitFor();
   async function openFixture() {
     await client.call('open', { url: fixtureOrigin });
     let target;

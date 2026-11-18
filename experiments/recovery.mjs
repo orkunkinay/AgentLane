@@ -87,6 +87,7 @@ try {
   const tabId = await rig.worker.evaluate(
     () => [...globalThis.benchLane.sessions.values()][0].tabId,
   );
+  const mcpRecoveryStart = performance.now();
   await client.close();
   client = null;
   await wait(() =>
@@ -104,6 +105,7 @@ try {
   assert(page);
   assert.equal(await page.locator('input').inputValue(), 'preserved logical session');
   results.mcpRestartPreservedExactTab = true;
+  results.mcpRecoveryMs = performance.now() - mcpRecoveryStart;
   const contender = await connect();
   try {
     const conflict = await raw(contender, 'open', { url: origin + '/agent' });
@@ -113,11 +115,13 @@ try {
   } finally {
     await contender.close();
   }
+  const nativeRecoveryStart = performance.now();
   await restartHost();
   await reconnectBridge();
   await call('open', { url: origin + '/must-not-navigate' });
   assert.equal(await page.locator('input').inputValue(), 'preserved logical session');
   results.nativeRestartPreservedExactTab = true;
+  results.nativeRecoveryMs = performance.now() - nativeRecoveryStart;
   // Drop the response only after the real input sequence has finished. The server
   // effect may already be committed, so reconnect must never repeat the click.
   for (const [index, kind] of kinds.entries()) {
@@ -152,6 +156,7 @@ try {
     await rig.worker.evaluate(() => globalThis.benchReleaseAck());
     assert(lost.isError);
     assert(lost.structuredContent.mayHaveExecuted);
+    assert.equal(lost.structuredContent.operationIdSource, 'journal');
     await wait(async () => effects === index + 1);
     await reconnectBridge();
     await call('open', { url: origin + '/must-not-navigate' });

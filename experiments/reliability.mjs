@@ -20,6 +20,10 @@ const sourceFiles = [
   'extension/lane.js',
   'extension/worker.js',
   'extension/errors.js',
+  'extension/starting-websites.js',
+  'extension/select-picker.js',
+  'src/framing.js',
+  'src/paths.js',
 ];
 const sourceHashes = Object.fromEntries(
   await Promise.all(
@@ -64,10 +68,17 @@ if (!counts.every((n) => Number.isInteger(n) && n > 0 && n <= 20))
   throw Error('Invalid concurrency counts');
 const fixture = `<!doctype html><style>body{margin:0;font:24px system-ui}input{position:absolute;left:40px;top:60px;width:600px;height:40px}button{position:absolute;left:40px;top:140px;width:180px;height:50px}</style><input><button onclick="fetch('/commit',{method:'POST',body:document.querySelector('input').value}).then(()=>document.querySelector('button').textContent='Saved')">Save</button>`;
 const commits = [];
+let authenticatedCommits = 0;
 const server = createServer((req, res) => {
   if (req.url === '/seed')
     res.setHeader('Set-Cookie', 'fixture=synthetic; HttpOnly; SameSite=Lax; Path=/');
   if (req.url === '/commit') {
+    if (!req.headers.cookie?.includes('fixture=synthetic')) {
+      res.statusCode = 401;
+      res.end('Synthetic session missing');
+      return;
+    }
+    authenticatedCommits++;
     let data = '';
     req.on('data', (c) => (data += c));
     req.on('end', () => {
@@ -223,6 +234,7 @@ try {
             sdkVersion,
             extensionVersion: version,
             trialsPerScenario: 1,
+            authenticatedCommits,
             resourceCaveat:
               'Two snapshots of owned browser/native/MCP processes; summed RSS may double-count shared pages; CPU is lifetime average, not interval utilization.',
             statisticalCaveat:
