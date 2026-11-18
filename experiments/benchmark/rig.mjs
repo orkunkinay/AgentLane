@@ -8,7 +8,7 @@ const root = resolve(import.meta.dirname, '../..');
 const quote = (s) => "'" + s.replaceAll("'", "'\\''") + "'";
 export async function createRig(origin, options) {
   const profile = await mkdtemp(join(tmpdir(), 'al-bench-'));
-  let context, protocol, cdp, agent, transport;
+  let context, protocol, cdp, agent, transport, bridgeState;
   try {
     const extension = join(profile, 'extension');
     await cp(join(root, 'extension'), extension, { recursive: true });
@@ -63,6 +63,7 @@ export async function createRig(origin, options) {
           allowed_origins: [`chrome-extension://${new URL(worker.url()).host}/`],
         }),
       );
+      bridgeState = state;
       await worker.evaluate(() => globalThis.benchConnect());
       await stat(join(state, 'browser.sock'));
       protocol = new Client({ name: 'agentlane-benchmark', version: '1.0.0' });
@@ -147,6 +148,7 @@ export async function createRig(origin, options) {
     const browserPid = info?.processInfo.find((p) => p.type === 'browser')?.id ?? null;
     const rig = {
       call,
+      bridgeState,
       context,
       human,
       human2,

@@ -102,13 +102,16 @@ test('disconnect cancels a queued mutation before dispatch', async () => {
   assert(!f.calls.some((c) => c[0] === 'Input.insertText'));
   assert.equal(f.tabs.size, 0);
 });
-test('timed out renderer poisons the lane and never falls back to native input', async () => {
+test('timed out renderer fences its owner without poisoning independent sessions', async () => {
   const f = fixture();
   await f.run('a', 'open', { url: 'https://example.com/' });
   f.lane.commandTimeoutMs = 5;
+  const send = f.lane.api.debugger.sendCommand;
   f.lane.api.debugger.sendCommand = () => new Promise(() => {});
   await assert.rejects(f.run('a', 'screenshot'), /timed out/);
-  await assert.rejects(f.run('b', 'open', { url: 'https://example.com/' }), /reload extension/);
+  f.lane.api.debugger.sendCommand = send;
+  await assert.rejects(f.run('a', 'screenshot'), /timed out/);
+  await f.run('b', 'open', { url: 'https://example.com/' });
 });
 
 test('detached sessions can close their owned tab without adopting anything', async () => {
@@ -152,6 +155,7 @@ test('read-only capture retries a provisional navigation surface without repeati
 test('an already staged tab needs no tab-strip edit while the human drags tabs', async () => {
   const f = fixture();
   await f.run('a', 'open', { url: 'https://example.com/' });
+  await f.run('a', 'screenshot');
   f.lane.api.tabs.update = async () => {
     throw Error('Tabs cannot be edited right now (user may be dragging a tab).');
   };
@@ -594,4 +598,35 @@ test('bounded queues reject overload before dispatch and recover capacity after 
   await first;
   await f.run('a', 'close');
   assert.equal(f.lane.queued, 0);
+});
+
+test('independent renderer input overlaps while operations on one owner stay ordered', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  await f.run('b', 'open', { url: 'https://example.com' });
+  const a = await f.run('a', 'screenshot');
+  const b = await f.run('b', 'screenshot');
+  const send = f.lane.api.debugger.sendCommand;
+  let release, entered;
+  const dispatched = new Promise((resolve) => {
+    entered = resolve;
+  });
+  f.lane.api.debugger.sendCommand = async (target, method, params) => {
+    if (target.tabId === 1 && method === 'Input.insertText') {
+      entered();
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+    }
+    return send(target, method, params);
+  };
+  const first = f.run('a', 'type', { frame: a.frame, text: 'a' });
+  await dispatched;
+  const same = f.run('a', 'screenshot');
+  await f.run('b', 'type', { frame: b.frame, text: 'b' });
+  assert(!f.calls.some(([method, tab]) => tab === 1 && method === 'Input.insertText'));
+  release();
+  await first;
+  await same;
+  assert(f.calls.some(([method, tab]) => tab === 2 && method === 'Input.insertText'));
 });

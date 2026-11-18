@@ -17,6 +17,8 @@ export class Lane {
     this.framePreparations = new Set();
     this.cancelled = new Set();
     this.tail = Promise.resolve();
+    this.sessionTails = new Map();
+    this.stagingTail = Promise.resolve();
     this.queued = 0;
     this.maxQueued = 128;
   }
@@ -59,9 +61,14 @@ export class Lane {
     const generation = this.generation;
     const owner = this.sessions.get(message.session);
     const epoch = owner?.controlEpoch;
-    const context = { id: crypto.randomUUID(), dispatched: false };
+    const context = {
+      id: crypto.randomUUID(),
+      dispatched: false,
+      expectedOwner: owner,
+      expectedEpoch: epoch,
+    };
     this.queued++;
-    const next = this.tail
+    const next = Promise.all([this.tail, this.sessionTails.get(message.session)])
       .then(() => {
         if (generation !== this.generation)
           throw Error(
@@ -74,7 +81,12 @@ export class Lane {
             'OPERATION_CANCELLED',
             'Ownership changed while queued; action was not dispatched.',
           );
-        return this.execute({ ...message, context }, generation);
+        const execute = () => this.execute({ ...message, context }, generation);
+        // The shared window has one selected-tab slot. Only staging/management
+        // holds this mutex; renderer-targeted input on independent tabs may overlap.
+        return ['open', 'close', 'screenshot'].includes(message.op)
+          ? this.stage(execute)
+          : execute();
       })
       .catch((error) => {
         error.details = describeFailure(error, {
@@ -91,7 +103,17 @@ export class Lane {
       .finally(() => {
         this.queued--;
       });
-    this.tail = next.catch(() => {});
+    const tail = next.catch(() => {});
+    this.sessionTails.set(message.session, tail);
+    tail.finally(() => {
+      if (this.sessionTails.get(message.session) === tail)
+        this.sessionTails.delete(message.session);
+    });
+    return next;
+  }
+  stage(execute) {
+    const next = this.stagingTail.then(execute);
+    this.stagingTail = next.catch(() => {});
     return next;
   }
   assertOwner(s) {
@@ -101,6 +123,7 @@ export class Lane {
         'Lane was recreated; the previous action was not continued. Call lane_open for a fresh owned tab.',
       );
     if (this.cancelled.has(owner.session)) throw Error('Session disconnected');
+    if (owner.failed) throw Error(owner.failed);
     if (owner.control !== 'AGENT_CONTROL' || owner.operation?.epoch !== owner.controlEpoch)
       throw new CoordinationError(
         'HUMAN_CONTROL',
@@ -229,14 +252,19 @@ export class Lane {
       // Only child frames of an owned tab are resumed; never attach to another tab.
       await this.command(frame, 'Runtime.runIfWaitingForDebugger');
     })();
+    owner.preparations ??= new Set();
+    owner.preparations.add(preparation);
     this.framePreparations.add(preparation);
     preparation
       .catch(() => {
         if (generation !== this.generation) return;
-        this.failed =
+        owner.failed =
           'Could not protect an embedded select picker; close the session and reload the extension.';
       })
-      .finally(() => this.framePreparations.delete(preparation));
+      .finally(() => {
+        owner.preparations.delete(preparation);
+        this.framePreparations.delete(preparation);
+      });
   }
   async command(s, method, params = {}) {
     const generation = s.generation;
@@ -267,7 +295,8 @@ export class Lane {
           timer = setTimeout(() => {
             const failure =
               'Renderer command timed out (a covered, minimized or other-Space agent window is a common cause); keep the agent window visible, then recreate the agent window or reload extension';
-            if (generation === this.generation) this.failed = failure;
+            if (generation === this.generation && this.sessions.get(owner.session) === owner)
+              owner.failed = failure;
             this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
             reject(Error(failure));
           }, this.commandTimeoutMs);
@@ -307,12 +336,19 @@ export class Lane {
     { session, op, args = {}, context = { id: crypto.randomUUID(), dispatched: false } },
     generation = this.generation,
   ) {
+    if (generation !== this.generation)
+      throw Error('Lane was recreated; action was not dispatched.');
     if (this.cancelled.has(session) && op !== 'close') throw Error('Session disconnected');
     if (typeof session !== 'string' || !session) throw Error('Missing session');
     if (!['open', 'close', 'screenshot', 'click', 'type', 'key', 'scroll', 'navigate'].includes(op))
       throw Error('Unsupported operation');
     if (op === 'close') {
       const s = await this.owned(session, true);
+      if (
+        context.expectedOwner &&
+        (s !== context.expectedOwner || s.controlEpoch !== context.expectedEpoch)
+      )
+        throw Error('Ownership changed; close was not dispatched.');
       if (s.control !== 'AGENT_CONTROL' && !this.cancelled.has(session))
         throw new CoordinationError(
           'HUMAN_CONTROL',
@@ -368,11 +404,7 @@ export class Lane {
         this.assertOwner(s);
         await this.api.debugger.attach({ tabId: tab.id }, '1.3');
         await this.prepareTarget(s);
-        // Changes selection only inside the dedicated lane, never focuses its window.
-        await this.tabEdit(
-          () => this.api.tabs.update(tab.id, { active: true, autoDiscardable: false }),
-          session,
-        );
+        await this.tabEdit(() => this.api.tabs.update(tab.id, { autoDiscardable: false }), session);
         await this.command(s, 'Page.navigate', { url });
         return { opened: true, width: 1100, height: 760 };
       } catch (e) {
@@ -385,16 +417,21 @@ export class Lane {
       }
     }
     const s = await this.owned(session);
+    if (
+      context.expectedOwner &&
+      (s !== context.expectedOwner || s.controlEpoch !== context.expectedEpoch)
+    )
+      throw Error('Ownership changed; action was not dispatched.');
     context.epoch = s.controlEpoch;
     s.operation = context;
     this.assertOwner(s);
-    await Promise.all([...this.framePreparations]);
+    await Promise.all([...(s.preparations || [])]);
     if (this.failed) throw Error(this.failed);
-    // Stage only the exact owned tab; never touch the human's selected tab.
-    const stagedTab = await this.api.tabs.get(s.tabId);
-    if (!stagedTab.active)
-      await this.tabEdit(() => this.api.tabs.update(s.tabId, { active: true }), session);
     if (op === 'screenshot') {
+      // Capture needs a visible tab surface; selection changes only in the lane.
+      const stagedTab = await this.api.tabs.get(s.tabId);
+      if (!stagedTab.active)
+        await this.tabEdit(() => this.api.tabs.update(s.tabId, { active: true }), session);
       s.frame = null;
       for (let attempt = 0; attempt < 8; attempt++) {
         const revision = s.navigationRevision;
