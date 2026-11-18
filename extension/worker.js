@@ -1,4 +1,5 @@
 import { Lane } from './lane.js';
+import { describeFailure } from './errors.js';
 import { parseStartingPolicy, restoreStartingPolicy } from './starting-websites.js';
 export const lane = new Lane(chrome);
 let settings = { mode: 'selected', websites: [] };
@@ -46,7 +47,7 @@ function connect() {
         connection.postMessage({ id: m.id, result });
       } catch (e) {
         try {
-          connection.postMessage({ id: m.id, error: e.message });
+          connection.postMessage({ id: m.id, error: e.message, details: describeFailure(e) });
         } catch {}
       }
     });

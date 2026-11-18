@@ -1,6 +1,7 @@
 import net from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { socketPath } from './paths.js';
+import { CoordinationError } from '../extension/errors.js';
 export class BrowserClient {
   async connect() {
     if (this.socket && !this.socket.destroyed && this.socket.readyState === 'open') return;
@@ -8,6 +9,7 @@ export class BrowserClient {
     const socket = net.createConnection(socketPath);
     this.socket = socket;
     let buffer = '';
+    socket.setEncoding('utf8');
     socket.on('error', () => {});
     socket.on('data', (chunk) => {
       if (this.socket !== socket) return;
@@ -22,14 +24,19 @@ export class BrowserClient {
         buffer = buffer.slice(end + 1);
         const p = this.pending;
         if (!p || p.socket !== socket) continue;
-        this.pending = null;
-        clearTimeout(p.timer);
         try {
           const m = JSON.parse(line);
-          if (m.error) p.reject(Error(m.error));
-          else p.resolve(m.result);
-        } catch (e) {
-          p.reject(e);
+          // Unrelated/late acknowledgements must never complete a newer operation.
+          if (m.id !== p.id) continue;
+          this.pending = null;
+          clearTimeout(p.timer);
+          if (m.error) {
+            const error = Error(m.error);
+            error.details = m.details;
+            p.reject(error);
+          } else p.resolve(m.result);
+        } catch {
+          socket.destroy();
         }
       }
     });
@@ -39,8 +46,10 @@ export class BrowserClient {
         clearTimeout(p.timer);
         this.pending = null;
         p.reject(
-          Error(
+          new CoordinationError(
+            'OPERATION_OUTCOME_UNKNOWN',
             'Browser bridge disconnected during the action. Its outcome is unknown; it was not retried. Reconnect from the extension, then call lane_open for a new owned tab.',
+            { mayHaveExecuted: true, operationId: p.id },
           ),
         );
       }
@@ -73,8 +82,9 @@ export class BrowserClient {
         );
       return await new Promise((resolve, reject) => {
         const timer = setTimeout(() => socket.destroy(), 35000);
-        this.pending = { resolve, reject, timer, socket };
-        socket.write(JSON.stringify({ id: randomUUID(), op, args }) + '\n');
+        const id = randomUUID();
+        this.pending = { resolve, reject, timer, socket, id };
+        socket.write(JSON.stringify({ id, op, args }) + '\n');
       });
     } finally {
       this.callInProgress = false;

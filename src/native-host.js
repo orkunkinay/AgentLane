@@ -4,6 +4,7 @@ import { mkdir, lstat, chmod, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { NativeDecoder, nativeFrame } from './framing.js';
 import { stateDir, socketPath } from './paths.js';
+import { CoordinationError } from '../extension/errors.js';
 process.umask(0o077);
 if (process.platform === 'darwin' && Buffer.byteLength(socketPath) > 103)
   throw Error(
@@ -25,13 +26,16 @@ decoder.on('data', (m) => {
   if (!p) return;
   pending.delete(m.id);
   clearTimeout(p.timer);
-  if (!p.socket.destroyed) p.socket.write(JSON.stringify(m) + '\n');
+  p.client.busy = false;
+  if (!p.socket.destroyed) p.socket.write(JSON.stringify({ ...m, id: p.requestId }) + '\n');
 });
 const server = net.createServer((socket) => {
+  if (clients.size >= 64) return socket.destroy();
   clients.add(socket);
+  socket.setEncoding('utf8');
   const session = randomUUID();
+  const client = { busy: false };
   let buffer = '';
-  let busy = false;
   socket.on('data', (chunk) => {
     buffer += chunk.toString();
     if (Buffer.byteLength(buffer) > 65536) {
@@ -42,30 +46,30 @@ const server = net.createServer((socket) => {
     while ((end = buffer.indexOf('\n')) >= 0) {
       const line = buffer.slice(0, end);
       buffer = buffer.slice(end + 1);
+      let requestId;
       try {
         const m = JSON.parse(line);
-        if (busy) throw Error('One in-flight request per client');
+        requestId = m.id;
+        if (client.busy) throw Error('One in-flight request per client');
         if (typeof m.id !== 'string' || m.id.length > 100) throw Error('Invalid request ID');
+        if (pending.size >= 64) throw Error('Broker request capacity exceeded');
         const id = randomUUID();
-        busy = true;
+        client.busy = true;
         const timer = setTimeout(() => {
           pending.delete(id);
           socket.destroy();
         }, 30000);
         // Session and routing ID are host-owned; caller cannot impersonate a lane.
-        pending.set(id, { socket, timer });
+        pending.set(id, { socket, timer, requestId, client });
         send({ id, session, op: m.op, args: m.args });
-        // busy is released by response, below, through one handler per request.
-        const done = (msg) => {
-          if (msg.id === id) {
-            busy = false;
-            decoder.off('data', done);
-          }
-        };
-        decoder.on('data', done);
-        socket.once('close', () => decoder.off('data', done));
       } catch (e) {
-        socket.write(JSON.stringify({ error: e.message }) + '\n');
+        socket.write(
+          JSON.stringify({
+            id: requestId,
+            error: e.message,
+            details: new CoordinationError('INVALID_REQUEST', e.message).details,
+          }) + '\n',
+        );
       }
     }
   });

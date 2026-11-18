@@ -21,6 +21,7 @@ const files = [
   'manifest.json',
   'worker.js',
   'lane.js',
+  'errors.js',
   'select-picker.js',
   'starting-websites.js',
   'setup.html',
