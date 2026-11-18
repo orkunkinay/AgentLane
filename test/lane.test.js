@@ -630,3 +630,82 @@ test('independent renderer input overlaps while operations on one owner stay ord
   await same;
   assert(f.calls.some(([method, tab]) => tab === 2 && method === 'Input.insertText'));
 });
+
+test('human handoff fences running input, blocks closing, and handback requires a fresh frame', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  const shot = await f.run('a', 'screenshot');
+  const send = f.lane.api.debugger.sendCommand;
+  let entered, release;
+  const started = new Promise((r) => {
+    entered = r;
+  });
+  f.lane.api.debugger.sendCommand = async (t, m, p) => {
+    if (m === 'Input.dispatchMouseEvent' && p.type === 'mousePressed') {
+      entered();
+      await new Promise((r) => {
+        release = r;
+      });
+    }
+    return send(t, m, p);
+  };
+  const action = f.run('a', 'click', { frame: shot.frame, x: 5, y: 5 });
+  await started;
+  const handoff = f.lane.pause('a');
+  assert.equal(f.lane.sessions.get('a').control, 'HANDOFF_PENDING');
+  release();
+  await assert.rejects(action, (e) => e.details.mayHaveExecuted);
+  assert.equal((await handoff).control, 'HUMAN_CONTROL');
+  await assert.rejects(f.run('a', 'close'), /Human-controlled/);
+  await assert.rejects(f.run('a', 'screenshot'), /human control/);
+  f.window.focused = true;
+  await assert.rejects(f.lane.resume('a'), /focused/);
+  f.window.focused = false;
+  await f.lane.resume('a');
+  await assert.rejects(f.run('a', 'click', { frame: shot.frame, x: 5, y: 5 }), /Stale/);
+  assert(
+    !f.calls.some(([m, , p]) => m === 'Input.dispatchMouseEvent' && p.type === 'mouseReleased'),
+  );
+});
+
+test('observation capability cannot be bypassed through another input or navigation tool', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  f.lane.setAccess('a', 'observe');
+  const shot = await f.run('a', 'screenshot');
+  for (const op of ['click', 'type', 'key', 'scroll', 'navigate'])
+    await assert.rejects(
+      f.run('a', op, {
+        frame: shot.frame,
+        x: 5,
+        y: 5,
+        text: 'x',
+        key: 'Enter',
+        deltaX: 0,
+        deltaY: 10,
+        url: 'https://example.com',
+      }),
+      (e) => e.details.code === 'CAPABILITY_DENIED',
+    );
+  assert(!f.calls.some(([m]) => m.startsWith('Input.')));
+  await f.run('a', 'close');
+});
+
+test('a disconnected human-controlled tab survives and can be explicitly released', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  await f.lane.pause('a');
+  await f.lane.cancel('a');
+  assert(f.tabs.has(1));
+  await f.lane.release('a');
+  assert(f.tabs.has(1));
+  assert.equal(f.lane.sessions.size, 0);
+});
+
+test('a move event revokes ownership even if the tab moves back before the next call', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  f.lane.tabDetached(1);
+  await assert.rejects(f.run('a', 'screenshot'), /No owned tab/);
+  assert(f.tabs.has(1));
+});

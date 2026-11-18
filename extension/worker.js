@@ -13,6 +13,9 @@ const settingsReady = chrome.storage.local
 let port;
 let bridge = 'disconnected';
 let connectionAttempt;
+function notifySetup() {
+  chrome.runtime.sendMessage({ op: 'stateChanged' }).catch(() => {});
+}
 function connect() {
   if (bridge === 'connected') return Promise.resolve();
   if (connectionAttempt) return connectionAttempt;
@@ -36,6 +39,7 @@ function connect() {
         connection.postMessage({ event: 'disclosure', version: 2 });
         clearTimeout(timer);
         bridge = 'connected';
+        notifySetup();
         resolve();
         return;
       }
@@ -46,10 +50,12 @@ function connect() {
       try {
         const result = await lane.run(m);
         connection.postMessage({ id: m.id, result });
+        notifySetup();
       } catch (e) {
         try {
           connection.postMessage({ id: m.id, error: e.message, details: describeFailure(e) });
         } catch {}
+        notifySetup();
       }
     });
     connection.onDisconnect.addListener(() => {
@@ -61,6 +67,7 @@ function connect() {
         bridge = 'disconnected';
         // A new native host assigns new identities. Revoke and close only old owned tabs.
         for (const session of lane.sessions.keys()) lane.cancel(session);
+        notifySetup();
       }
       reject(
         Error('AgentLane could not connect to Chrome. Finish the one-time setup, then try again.'),
@@ -96,10 +103,28 @@ async function setupState() {
     consentRequired: !accessConsent,
     activeSessions: lane.sessions.size,
     needsReload: Boolean(lane.failed),
+    sessions: await Promise.all(
+      [...lane.sessions].map(async ([id, s]) => ({
+        id,
+        control: s.control,
+        access: s.access,
+        failed: Boolean(s.failed),
+        title: (await chrome.tabs.get(s.tabId).catch(() => null))?.title || 'Agent tab',
+      })),
+    ),
   };
 }
 chrome.runtime.onMessage.addListener((m, sender, respond) => {
   if (sender.id !== chrome.runtime.id || sender.url !== chrome.runtime.getURL('setup.html')) return;
+  if (['pause', 'resume', 'access', 'release'].includes(m.op)) {
+    (async () => {
+      if (m.op === 'access') lane.setAccess(m.session, m.access);
+      else await lane[m.op](m.session);
+      notifySetup();
+      return setupState();
+    })().then(respond, (e) => respond({ error: e.message }));
+    return true;
+  }
   if (m.op === 'status') {
     setupState().then(respond, (e) => respond({ error: e.message }));
     return true;
@@ -173,8 +198,18 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
       .catch(() => {});
   }
 });
-chrome.windows.onRemoved.addListener((windowId) => lane.windowRemoved(windowId));
+chrome.windows.onRemoved.addListener((windowId) => {
+  lane.windowRemoved(windowId);
+  notifySetup();
+});
+chrome.windows.onFocusChanged.addListener(notifySetup);
+chrome.windows.onBoundsChanged.addListener(notifySetup);
+chrome.tabs.onDetached.addListener((tabId) => {
+  lane.tabDetached(tabId);
+  notifySetup();
+});
 chrome.tabs.onRemoved.addListener((tabId) => {
   for (const [id, s] of lane.sessions) if (s.tabId === tabId) lane.sessions.delete(id);
+  notifySetup();
 });
 // Intentionally no startup adoption: worker restart loses capabilities and fails closed.

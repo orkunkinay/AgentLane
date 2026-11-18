@@ -399,3 +399,30 @@ summary:focus-visible {
   outline-offset: 4px;
   border-radius: 3px;
 }
+
+#sessions {
+  margin-top: 14px;
+}
+#sessions h2 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+#session-list {
+  max-height: 180px;
+  overflow-y: auto;
+}
+.session-row {
+  border-top: 1px solid #d7ddd1;
+  padding: 8px 0;
+}
+.session-row p {
+  margin: 0 0 6px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.session-row button {
+  margin: 2px 6px 2px 0;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 11px;
+}

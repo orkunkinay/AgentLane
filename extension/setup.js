@@ -77,6 +77,7 @@ function render() {
     error.hidden = false;
   }
   document.querySelector('#ready-note').hidden = !connected;
+  renderSessions();
   document.querySelector('#ready-copy').textContent = state.minimized
     ? 'Restore the agent window manually, then switch back to your usual window.'
     : state.focused
@@ -158,6 +159,43 @@ form.addEventListener('submit', async (event) => {
   }
 });
 await refresh(true);
-setInterval(() => {
-  if (!pending) refresh();
-}, 2000);
+chrome.runtime.onMessage.addListener((message, sender) => {
+  if (sender.id === chrome.runtime.id && message.op === 'stateChanged' && !pending) refresh();
+});
+function renderSessions() {
+  const sessions = state.sessions || [];
+  document.querySelector('#sessions').hidden = sessions.length === 0;
+  const list = document.querySelector('#session-list');
+  list.replaceChildren();
+  for (const session of sessions) {
+    const row = document.createElement('div');
+    row.className = 'session-row';
+    const title = document.createElement('p');
+    title.textContent = session.title + ' · ' + session.id.slice(0, 8) + ' · ' + session.control;
+    row.append(title);
+    const add = (label, op, extra = {}) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.disabled = session.control === 'HANDOFF_PENDING';
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        const result = await chrome.runtime.sendMessage({ op, session: session.id, ...extra });
+        if (result.error) {
+          error.textContent = result.error;
+          error.hidden = false;
+        }
+        await refresh();
+      });
+      row.append(button);
+    };
+    if (session.control === 'HUMAN_CONTROL') {
+      add('Hand back to agent', 'resume');
+      add('Release tab to me', 'release');
+    } else add('Take control', 'pause');
+    add(session.access === 'observe' ? 'Allow interaction' : 'Observe only', 'access', {
+      access: session.access === 'observe' ? 'interact' : 'observe',
+    });
+    list.append(row);
+  }
+}

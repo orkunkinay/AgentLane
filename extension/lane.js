@@ -62,7 +62,7 @@ export class Lane {
     const owner = this.sessions.get(message.session);
     const epoch = owner?.controlEpoch;
     const context = {
-      id: crypto.randomUUID(),
+      id: message.id || crypto.randomUUID(),
       dispatched: false,
       expectedOwner: owner,
       expectedEpoch: epoch,
@@ -316,10 +316,64 @@ export class Lane {
       clearTimeout(timer);
     }
   }
+  async pause(session) {
+    const s = this.sessions.get(session);
+    if (!s) throw Error('No owned tab');
+    if (s.control !== 'AGENT_CONTROL') throw Error('Session is already paused');
+    s.controlEpoch++;
+    s.control = 'HANDOFF_PENDING';
+    s.frame = null;
+    const mayHaveExecuted = Boolean(s.operation?.dispatched);
+    await this.sessionTails.get(session);
+    if (this.sessions.get(session) !== s) throw Error('Ownership changed during handoff');
+    s.control = 'HUMAN_CONTROL';
+    return { control: s.control, mayHaveExecuted };
+  }
+  async resume(session) {
+    const s = await this.owned(session, true);
+    if (s.control !== 'HUMAN_CONTROL') throw Error('Session is not under human control');
+    await this.assertLane();
+    if (this.sessions.get(session) !== s) throw Error('Ownership changed during handback');
+    if (s.failed) throw Error(s.failed);
+    s.controlEpoch++;
+    s.control = 'AGENT_CONTROL';
+    s.frame = null;
+    s.frameInvalidation = 'Explicit human handback; fresh observation required';
+    return { control: s.control, observationRequired: true };
+  }
+  setAccess(session, access) {
+    if (!['observe', 'interact'].includes(access)) throw Error('Unknown access policy');
+    const s = this.sessions.get(session);
+    if (!s) throw Error('No owned tab');
+    s.controlEpoch++;
+    s.frame = null;
+    s.access = access;
+  }
+  async release(session) {
+    const s = this.sessions.get(session);
+    if (!s || s.control !== 'HUMAN_CONTROL') throw Error('Take human control before releasing');
+    s.controlEpoch++;
+    this.sessions.delete(session);
+    await this.api.debugger.detach({ tabId: s.tabId }).catch(() => {});
+    return { released: true };
+  }
+  tabDetached(tabId) {
+    for (const [session, s] of this.sessions) {
+      if (s.tabId !== tabId) continue;
+      s.controlEpoch++;
+      this.sessions.delete(session);
+      this.api.debugger.detach({ tabId }).catch(() => {});
+    }
+  }
   cancel(session) {
     this.cancelled.add(session);
     const owner = this.sessions.get(session);
     if (owner) owner.controlEpoch++;
+    if (owner && owner.control !== 'AGENT_CONTROL') {
+      owner.control = 'HUMAN_CONTROL';
+      this.cancelled.delete(session);
+      return Promise.resolve();
+    }
     return this.run({ session, op: 'close' })
       .catch(() => {})
       .finally(() => this.cancelled.delete(session));
@@ -390,6 +444,7 @@ export class Lane {
         tabId: tab.id,
         session,
         control: 'AGENT_CONTROL',
+        access: 'interact',
         controlEpoch: 0,
         operation: { ...context, epoch: 0 },
         frame: null,
@@ -423,6 +478,11 @@ export class Lane {
     )
       throw Error('Ownership changed; action was not dispatched.');
     context.epoch = s.controlEpoch;
+    if (s.access === 'observe' && op !== 'screenshot')
+      throw new CoordinationError(
+        'CAPABILITY_DENIED',
+        'This session permits observation only; browser input and navigation are denied.',
+      );
     s.operation = context;
     this.assertOwner(s);
     await Promise.all([...(s.preparations || [])]);

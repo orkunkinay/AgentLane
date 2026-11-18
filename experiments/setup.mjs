@@ -180,6 +180,20 @@ try {
   };
   await client.call('open', { url: 'https://example.com/' });
   await page.waitForFunction(() => document.querySelector('#origins').disabled);
+  await page.getByRole('button', { name: 'Take control', exact: true }).click();
+  await page.getByRole('button', { name: 'Hand back to agent', exact: true }).waitFor();
+  await assert.rejects(client.call('close'), /Human-controlled/);
+  await page.getByRole('button', { name: 'Observe only', exact: true }).click();
+  await page.getByRole('button', { name: 'Allow interaction', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Hand back to agent', exact: true }).click();
+  await page.getByRole('button', { name: 'Take control', exact: true }).waitFor();
+  await assert.rejects(
+    client.call('navigate', { url: 'https://example.com/' }),
+    /observation only/,
+  );
+  await page.getByRole('button', { name: 'Allow interaction', exact: true }).click();
+  await page.getByRole('button', { name: 'Observe only', exact: true }).waitFor();
+
   // Avoid network dependence for input policy: the owned tab need only exist.
   const locked = await page.evaluate(() =>
     chrome.runtime.sendMessage({ op: 'prepare', origins: ['https://changed.example'] }),
