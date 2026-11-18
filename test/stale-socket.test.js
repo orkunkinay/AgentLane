@@ -68,3 +68,45 @@ test(
     }
   },
 );
+
+test('concurrent stale-socket claimants elect exactly one broker', { timeout: 15000 }, async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'al-election-'));
+  const children = [];
+  try {
+    const first = start(dir);
+    children.push(first);
+    await waitForSocket(join(dir, 'browser.sock'));
+    const ended = once(first, 'exit');
+    first.kill('SIGKILL');
+    await ended;
+    const outcomes = await Promise.all(
+      Array.from({ length: 5 }, () => {
+        const child = start(dir);
+        children.push(child);
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(Error('Election did not finish')), 5000);
+          child.stdout.once('data', () => {
+            clearTimeout(timer);
+            resolve({ child, ready: true });
+          });
+          child.once('exit', (code) => {
+            clearTimeout(timer);
+            resolve({ child, ready: false, code });
+          });
+        });
+      }),
+    );
+    assert.equal(outcomes.filter((r) => r.ready).length, 1);
+    assert(outcomes.filter((r) => !r.ready).every((r) => r.code !== 0));
+  } finally {
+    await Promise.all(
+      children.map(async (child) => {
+        if (child.exitCode !== null || child.signalCode !== null) return;
+        const ended = once(child, 'exit');
+        child.kill('SIGKILL');
+        await ended;
+      }),
+    );
+    await rm(dir, { recursive: true, force: true });
+  }
+});

@@ -783,3 +783,16 @@ test('an orphaned persistent session can be taken by the human and handed back f
     ).recovered,
   );
 });
+
+test('closing and reopening cannot reset a human-selected observation policy', async () => {
+  const f = fixture();
+  await f.run('a', 'open', { url: 'https://example.com' });
+  f.lane.setAccess('a', 'observe');
+  await f.run('a', 'close');
+  await f.run('a', 'open', { url: 'https://example.com' });
+  const shot = await f.run('a', 'screenshot');
+  await assert.rejects(
+    f.run('a', 'type', { frame: shot.frame, text: 'bypass' }),
+    (e) => e.details.code === 'CAPABILITY_DENIED',
+  );
+});

@@ -1,6 +1,7 @@
 import { lstatSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { CoordinationError } from '../extension/errors.js';
 
 // Kernel-backed SQLite locks are released on process death, including SIGKILL.
 // No heartbeat, polling, PID reuse inference or user-space stale-lock deletion.
@@ -94,7 +95,10 @@ export async function openBrokerStore(directory) {
           .update(session + '\0' + request)
           .digest('hex');
         if (db.prepare('SELECT id FROM operations WHERE dedupe=?').get(dedupe))
-          throw Error('Duplicate operation ID was not replayed; observe the current state.');
+          throw new CoordinationError(
+            'OPERATION_ALREADY_RECORDED',
+            'Duplicate operation ID was not replayed; observe the current state.',
+          );
         // Bound retained metadata. Never discard in-flight operations to make room.
         const active = db
           .prepare("SELECT COUNT(*) AS count FROM operations WHERE state IN ('QUEUED','RUNNING')")

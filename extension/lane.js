@@ -15,6 +15,7 @@ export class Lane {
     this.origins = [];
     this.mode = 'selected';
     this.sessions = new Map();
+    this.policies = new Map();
     this.framePreparations = new Set();
     this.cancelled = new Set();
     this.tail = Promise.resolve();
@@ -377,6 +378,11 @@ export class Lane {
     if (!s) throw Error('No owned tab');
     s.controlEpoch++;
     s.frame = null;
+    if (access === 'observe') {
+      if (!this.policies.has(session) && this.policies.size >= 256)
+        throw Error('Access policy capacity exceeded');
+      this.policies.set(session, 'observe');
+    } else this.policies.delete(session);
     s.access = access;
   }
   async release(session) {
@@ -510,7 +516,7 @@ export class Lane {
         tabId: tab.id,
         session,
         control: 'AGENT_CONTROL',
-        access: 'interact',
+        access: this.policies.get(session) || 'interact',
         persistent,
         controlEpoch: 0,
         operation: { ...context, epoch: 0 },

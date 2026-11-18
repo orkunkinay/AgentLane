@@ -191,6 +191,10 @@ function listen() {
 function isLive() {
   return new Promise((resolve) => {
     const probe = net.createConnection(socketPath);
+    probe.setTimeout(1000, () => {
+      probe.destroy();
+      resolve(true);
+    });
     probe.once('connect', () => (probe.destroy(), resolve(true)));
     probe.once('error', (e) => resolve(e.code !== 'ECONNREFUSED' && e.code !== 'ENOENT'));
   });

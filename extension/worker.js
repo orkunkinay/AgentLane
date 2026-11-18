@@ -6,9 +6,20 @@ let settings = { mode: 'selected', websites: [] };
 let accessConsent = false;
 let environmentId;
 const settingsReady = chrome.storage.local
-  .get(['startingPolicy', 'websites', 'origins', 'accessConsentVersion', 'browserEnvironmentId'])
+  .get([
+    'startingPolicy',
+    'websites',
+    'origins',
+    'accessConsentVersion',
+    'browserEnvironmentId',
+    'accessPolicies',
+  ])
   .then(async (saved) => {
     settings = restoreStartingPolicy(saved);
+    if (saved.accessPolicies && typeof saved.accessPolicies === 'object')
+      for (const [session, access] of Object.entries(saved.accessPolicies).slice(0, 256))
+        if (/^[0-9a-f-]{36}$/.test(session))
+          lane.policies.set(session, access === 'interact' ? 'interact' : 'observe');
     accessConsent = saved.accessConsentVersion === 2;
     environmentId = saved.browserEnvironmentId;
     if (typeof environmentId !== 'string' || !/^[0-9a-f-]{36}$/.test(environmentId)) {
@@ -64,7 +75,13 @@ function connect() {
         return;
       }
       if (m.op === 'disconnect') {
-        lane.cancel(m.session);
+        lane.cancel(m.session).finally(() => {
+          lane.policies.delete(m.session);
+          chrome.storage.local
+            .set({ accessPolicies: Object.fromEntries(lane.policies) })
+            .catch(() => {});
+          notifySetup();
+        });
         return;
       }
       try {
@@ -141,8 +158,10 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
   if (sender.id !== chrome.runtime.id || sender.url !== chrome.runtime.getURL('setup.html')) return;
   if (['pause', 'resume', 'access', 'release'].includes(m.op)) {
     (async () => {
-      if (m.op === 'access') lane.setAccess(m.session, m.access);
-      else await lane[m.op](m.session);
+      if (m.op === 'access') {
+        lane.setAccess(m.session, m.access);
+        await chrome.storage.local.set({ accessPolicies: Object.fromEntries(lane.policies) });
+      } else await lane[m.op](m.session);
       notifySetup();
       return setupState();
     })().then(respond, (e) => respond({ error: e.message }));
