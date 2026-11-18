@@ -11,6 +11,18 @@ test('kernel lock prevents a second broker and journal restart preserves uncerta
   try {
     first = await openBrokerStore(dir);
     await assert.rejects(openBrokerStore(dir), /already running/);
+    const identity = first.resolveSession('synthetic-credential-hash', 'browser-a');
+    assert.deepEqual(
+      { ...first.resolveSession('synthetic-credential-hash', 'browser-a') },
+      {
+        ...identity,
+        environment: 'browser-a',
+      },
+    );
+    assert.throws(
+      () => first.resolveSession('synthetic-credential-hash', 'browser-b'),
+      /different browser/,
+    );
     const uncertain = first.start('session', 'request', 'click');
     const read = first.start('session', 'read', 'screenshot');
     const completed = first.start('session', 'completed', 'type');

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 const dir = await mkdtemp(join(tmpdir(), 'al-client-'));
@@ -29,6 +29,39 @@ test('client correlates replies and preserves fragmented UTF-8 without completin
   } finally {
     client.close();
     await new Promise((resolve) => server.close(resolve));
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('cancellation before dispatch creates no connection and cancellation after dispatch is uncertain', async () => {
+  const before = new AbortController();
+  before.abort();
+  const idle = new BrowserClient();
+  await assert.rejects(
+    idle.call('click', {}, { signal: before.signal }),
+    (e) => e.details.code === 'OPERATION_CANCELLED' && !e.details.mayHaveExecuted,
+  );
+  assert.equal(idle.socket, undefined);
+  await mkdir(dir, { mode: 0o700 });
+  const controller = new AbortController();
+  let calls = 0;
+  const server = net.createServer((socket) =>
+    socket.once('data', () => {
+      calls++;
+      controller.abort();
+    }),
+  );
+  await new Promise((resolve) => server.listen(join(dir, 'browser.sock'), resolve));
+  const client = new BrowserClient();
+  try {
+    await assert.rejects(
+      client.call('click', {}, { signal: controller.signal }),
+      (e) => e.details.code === 'OPERATION_OUTCOME_UNKNOWN' && e.details.mayHaveExecuted,
+    );
+    assert.equal(calls, 1);
+  } finally {
+    client.close();
+    await new Promise((r) => server.close(r));
     await rm(dir, { recursive: true, force: true });
   }
 });

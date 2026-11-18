@@ -2,7 +2,13 @@
 
 <img src="extension/icons/logo.png" alt="AgentLane logo" width="120">
 
-**Keep using your logged-in Chrome while an AI agent works in its own visual lane.**
+**Your AI agent wants to use Chrome. So do you.**
+
+Keep using your logged-in Chrome while agents work in their own visual lanes.
+
+> **0.2.0 source is unreleased.** It adds per-owner scheduling, opt-in MCP/native-host
+> session survival, a metadata journal and human takeover. The verified store version
+> is still 0.1.1. [Coordination, setup and exact recovery limits](docs/COORDINATION.md).
 
 **Website and documentation:** open [`index.html`](index.html) (static; served by GitHub Pages) or run `npm run site` and visit <http://localhost:4173>. Check it with `npm run check:site`.
 

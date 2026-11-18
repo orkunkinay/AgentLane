@@ -1,6 +1,7 @@
 import net from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { socketPath } from './paths.js';
+import { readSessionKey } from './session-key.js';
 import { CoordinationError } from '../extension/errors.js';
 export class BrowserClient {
   async connect() {
@@ -59,8 +60,27 @@ export class BrowserClient {
       socket.once('error', reject);
       socket.once('close', () => reject(Error('Connection closed before ready')));
     })
-      .catch(() => {
+      .then(async () => {
+        if (!process.env.AGENTLANE_SESSION_FILE) return;
+        let token;
+        try {
+          token = await readSessionKey(process.env.AGENTLANE_SESSION_FILE);
+        } catch {
+          throw new CoordinationError(
+            'SESSION_CREDENTIAL_INVALID',
+            'Session capability could not be read. Use an owner-only regular file created by scripts/create-session.mjs.',
+          );
+        }
+        this.sessionInfo = await new Promise((resolve, reject) => {
+          const id = randomUUID();
+          const timer = setTimeout(() => socket.destroy(), 5000);
+          this.pending = { id, resolve, reject, timer, socket };
+          socket.write(JSON.stringify({ id, op: '__resume', args: { token } }) + '\n');
+        });
+      })
+      .catch((error) => {
         socket.destroy();
+        if (error.details) throw error;
         throw Error(
           'Browser bridge unavailable. Open AgentLane in Chrome, create or connect the agent window, then retry lane_open in this conversation.',
         );
@@ -70,22 +90,28 @@ export class BrowserClient {
       });
     return this.connectionAttempt;
   }
-  async call(op, args = {}) {
+  async call(op, args = {}, { signal } = {}) {
+    if (signal?.aborted)
+      throw new CoordinationError('OPERATION_CANCELLED', 'Operation cancelled before dispatch.');
     if (this.callInProgress) throw Error('Concurrent actions are not supported on one session');
     this.callInProgress = true;
     try {
       await this.connect();
+      if (signal?.aborted)
+        throw new CoordinationError('OPERATION_CANCELLED', 'Operation cancelled before dispatch.');
       const socket = this.socket;
       if (socket.destroyed || socket.readyState !== 'open')
         throw Error(
           'Browser bridge disconnected before dispatch; reconnect from the extension and retry lane_open.',
         );
+      const abort = () => socket.destroy();
+      signal?.addEventListener('abort', abort, { once: true });
       return await new Promise((resolve, reject) => {
         const timer = setTimeout(() => socket.destroy(), 35000);
         const id = randomUUID();
         this.pending = { resolve, reject, timer, socket, id };
         socket.write(JSON.stringify({ id, op, args }) + '\n');
-      });
+      }).finally(() => signal?.removeEventListener('abort', abort));
     } finally {
       this.callInProgress = false;
     }

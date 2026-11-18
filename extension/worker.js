@@ -4,11 +4,17 @@ import { parseStartingPolicy, restoreStartingPolicy } from './starting-websites.
 export const lane = new Lane(chrome);
 let settings = { mode: 'selected', websites: [] };
 let accessConsent = false;
+let environmentId;
 const settingsReady = chrome.storage.local
-  .get(['startingPolicy', 'websites', 'origins', 'accessConsentVersion'])
-  .then((saved) => {
+  .get(['startingPolicy', 'websites', 'origins', 'accessConsentVersion', 'browserEnvironmentId'])
+  .then(async (saved) => {
     settings = restoreStartingPolicy(saved);
     accessConsent = saved.accessConsentVersion === 2;
+    environmentId = saved.browserEnvironmentId;
+    if (typeof environmentId !== 'string' || !/^[0-9a-f-]{36}$/.test(environmentId)) {
+      environmentId = crypto.randomUUID();
+      await chrome.storage.local.set({ browserEnvironmentId: environmentId });
+    }
   });
 let port;
 let bridge = 'disconnected';
@@ -36,11 +42,25 @@ function connect() {
     connection.onMessage.addListener(async (m) => {
       if (port !== connection) return;
       if (m.event === 'ready') {
-        connection.postMessage({ event: 'disclosure', version: 2 });
+        await settingsReady;
+        connection.postMessage({ event: 'disclosure', version: 2, environmentId });
+        if (m.disclosureProtocol === 2) return;
         clearTimeout(timer);
         bridge = 'connected';
         notifySetup();
         resolve();
+        return;
+      }
+      if (m.event === 'disclosureAccepted') {
+        clearTimeout(timer);
+        bridge = 'connected';
+        notifySetup();
+        resolve();
+        return;
+      }
+      if (m.op === 'suspend') {
+        lane.suspend(m.session);
+        notifySetup();
         return;
       }
       if (m.op === 'disconnect') {
@@ -66,7 +86,10 @@ function connect() {
         port = null;
         bridge = 'disconnected';
         // A new native host assigns new identities. Revoke and close only old owned tabs.
-        for (const session of lane.sessions.keys()) lane.cancel(session);
+        for (const [session, s] of lane.sessions) {
+          if (s.persistent) lane.suspend(session);
+          else lane.cancel(session);
+        }
         notifySetup();
       }
       reject(

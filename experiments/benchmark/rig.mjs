@@ -8,13 +8,13 @@ const root = resolve(import.meta.dirname, '../..');
 const quote = (s) => "'" + s.replaceAll("'", "'\\''") + "'";
 export async function createRig(origin, options) {
   const profile = await mkdtemp(join(tmpdir(), 'al-bench-'));
-  let context, protocol, cdp, agent, transport, bridgeState;
+  let context, protocol, cdp, agent, transport, bridgeState, nativePidFile;
   try {
     const extension = join(profile, 'extension');
     await cp(join(root, 'extension'), extension, { recursive: true });
     await appendFile(
       join(extension, 'worker.js'),
-      '\nglobalThis.benchLane=lane; globalThis.benchConnect=connect;\n',
+      '\nglobalThis.benchLane=lane; globalThis.benchConnect=connect; globalThis.benchDisconnect=()=>port.disconnect(); globalThis.benchBridge=()=>bridge;\n',
     );
     context = await chromium.launchPersistentContext(profile, {
       headless: !options.headed,
@@ -47,9 +47,10 @@ export async function createRig(origin, options) {
         hosts = join(profile, 'NativeMessagingHosts'),
         launcher = join(profile, 'host');
       await mkdir(hosts, { recursive: true });
+      nativePidFile = join(profile, 'native-host.pid');
       await writeFile(
         launcher,
-        `#!/bin/sh\nAGENTLANE_STATE_DIR=${quote(state)} exec ${quote(process.execPath)} ${quote(join(root, 'src/native-host.js'))} "$@"\n`,
+        `#!/bin/sh\necho $$ > ${quote(nativePidFile)}\nAGENTLANE_STATE_DIR=${quote(state)} exec ${quote(process.execPath)} ${quote(join(root, 'src/native-host.js'))} "$@"\n`,
         { mode: 0o700 },
       );
       await chmod(launcher, 0o700);
@@ -149,6 +150,7 @@ export async function createRig(origin, options) {
     const rig = {
       call,
       bridgeState,
+      nativePidFile,
       context,
       human,
       human2,

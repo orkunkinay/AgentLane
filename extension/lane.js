@@ -64,6 +64,7 @@ export class Lane {
     const context = {
       id: message.id || crypto.randomUUID(),
       dispatched: false,
+      active: true,
       expectedOwner: owner,
       expectedEpoch: epoch,
     };
@@ -101,6 +102,7 @@ export class Lane {
         throw error;
       })
       .finally(() => {
+        context.active = false;
         this.queued--;
       });
     const tail = next.catch(() => {});
@@ -124,7 +126,10 @@ export class Lane {
       );
     if (this.cancelled.has(owner.session)) throw Error('Session disconnected');
     if (owner.failed) throw Error(owner.failed);
-    if (owner.control !== 'AGENT_CONTROL' || owner.operation?.epoch !== owner.controlEpoch)
+    if (
+      owner.control !== 'AGENT_CONTROL' ||
+      (owner.operation?.active && owner.operation.epoch !== owner.controlEpoch)
+    )
       throw new CoordinationError(
         'HUMAN_CONTROL',
         'Session is paused for human control; explicit handback is required.',
@@ -316,6 +321,14 @@ export class Lane {
       clearTimeout(timer);
     }
   }
+  suspend(session) {
+    const s = this.sessions.get(session);
+    if (!s) return;
+    s.controlEpoch++;
+    s.suspended = true;
+    s.frame = null;
+    if (s.control === 'AGENT_CONTROL') s.control = 'DISCONNECTED';
+  }
   async pause(session) {
     const s = this.sessions.get(session);
     if (!s) throw Error('No owned tab');
@@ -387,7 +400,14 @@ export class Lane {
     }
   }
   async execute(
-    { session, op, args = {}, context = { id: crypto.randomUUID(), dispatched: false } },
+    {
+      session,
+      op,
+      args = {},
+      persistent = false,
+      recover = false,
+      context = { id: crypto.randomUUID(), dispatched: false },
+    },
     generation = this.generation,
   ) {
     if (generation !== this.generation)
@@ -396,6 +416,14 @@ export class Lane {
     if (typeof session !== 'string' || !session) throw Error('Missing session');
     if (!['open', 'close', 'screenshot', 'click', 'type', 'key', 'scroll', 'navigate'].includes(op))
       throw Error('Unsupported operation');
+    if (recover && !this.sessions.has(session)) {
+      if (op === 'close') return { closed: false, sessionReset: true };
+      throw new CoordinationError(
+        'SESSION_RECOVERY_FAILED',
+        'The previous browser capability no longer exists. No tab was adopted or recreated. Call lane_close to acknowledge the loss before opening a fresh tab.',
+        { humanActionRequired: true },
+      );
+    }
     if (op === 'close') {
       const s = await this.owned(session, true);
       if (
@@ -425,6 +453,27 @@ export class Lane {
     if (generation !== this.generation)
       throw Error('Lane was recreated; the action was not dispatched. Call lane_open.');
     if (op === 'open') {
+      const surviving = this.sessions.get(session);
+      if (surviving?.suspended) {
+        await this.owned(session, true);
+        if (surviving.control !== 'DISCONNECTED')
+          throw new CoordinationError(
+            'HUMAN_CONTROL',
+            'Explicit human handback is required before resuming this session.',
+          );
+        if (surviving.failed) throw Error(surviving.failed);
+        surviving.controlEpoch++;
+        surviving.control = 'AGENT_CONTROL';
+        surviving.suspended = false;
+        surviving.frame = null;
+        return {
+          opened: false,
+          recovered: true,
+          observationRequired: true,
+          width: 1100,
+          height: 760,
+        };
+      }
       if (this.sessions.has(session)) throw Error('Session already owns a tab');
       const url = this.url(args.url);
       const tab = await this.tabEdit(
@@ -445,6 +494,7 @@ export class Lane {
         session,
         control: 'AGENT_CONTROL',
         access: 'interact',
+        persistent,
         controlEpoch: 0,
         operation: { ...context, epoch: 0 },
         frame: null,

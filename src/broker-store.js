@@ -43,18 +43,52 @@ export async function openBrokerStore(directory) {
     lock.exec('BEGIN EXCLUSIVE; CREATE TABLE IF NOT EXISTS owner (id INTEGER PRIMARY KEY);');
     db = open('operations.sqlite');
     const version = db.prepare('PRAGMA user_version').get().user_version;
-    if (![0, 1].includes(version))
+    if (![0, 1, 2, 3].includes(version))
       throw Error('Unsupported broker journal schema; preserve it for review.');
+    db.exec('BEGIN IMMEDIATE');
     db.exec(`CREATE TABLE IF NOT EXISTS operations (
       id TEXT PRIMARY KEY, dedupe TEXT UNIQUE NOT NULL, session TEXT NOT NULL,
       op TEXT NOT NULL, state TEXT NOT NULL, created INTEGER NOT NULL
-    ); PRAGMA user_version=1;`);
+    );
+    CREATE TABLE IF NOT EXISTS sessions (
+      credential TEXT PRIMARY KEY, session TEXT UNIQUE NOT NULL, client TEXT NOT NULL, opened INTEGER NOT NULL
+    );`);
+    if (version < 3)
+      db.exec("ALTER TABLE sessions ADD COLUMN environment TEXT NOT NULL DEFAULT ''");
+    db.exec('PRAGMA user_version=3; COMMIT');
     db.exec(
       "UPDATE operations SET state=CASE WHEN op='screenshot' THEN 'FAILED' ELSE 'OUTCOME_UNKNOWN' END WHERE state IN ('QUEUED','RUNNING')",
     );
     const generation = randomUUID();
     return {
       generation,
+      resolveSession(credential, environment) {
+        let row = db
+          .prepare('SELECT session, client, opened, environment FROM sessions WHERE credential=?')
+          .get(credential);
+        if (!row) {
+          if (db.prepare('SELECT COUNT(*) AS count FROM sessions').get().count >= 256)
+            throw Error('Persistent session capacity exceeded; review local session registry.');
+          row = { session: randomUUID(), client: randomUUID(), opened: 0 };
+          db.prepare('INSERT INTO sessions VALUES (?,?,?,0,?)').run(
+            credential,
+            row.session,
+            row.client,
+            environment,
+          );
+        }
+        if (row.environment && row.environment !== environment)
+          throw Error('Session capability belongs to a different browser environment.');
+        if (!row.environment)
+          db.prepare('UPDATE sessions SET environment=? WHERE credential=?').run(
+            environment,
+            credential,
+          );
+        return row;
+      },
+      setOpened(session, opened) {
+        db.prepare('UPDATE sessions SET opened=? WHERE session=?').run(opened ? 1 : 0, session);
+      },
       start(session, request, op) {
         const dedupe = createHash('sha256')
           .update(session + '\0' + request)
@@ -62,9 +96,12 @@ export async function openBrokerStore(directory) {
         if (db.prepare('SELECT id FROM operations WHERE dedupe=?').get(dedupe))
           throw Error('Duplicate operation ID was not replayed; observe the current state.');
         // Bound retained metadata. Never discard in-flight operations to make room.
-        db.exec(
-          "DELETE FROM operations WHERE id IN (SELECT id FROM operations WHERE state NOT IN ('QUEUED','RUNNING') ORDER BY created DESC LIMIT -1 OFFSET 4095)",
-        );
+        const active = db
+          .prepare("SELECT COUNT(*) AS count FROM operations WHERE state IN ('QUEUED','RUNNING')")
+          .get().count;
+        db.prepare(
+          "DELETE FROM operations WHERE id IN (SELECT id FROM operations WHERE state NOT IN ('QUEUED','RUNNING') ORDER BY created DESC LIMIT -1 OFFSET ?)",
+        ).run(Math.max(0, 4095 - active));
         const id = randomUUID();
         db.prepare('INSERT INTO operations VALUES (?,?,?,?,?,?)').run(
           id,

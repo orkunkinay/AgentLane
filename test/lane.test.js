@@ -709,3 +709,38 @@ test('a move event revokes ownership even if the tab moves back before the next 
   await assert.rejects(f.run('a', 'screenshot'), /No owned tab/);
   assert(f.tabs.has(1));
 });
+
+test('persistent suspension preserves a capability and open resumes without navigating', async () => {
+  const f = fixture();
+  await f.lane.run({
+    session: 'a',
+    op: 'open',
+    args: { url: 'https://example.com' },
+    persistent: true,
+  });
+  const tab = f.lane.sessions.get('a').tabId;
+  const navigations = f.calls.filter(([m]) => m === 'Page.navigate').length;
+  f.lane.suspend('a');
+  await assert.rejects(f.run('a', 'screenshot'), /human control/);
+  const resumed = await f.lane.run({
+    session: 'a',
+    op: 'open',
+    args: { url: 'https://example.com/should-not-navigate' },
+    persistent: true,
+    recover: true,
+  });
+  assert(resumed.recovered);
+  assert.equal(resumed.opened, false);
+  assert.equal(f.lane.sessions.get('a').tabId, tab);
+  assert.equal(f.calls.filter(([m]) => m === 'Page.navigate').length, navigations);
+});
+
+test('lost persistent capability requires explicit acknowledgement instead of tab-ID adoption', async () => {
+  const f = fixture();
+  await assert.rejects(
+    f.lane.run({ session: 'a', op: 'open', args: { url: 'https://example.com' }, recover: true }),
+    (e) => e.details.code === 'SESSION_RECOVERY_FAILED',
+  );
+  assert.equal(f.tabs.size, 0);
+  assert((await f.lane.run({ session: 'a', op: 'close', recover: true })).sessionReset);
+});

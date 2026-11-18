@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import net from 'node:net';
 import { mkdir, lstat, chmod, unlink } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { NativeDecoder, nativeFrame } from './framing.js';
 import { stateDir, socketPath } from './paths.js';
 import { openBrokerStore } from './broker-store.js';
@@ -20,13 +20,21 @@ const store = await openBrokerStore(stateDir);
 // Do not unlink an existing socket: another Chrome profile may own it.
 const pending = new Map();
 const clients = new Set();
+const leases = new Map();
 const send = (m) => process.stdout.write(nativeFrame(m));
 const decoder = new NativeDecoder();
 process.stdin.pipe(decoder);
 let journalEnabled = false;
+let environmentId;
 decoder.on('data', (m) => {
-  if (m.event === 'disclosure' && m.version === 2) {
+  if (
+    m.event === 'disclosure' &&
+    m.version === 2 &&
+    /^[0-9a-f-]{36}$/.test(m.environmentId || '')
+  ) {
     journalEnabled = true;
+    environmentId = m.environmentId;
+    send({ event: 'disclosureAccepted' });
     return;
   }
   const p = pending.get(m.id);
@@ -49,6 +57,10 @@ decoder.on('data', (m) => {
       ).details,
     };
   }
+  if (p.client.persistent && m.result) {
+    if (p.op === 'close') store.setOpened(p.session, false);
+    if (p.op === 'open' || p.op === 'close') p.client.recover = false;
+  }
   p.client.busy = false;
   if (m.result && typeof m.result === 'object')
     m.result.coordination = { journal: journalEnabled, connectionGeneration: store.generation };
@@ -58,8 +70,8 @@ const server = net.createServer((socket) => {
   if (clients.size >= 64) return socket.destroy();
   clients.add(socket);
   socket.setEncoding('utf8');
-  const session = randomUUID();
-  const client = { busy: false };
+  let session = randomUUID();
+  const client = { busy: false, persistent: false, recover: false };
   let buffer = '';
   socket.on('data', (chunk) => {
     buffer += chunk.toString();
@@ -77,6 +89,45 @@ const server = net.createServer((socket) => {
         requestId = m.id;
         if (client.busy) throw Error('One in-flight request per client');
         if (typeof m.id !== 'string' || m.id.length > 100) throw Error('Invalid request ID');
+        if (m.op === '__resume') {
+          if (client.persistent || client.used) throw Error('Session identity is already bound');
+          if (!journalEnabled)
+            throw Error(
+              'Persistent sessions require the updated extension and accepted disclosure.',
+            );
+          if (!/^[0-9a-f]{64}$/.test(m.args?.token || ''))
+            throw Error('Invalid session capability');
+          const credential = createHash('sha256').update(m.args.token).digest('hex');
+          const record = store.resolveSession(credential, environmentId);
+          if (leases.has(record.session))
+            throw new CoordinationError(
+              'SESSION_IN_USE',
+              'This logical session already has an active client.',
+            );
+          session = record.session;
+          leases.set(session, socket);
+          client.persistent = true;
+          client.recover = Boolean(record.opened);
+          socket.write(
+            JSON.stringify({
+              id: m.id,
+              result: {
+                sessionId: session,
+                clientId: record.client,
+                connectionGeneration: store.generation,
+                browserEnvironmentId: environmentId,
+                recoveryRequired: client.recover,
+              },
+            }) + '\n',
+          );
+          continue;
+        }
+        client.used = true;
+        if (client.recover && !['open', 'close'].includes(m.op))
+          throw new CoordinationError(
+            'SESSION_RECOVERY_REQUIRED',
+            'Call lane_open to validate the surviving session before continuing.',
+          );
         if (pending.size >= 64) throw Error('Broker request capacity exceeded');
         if (
           !['open', 'close', 'screenshot', 'click', 'type', 'key', 'scroll', 'navigate'].includes(
@@ -85,6 +136,7 @@ const server = net.createServer((socket) => {
         )
           throw Error('Unsupported operation');
         const id = journalEnabled ? store.start(session, m.id, m.op) : randomUUID();
+        if (client.persistent && m.op === 'open') store.setOpened(session, true);
         client.busy = true;
         const timer = setTimeout(() => {
           pending.delete(id);
@@ -92,14 +144,21 @@ const server = net.createServer((socket) => {
           socket.destroy();
         }, 30000);
         // Session and routing ID are host-owned; caller cannot impersonate a lane.
-        pending.set(id, { socket, timer, requestId, client });
-        send({ id, session, op: m.op, args: m.args });
+        pending.set(id, { socket, timer, requestId, client, session, op: m.op });
+        send({
+          id,
+          session,
+          op: m.op,
+          args: m.args,
+          persistent: client.persistent,
+          recover: client.recover,
+        });
       } catch (e) {
         socket.write(
           JSON.stringify({
             id: requestId,
             error: e.message,
-            details: new CoordinationError('INVALID_REQUEST', e.message).details,
+            details: e.details || new CoordinationError('INVALID_REQUEST', e.message).details,
           }) + '\n',
         );
       }
@@ -114,7 +173,8 @@ const server = net.createServer((socket) => {
         pending.delete(id);
         store.finish(id, 'OUTCOME_UNKNOWN');
       }
-    send({ id: randomUUID(), session, op: 'disconnect' });
+    if (leases.get(session) === socket) leases.delete(session);
+    send({ id: randomUUID(), session, op: client.persistent ? 'suspend' : 'disconnect' });
   });
 });
 // A crashed host leaves its socket file behind. Reclaim it only when nothing answers;
@@ -155,7 +215,7 @@ server.on('error', (e) => {
   process.exit(1);
 });
 // Confirm readiness only after the owner-only socket is listening.
-send({ event: 'ready', generation: store.generation });
+send({ event: 'ready', generation: store.generation, disclosureProtocol: 2 });
 let stopping = false;
 async function shutdown() {
   if (stopping) return;

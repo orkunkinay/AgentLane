@@ -10,7 +10,10 @@ review the extension before granting debugger access to a real profile.
 - No cookie/password/token extraction or profile replication implementation.
 - No TCP listener. Native host extension-origin allowlist, owner-only directory and
   Unix socket. Different OS users cannot normally connect through those permissions.
-- Each connection receives an unforgeable host-assigned routing identity. Agents can
+- Each connection receives an unforgeable host-assigned routing identity. Optional
+  persistent sessions require an owner-only bearer capability file, bind to the
+  Chrome-local environment ID and permit one live socket lease; a caller cannot
+  choose another session ID. See [coordination](docs/COORDINATION.md). Agents can
   operate only the tab that identity created; they cannot enumerate/read/select
   pre-existing human tabs through AgentLane's toolset.
 - Fixed methods, bounded payloads and viewport coordinates; no agent-facing arbitrary
