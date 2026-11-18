@@ -8,9 +8,22 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { createRig } from './benchmark/rig.mjs';
 import { createSessionKey } from '../src/session-key.js';
 let effects = 0;
-const html = `<!doctype html><style>input{position:absolute;left:40px;top:60px;width:400px;height:40px}button{position:absolute;left:40px;top:140px;width:180px;height:50px}</style><input><button onclick="fetch('/commit',{method:'POST'}).then(()=>this.textContent='Saved')">Save</button>`;
-const server = createServer((req, res) => {
-  if (req.url === '/commit') effects++;
+const kinds = ['message', 'record', 'order', 'form', 'delete'];
+const effectsByKind = Object.fromEntries(kinds.map((kind) => [kind, 0]));
+let delayForm = false,
+  releaseCommit;
+const html = `<!doctype html><style>input{position:absolute;left:40px;top:60px;width:400px;height:40px}button{position:absolute;top:140px;width:180px;height:50px}</style><input>${kinds.map((kind, i) => `<button style="left:${40 + 200 * i}px" onclick="fetch('/commit?kind=${kind}',{method:'POST'}).then(()=>this.textContent='Saved')">${kind}</button>`).join('')}`;
+const server = createServer(async (req, res) => {
+  if (req.url.startsWith('/commit?kind=')) {
+    const kind = new URL(req.url, 'http://fixture.test').searchParams.get('kind');
+    if (kind === 'form' && delayForm)
+      await new Promise((resolve) => {
+        releaseCommit = resolve;
+      });
+    assert(kinds.includes(kind));
+    effects++;
+    effectsByKind[kind]++;
+  }
   res.setHeader('Content-Type', 'text/html');
   res.end(html);
 });
@@ -107,37 +120,49 @@ try {
   results.nativeRestartPreservedExactTab = true;
   // Drop the response only after the real input sequence has finished. The server
   // effect may already be committed, so reconnect must never repeat the click.
-  await rig.worker.evaluate(() => {
-    const lane = globalThis.benchLane;
-    const original = lane.run.bind(lane);
-    lane.run = async (m) => {
-      const result = await original(m);
-      if (m.op === 'click') {
-        lane.run = original;
-        globalThis.benchAckReady = true;
-        await new Promise((resolve) => {
-          globalThis.benchReleaseAck = resolve;
-        });
-      }
-      return result;
-    };
-  });
-  shot = await call('screenshot');
-  const pendingClick = raw(client, 'click', { frame: shot.frame, x: 120, y: 160 });
-  await wait(() => rig.worker.evaluate(() => globalThis.benchAckReady));
-  await wait(async () => effects === 1);
-  await restartHost();
-  const lost = await pendingClick;
-  await rig.worker.evaluate(() => globalThis.benchReleaseAck());
-  assert(lost.isError);
-  assert(lost.structuredContent.mayHaveExecuted);
-  await wait(async () => effects === 1);
-  await reconnectBridge();
-  await call('open', { url: origin + '/must-not-navigate' });
-  const stale = await raw(client, 'click', { frame: shot.frame, x: 120, y: 160 });
-  assert(stale.isError);
-  assert.equal(effects, 1);
+  for (const [index, kind] of kinds.entries()) {
+    delayForm = kind === 'form';
+    releaseCommit = null;
+    await rig.worker.evaluate(() => {
+      const lane = globalThis.benchLane;
+      const original = lane.run.bind(lane);
+      globalThis.benchAckReady = false;
+      lane.run = async (m) => {
+        const result = await original(m);
+        if (m.op === 'click') {
+          lane.run = original;
+          globalThis.benchAckReady = true;
+          await new Promise((resolve) => {
+            globalThis.benchReleaseAck = resolve;
+          });
+        }
+        return result;
+      };
+    });
+    shot = await call('screenshot');
+    const pendingClick = raw(client, 'click', { frame: shot.frame, x: 120 + 200 * index, y: 160 });
+    await wait(() => rig.worker.evaluate(() => globalThis.benchAckReady));
+    if (delayForm) {
+      await wait(async () => Boolean(releaseCommit));
+      assert.equal(effects, index);
+    } else await wait(async () => effects === index + 1);
+    await restartHost();
+    const lost = await pendingClick;
+    if (delayForm) releaseCommit();
+    await rig.worker.evaluate(() => globalThis.benchReleaseAck());
+    assert(lost.isError);
+    assert(lost.structuredContent.mayHaveExecuted);
+    await wait(async () => effects === index + 1);
+    await reconnectBridge();
+    await call('open', { url: origin + '/must-not-navigate' });
+    const stale = await raw(client, 'click', { frame: shot.frame, x: 120 + 200 * index, y: 160 });
+    assert(stale.isError);
+    assert.equal(effects, index + 1);
+  }
+  assert(kinds.every((kind) => effectsByKind[kind] === 1));
   results.committedEffectNotReplayed = true;
+  results.fiveMutationKindsExactlyOnceInFixture = true;
+  results.lossBeforeServerCommit = true;
   // Simulate lost worker capability memory. Do not adopt the still-live tab.
   await rig.worker.evaluate(() => globalThis.benchLane.sessions.clear());
   await client.close();
@@ -158,6 +183,9 @@ try {
         browser: rig.metadata.browserVersion,
         results,
         effects,
+        effectsByKind,
+        faultTiming:
+          'form before server commit; message/record/order/delete after server commit; all before client acknowledgement',
         workerRestart: 'capability-memory-loss simulation only',
         physicalIsolation: 'not measured',
       },
