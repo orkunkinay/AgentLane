@@ -4,16 +4,30 @@ permissions:
   contents: read
 jobs:
   policy-and-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node: '24'
+          - os: macos-latest
+            node: '22.13.0'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
       - run: npm test
       - run: npm run format:check
+      - run: npm run check:site
+      - run: npm run package:extension
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - run: AGENTLANE_MCP=1 AGENTLANE_NAVIGATION_PROBE=1 npm run test:browser
+      - run: node experiments/setup.mjs
+      - run: node experiments/dropdown.mjs
+      - run: AGENTLANE_COUNTS=1,2,5 npm run test:reliability
+      - run: npm run test:recovery

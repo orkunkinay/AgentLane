@@ -1,0 +1,27 @@
+name: Reliability or ownership bug
+description: Report a reproducible failure with synthetic data.
+body:
+  - type: markdown
+    attributes:
+      value: Do not include private screenshots, cookies, tokens, session capability files or account data. Report focus or wrong-tab behavior accurately, including failed runs.
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions and installation
+      description: OS, Chrome, Node, extension version/route, source commit and MCP client/version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Synthetic reproduction
+      description: Exact commands or fixture steps, number of clients, human activity and fault timing.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Expected and observed behavior
+      description: Include the structured error code and whether an external effect may have occurred. Never repeat an ambiguous mutation just to reproduce it.
+    validations:
+      required: true

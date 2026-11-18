@@ -21,7 +21,9 @@
     "package:extension": "node scripts/package-extension.mjs",
     "assets:store": "node scripts/capture-docs.mjs && node scripts/render-store-assets.mjs",
     "doctor": "node scripts/doctor.mjs",
-    "bench": "node experiments/benchmark/cli.mjs"
+    "bench": "node experiments/benchmark/cli.mjs",
+    "test:reliability": "node experiments/reliability.mjs",
+    "test:recovery": "node experiments/recovery.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.0",
