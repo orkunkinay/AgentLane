@@ -231,6 +231,10 @@ test(
     const decoder = new NativeDecoder();
     host.stdout.pipe(decoder);
     let forwarded = 0;
+    let held, entered;
+    const running = new Promise((resolve) => {
+      entered = resolve;
+    });
     let ready;
     const started = new Promise((r) => {
       ready = r;
@@ -252,6 +256,11 @@ test(
       }
       if (m.op === 'disconnect') return;
       forwarded++;
+      if (m.args?.text === 'hold') {
+        held = m;
+        entered();
+        return;
+      }
       host.stdin.write(nativeFrame({ id: m.id, result: { performed: m.op } }));
     });
     let socket;
@@ -273,6 +282,20 @@ test(
       const rejected = JSON.parse((await response)[0]);
       assert.equal(rejected.details.code, 'OPERATION_ALREADY_RECORDED');
       assert.equal(forwarded, 1);
+      const inFlight =
+        JSON.stringify({ id: 'inflight-fixture', op: 'type', args: { text: 'hold' } }) + '\n';
+      socket.write(inFlight);
+      await running;
+      response = once(socket, 'data');
+      socket.write(inFlight);
+      const busy = JSON.parse((await response)[0]);
+      assert.equal(busy.details.code, 'OPERATION_IN_PROGRESS');
+      assert(busy.details.mayHaveExecuted);
+      assert.equal(forwarded, 2);
+      response = once(socket, 'data');
+      host.stdin.write(nativeFrame({ id: held.id, result: { performed: 'type' } }));
+      await response;
+
       const { readFile } = await import('node:fs/promises');
       assert(
         !(await readFile(join(dir, 'operations.sqlite'))).includes(

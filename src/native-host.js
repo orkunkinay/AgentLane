@@ -62,6 +62,7 @@ decoder.on('data', (m) => {
     if (p.op === 'open' || p.op === 'close') p.client.recover = false;
   }
   p.client.busy = false;
+  p.client.requestId = null;
   if (m.result && typeof m.result === 'object')
     m.result.coordination = { journal: journalEnabled, connectionGeneration: store.generation };
   if (!p.socket.destroyed) p.socket.write(JSON.stringify({ ...m, id: p.requestId }) + '\n');
@@ -87,7 +88,12 @@ const server = net.createServer((socket) => {
       try {
         const m = JSON.parse(line);
         requestId = m.id;
-        if (client.busy) throw Error('One in-flight request per client');
+        if (client.busy)
+          throw new CoordinationError(
+            m.id === client.requestId ? 'OPERATION_IN_PROGRESS' : 'QUEUE_FULL',
+            'One in-flight request per client; this request was not forwarded. The existing operation may still execute.',
+            { mayHaveExecuted: m.id === client.requestId },
+          );
         if (typeof m.id !== 'string' || m.id.length > 100) throw Error('Invalid request ID');
         if (m.op === '__resume') {
           if (client.persistent || client.used) throw Error('Session identity is already bound');
@@ -138,6 +144,7 @@ const server = net.createServer((socket) => {
         const id = journalEnabled ? store.start(session, m.id, m.op) : randomUUID();
         if (client.persistent && m.op === 'open') store.setOpened(session, true);
         client.busy = true;
+        client.requestId = m.id;
         const timer = setTimeout(() => {
           pending.delete(id);
           store.finish(id, m.op === 'screenshot' ? 'FAILED' : 'OUTCOME_UNKNOWN');

@@ -15,7 +15,7 @@ export class BrowserClient {
     socket.on('data', (chunk) => {
       if (this.socket !== socket) return;
       buffer += chunk.toString();
-      if (buffer.length > 16 * 1024 * 1024) {
+      if (Buffer.byteLength(buffer) > 16 * 1024 * 1024) {
         socket.destroy();
         return;
       }
@@ -81,8 +81,14 @@ export class BrowserClient {
       .catch((error) => {
         socket.destroy();
         if (error.details) throw error;
-        throw Error(
+        throw new CoordinationError(
+          'BROWSER_CONNECTION_LOST',
           'Browser bridge unavailable. Open AgentLane in Chrome, create or connect the agent window, then retry lane_open in this conversation.',
+          {
+            humanActionRequired: true,
+            recovery:
+              'Connect the browser from extension setup; do not replay an interrupted operation.',
+          },
         );
       })
       .finally(() => {
