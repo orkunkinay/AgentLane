@@ -464,3 +464,41 @@ regeneration from identical main-run inputs was byte-identical. Local validation
 54 Node tests, format check and the existing 30-round MCP/native/navigation-probe
 browser regression passed. Dashboard desktop/mobile rendering was inspected.
 Native OS observer and real physical human trials were not run.
+
+
+## 2026-11-18 — Chrome Web Store setup and bridge-ID repair
+
+The public Chrome Web Store listing for item
+`mpiigaljakpfmmihkahppdaaccmpgmmk` was inspected through native Computer Use. It
+showed version 0.1.1, updated November 18, 2026, and Remove from Chrome, confirming
+the store copy was already installed. This is a public-listing observation, not a
+new inspection of the developer dashboard; submission-status.json remains historical.
+
+The local diagnostic found a native-host allowlist still pinned to the removed
+unpacked extension ID and no running bridge. The existing manifest was backed up
+outside the repository and its single allowed origin replaced with the store origin.
+The launcher, profile data and existing MCP configuration were preserved. No live
+native host was found before repair. Native Computer Use opened the store extension
+popup in an ordinary Chrome window and chose Create agent window; it showed Connected.
+The diagnostic then confirmed the exact store origin and a running bridge.
+
+The configured AgentLane MCP connection opened and captured the public documentation.
+Using only lane tools after setup, it visited the local synthetic seed/task pages,
+observed recognized authentication, clicked the note field, typed a synthetic note,
+opened Actions, saved it and verified Saved: Store installation connected from a
+fresh screenshot. The owned tab was closed. `images/store-first-task.png` is that
+1100 × 760 AgentLane capture; no personal account content is included. Existing
+setup/window illustrations remain disposable-profile captures, labeled separately.
+No desktop observer or physical-input concurrency measurement was run.
+
+A direct lane_open to the Chrome Web Store failed with Page.navigate: Not allowed.
+The store page was inspected separately through native Computer Use for setup;
+this is not claimed as a successful AgentLane task. No permission/focus guards or
+public tool contracts were changed. See [the store setup guide](STORE-SETUP.md).
+
+Documentation validation: `npm run check:site`, `npm run format:check` and
+`git diff --check` passed. The updated local documentation was inspected through
+AgentLane. Disposable-browser layout checks and visual review passed at 390px and
+1280px for the homepage and docs. A pre-existing mobile header overflow was fixed
+by hiding the redundant Home link at small widths; the logo still links home.
+Runtime/browser regressions were not rerun for these documentation-only changes.

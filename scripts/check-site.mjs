@@ -30,6 +30,10 @@ for (const page of pages) {
     }
     if (ref === GH.slice(0, -1) || ref.startsWith(GH)) continue; // repo root, issues
     if (ref.startsWith(PAGES)) continue; // canonical/social metadata
+    if (
+      ref === 'https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk'
+    )
+      continue; // official store item
     if (/^https?:/.test(ref)) {
       problems.push(`${page}: unexpected external link ${ref}`);
       continue;

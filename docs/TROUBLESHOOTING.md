@@ -38,6 +38,14 @@ not replay it. Inspect the website's state before deciding whether to repeat any
 consequential action. Persistent bridge errors still require checking host registration
 and socket ownership below; the client never starts Chrome or deletes a live socket.
 
+**Store extension after removing an unpacked copy:** deleting the extension does
+not change the native-host registration. The store ID is
+`mpiigaljakpfmmihkahppdaaccmpgmmk`; compare it with the allowed origin printed by
+`npm run doctor`. If it still names the unpacked ID, follow the
+[store migration guide](STORE-SETUP.md#switching-from-an-unpacked-extension) to
+inspect, back up and replace that registration after finishing active sessions.
+Keep exactly one allowed origin; do not delete a live socket or widen the allowlist.
+
 **Native host not found / forbidden:** Chrome's native messaging manifest must name
 `org.agentlane.browser`, have an absolute executable launcher path and exactly the extension
 origin. The default installer targets normal macOS Google Chrome. For another browser,

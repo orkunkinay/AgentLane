@@ -74,20 +74,25 @@ node scripts/install-skill.mjs
 Keep the checkout at this location after installation: the native launcher and MCP
 configuration point to its files.
 
-### 2. Load the Chrome extension
+### 2. Install from the Chrome Web Store
 
-In the **Chrome profile where you are already logged in**:
+In the **Chrome profile where you are already logged in**, open
+[AgentLane in the Chrome Web Store](https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk),
+click **Add to Chrome** and review Chrome's permission prompt. If the listing shows
+**Remove from Chrome**, it is already installed. Pin AgentLane through Chrome's
+puzzle-piece extensions menu for easy access. Developer mode is not needed for the
+store installation.
 
-1. Open `chrome://extensions`.
-2. Turn on **Developer mode**, at the upper right.
-3. Click **Load unpacked**, at the upper left.
-4. Select the **`extension/` folder inside this checkout**, not the repository root.
-5. Find **AgentLane** and copy the **ID** on its card.
+The store extension ID is **`mpiigaljakpfmmihkahppdaaccmpgmmk`**. The extension alone
+is not the whole setup: the checkout, local bridge and MCP server below are still
+required. Follow the [illustrated store setup guide](docs/STORE-SETUP.md), including
+[repairing an older unpacked installation](docs/STORE-SETUP.md#switching-from-an-unpacked-extension).
 
-![Chrome Extensions screen showing Developer mode, Load unpacked, and the installed AgentLane card with its extension ID.](docs/images/chrome-extensions.png)
+For extension development, you can instead open `chrome://extensions`, enable
+**Developer mode**, click **Load unpacked**, select this checkout's `extension/`
+folder, and copy that card's own ID. Use that ID in step 3; it differs from the store ID.
 
-*Real Chrome for Testing screenshot from a disposable profile. Your extension ID may
-be different; copy your own ID, not the one in this image.*
+![Development alternative: Load unpacked and the extension ID in a disposable Chrome profile.](docs/images/chrome-extensions.png)
 
 Review the debugger permission before using a real profile. Chrome grants broad
 browser access to the extension even though AgentLane exposes a narrow toolset.
@@ -95,10 +100,10 @@ Screenshots may contain private information and reach your configured AI provide
 
 ### 3. Register the local browser bridge
 
-Replace the example argument with the 32-character extension ID you just copied:
+For the store extension, run this from the checkout root (for an unpacked copy, substitute its own ID):
 
 ```sh
-node scripts/install-host.mjs YOUR_32_CHARACTER_EXTENSION_ID
+node scripts/install-host.mjs mpiigaljakpfmmihkahppdaaccmpgmmk
 ```
 
 This registers a Chrome native messaging host that uses an owner-only local Unix socket.
@@ -278,9 +283,10 @@ Read the [security model](SECURITY.md) before using sensitive workflows.
 
 ## Chrome Web Store release materials
 
-Version 0.1.1 is **pending Chrome Web Store review** as an unlisted beta. It will
-publish automatically after approval. Until then, use the unpacked installation
-steps above. [Recorded submission](docs/store/submission-status.json).
+Version 0.1.1 is [available in the Chrome Web Store](https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk)
+(public listing verified on 2026-11-18). See the [store setup guide](docs/STORE-SETUP.md).
+The [recorded submission](docs/store/submission-status.json) remains the historical
+2026-11-17 submission snapshot, not a current dashboard status.
 
 
 The beta submission package contains only extension files; the local native bridge
@@ -363,7 +369,9 @@ The logo and toolbar PNG icons are generated from the supplied artwork in
 
 The screenshot generator uses a disposable Chrome for Testing profile and a temporary
 local demo server, then removes both. The overview SVG is a diagram, not a screenshot. No
-personal browser screenshots or profile data are part of this documentation.
+personal account screenshots or profile data are part of this documentation. The
+store guide also includes a synthetic demo screenshot captured through AgentLane
+with the store-installed extension; its provenance is recorded in [EVIDENCE.md](docs/EVIDENCE.md).
 
 - [Migration](docs/MIGRATION.md) — former names, guarded local upgrade and manual Chrome reload.
 - [Architecture](docs/ARCHITECTURE.md) — ownership, transport, rendering and failures.

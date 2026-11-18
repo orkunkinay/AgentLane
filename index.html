@@ -349,8 +349,8 @@
           <p class="eyebrow">Get started</p>
           <h2 id="install-title">Six steps to <em>your first lane.</em></h2>
           <p class="lede">
-            About ten minutes, mostly clicking through Chrome. Everything below is the verified
-            procedure from the repository; the <a href="docs/#install">docs</a> add detail and recovery.
+            Install the Chrome Web Store extension, then connect its local bridge and MCP server.
+            Keep the source checkout in place; the <a href="docs/#install">docs</a> add detail and recovery.
           </p>
 
           <div class="env" id="env" aria-live="polite">
@@ -374,8 +374,9 @@ npm test</code></pre><button type="button" class="copy" data-copy>Copy</button><
             <li>
               <div class="step-n">2</div>
               <div class="step-b">
-                <h3>Load the extension in the Chrome profile you are already logged in to</h3>
-                <p>Open <code>chrome://extensions</code> <button type="button" class="copy inline" data-copy-text="chrome://extensions">copy</button>, turn on <b>Developer mode</b>, click <b>Load unpacked</b> and choose the <code>extension/</code> folder <em>inside</em> the checkout, not its root. Copy the 32-character <b>ID</b> from the AgentLane card.</p>
+                <h3>Install AgentLane from the Chrome Web Store</h3>
+                <p>In your usual signed-in Chrome profile, <a href="https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk" rel="noopener">open the AgentLane listing</a>, click <b>Add to Chrome</b> and review the permission prompt. Pin AgentLane through the puzzle-piece menu. Developer mode is not needed.</p>
+                <p>Already installed? <b>Remove from Chrome</b> on the listing confirms it. For development, the <a href="docs/#install-2">docs explain Load unpacked</a>.</p>
                 <p class="note">Chrome grants the extension broad debugger access, even though AgentLane exposes a narrow toolset. Review it before using a real profile.</p>
               </div>
             </li>
@@ -383,10 +384,10 @@ npm test</code></pre><button type="button" class="copy" data-copy>Copy</button><
               <div class="step-n">3</div>
               <div class="step-b">
                 <h3>Register the local browser bridge</h3>
-                <label class="idlabel" for="ext-id">Paste your extension ID <span id="id-state"></span></label>
-                <input id="ext-id" class="idinput" type="text" inputmode="latin" autocomplete="off" spellcheck="false" maxlength="40" placeholder="abcdefghijklmnopabcdefghijklmnop" />
-                <div class="code"><pre><code id="host-cmd">node scripts/install-host.mjs YOUR_32_CHARACTER_EXTENSION_ID</code></pre><button type="button" class="copy" data-copy data-target="host-cmd">Copy</button></div>
-                <p class="note">Registers a Chrome native messaging host using an owner-only Unix socket. No debugging TCP port, no exported cookies. The installer refuses to overwrite existing files.</p>
+                <label class="idlabel" for="ext-id">Extension ID (store ID prefilled) <span id="id-state"></span></label>
+                <input id="ext-id" class="idinput" type="text" inputmode="latin" autocomplete="off" spellcheck="false" maxlength="40" value="mpiigaljakpfmmihkahppdaaccmpgmmk" placeholder="abcdefghijklmnopabcdefghijklmnop" />
+                <div class="code"><pre><code id="host-cmd">node scripts/install-host.mjs mpiigaljakpfmmihkahppdaaccmpgmmk</code></pre><button type="button" class="copy" data-copy data-target="host-cmd">Copy</button></div>
+                <p class="note">Registers a Chrome native messaging host using an owner-only Unix socket. No debugging TCP port, no exported cookies. The installer refuses to overwrite existing files. Switching from an unpacked copy? <a href="docs/#install-3">Repair its old extension ID first</a>; deleting the extension does not update the bridge.</p>
               </div>
             </li>
             <li>
