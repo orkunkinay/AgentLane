@@ -57,3 +57,11 @@ test('only absent settings get Google; legacy and malformed settings never grant
   assert.throws(() => parseStartingPolicy('selected', []));
   assert.throws(() => parseStartingPolicy('selected', ['https://*']));
 });
+
+test('corrupt access restrictions fail closed instead of enabling new interaction', async () => {
+  const { restoreAccessPolicies } = await import('../extension/starting-websites.js');
+  const id = '8f80cb12-32a2-4431-a576-178e200e860a';
+  assert.equal(restoreAccessPolicies({ [id]: 'observe' }).get(id), 'observe');
+  for (const bad of [null, [], 'observe', { [id]: 'unknown' }, { 'not-an-identity': 'observe' }])
+    assert.throws(() => restoreAccessPolicies(bad), /metadata is invalid/);
+});

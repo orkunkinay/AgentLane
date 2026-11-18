@@ -1,6 +1,10 @@
 import { Lane } from './lane.js';
 import { describeFailure } from './errors.js';
-import { parseStartingPolicy, restoreStartingPolicy } from './starting-websites.js';
+import {
+  parseStartingPolicy,
+  restoreStartingPolicy,
+  restoreAccessPolicies,
+} from './starting-websites.js';
 export const lane = new Lane(chrome);
 let settings = { mode: 'selected', websites: [] };
 let accessConsent = false;
@@ -16,10 +20,7 @@ const settingsReady = chrome.storage.local
   ])
   .then(async (saved) => {
     settings = restoreStartingPolicy(saved);
-    if (saved.accessPolicies && typeof saved.accessPolicies === 'object')
-      for (const [session, access] of Object.entries(saved.accessPolicies).slice(0, 256))
-        if (/^[0-9a-f-]{36}$/.test(session))
-          lane.policies.set(session, access === 'interact' ? 'interact' : 'observe');
+    lane.policies = restoreAccessPolicies(saved.accessPolicies);
     accessConsent = saved.accessConsentVersion === 2;
     environmentId = saved.browserEnvironmentId;
     if (typeof environmentId !== 'string' || !/^[0-9a-f-]{36}$/.test(environmentId)) {
@@ -210,7 +211,9 @@ chrome.runtime.onMessage.addListener((m, sender, respond) => {
       // A failed bridge can be retried using the same window, without creating duplicates.
       await connect();
       return { prepared: true, ...(await setupState()) };
-    })().then(respond, async (e) => respond({ error: e.message, ...(await setupState()) }));
+    })().then(respond, async (e) =>
+      respond({ error: e.message, ...(await setupState().catch(() => ({}))) }),
+    );
     return true;
   }
 });

@@ -49,3 +49,29 @@ export function restoreStartingPolicy(saved) {
     return { mode: 'selected', websites: [] };
   }
 }
+
+// Persist restrictions independently of tab lifetimes. Corruption must not widen access.
+export function restoreAccessPolicies(saved) {
+  if (saved === undefined) return new Map();
+  if (
+    !saved ||
+    typeof saved !== 'object' ||
+    Array.isArray(saved) ||
+    Object.keys(saved).length > 256
+  )
+    throw Error(
+      'Access policy metadata is invalid; review local extension settings before reconnecting.',
+    );
+  const result = new Map();
+  for (const [session, access] of Object.entries(saved)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(session) ||
+      !['observe', 'interact'].includes(access)
+    )
+      throw Error(
+        'Access policy metadata is invalid; review local extension settings before reconnecting.',
+      );
+    if (access === 'observe') result.set(session, access);
+  }
+  return result;
+}
