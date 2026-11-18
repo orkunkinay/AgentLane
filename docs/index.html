@@ -49,6 +49,7 @@
             <a href="#limitations">Known limitations</a>
             <a href="#troubleshooting">Troubleshooting</a>
             <a href="#uninstall">Uninstall</a>
+            <a href="#coordination">0.2.0 coordination preview</a>
             <a href="#develop">Develop &amp; verify</a>
             <a href="#more">More reading</a>
           </nav>
@@ -94,6 +95,7 @@
           <p>Full matrix: <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/COMPATIBILITY.md" rel="noopener">docs/COMPATIBILITY.md</a>.</p>
         </section>
 
+        <p class="req"><b>0.2.0 source is unreleased.</b> The verified store build is still 0.1.1. See the <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/COORDINATION.md" rel="noopener">multi-agent scheduling, logical recovery, operation semantics and human takeover guide</a>. Updating this checkout does not update an installed extension.</p>
         <section id="install">
           <h2>Install</h2>
           <p class="req">Required setup. Allow roughly ten minutes. Keep the checkout in place afterward: the native launcher and the MCP configuration refer to its files.</p>
@@ -325,6 +327,15 @@ node scripts/concurrency-demo.mjs http://127.0.0.1:8741 120</code></pre><button 
             <li>Close only windows you recognise as AgentLane lanes. Once the native host has exited, remove <code>~/.agentlane/native-host</code> and any stale <code>~/.agentlane/browser.sock</code>.</li>
           </ol>
           <p>Do not delete Chrome profile files. Upgrading from the former <b>Still</b> installation: see <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/MIGRATION.md" rel="noopener">the migration guide</a>.</p>
+        </section>
+
+        <section id="coordination">
+          <h2>0.2.0 coordination preview</h2>
+          <p><b>Unreleased source; the published 0.1.1 extension does not include these changes.</b> The local native host now coordinates bounded per-agent queues, private session capabilities and an operation metadata journal. Independent tab input can overlap; screenshots share a staging mutex.</p>
+          <a href="images/coordination.svg" aria-label="Open full-size coordination diagram"><img src="images/coordination.svg" alt="Multiple MCP adapters share the native broker and extension ownership gate; the human keeps a separate window in the same authenticated profile." style="width:100%;height:auto" /></a>
+          <p>Opt in to reconnectable sessions with <code>node scripts/create-session.mjs /private/path/session.json</code> and set <code>AGENTLANE_SESSION_FILE</code> for that MCP process. Use a separate private file per agent. After reconnecting, <code>lane_open</code> recovers the exact surviving capability without navigating, then requires a fresh screenshot. Worker or Chrome capability loss fails closed; it does not adopt tabs from saved IDs.</p>
+          <p>The popup offers <b>Take control</b>, explicit <b>Hand back to agent</b>, <b>Release tab to me</b> and <b>Observe only</b>. Wait for HUMAN_CONTROL before acting. Return to your own window before handback. Delayed agent commands are fenced; already-dispatched effects cannot be undone.</p>
+          <p>Unknown mutation outcomes are never replayed automatically. Authentication and account effects remain shared. Native dialogs, popups, arbitrary-site isolation and full browser-restart restoration remain limitations. Read <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/COORDINATION.md" rel="noopener">coordination and recovery</a> and the <a href="https://github.com/orkunkinay/AgentLane/blob/main/docs/IMPLEMENTATION-REPORT.md" rel="noopener">implementation report</a> before testing source in a disposable profile.</p>
         </section>
 
         <section id="develop">

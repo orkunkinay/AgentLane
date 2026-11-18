@@ -394,3 +394,11 @@ with the store-installed extension; its provenance is recorded in [EVIDENCE.md](
 
 MIT licensed. No code copied from Agent Lanes or Playwright; dependencies keep their
 own licenses. Related work is credited in the research report.
+
+## Coordination implementation and measured limits
+
+The [implementation report](docs/IMPLEMENTATION-REPORT.md) covers the unreleased
+0.2.0 broker, session capabilities, operation journal, human handoff and remaining
+release blockers. [Synthetic benchmark results](docs/BENCHMARK-RESULTS.md) include
+1/2/5/10/20-client measurements and fault-injection outcomes. They do not establish
+arbitrary-site isolation or an advantage over other browser tools.

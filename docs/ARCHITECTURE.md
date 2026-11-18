@@ -2,7 +2,9 @@
 
 The ownership unit is an interaction surface, not a macOS keyboard or a copy of a
 user's credentials. A lane is a dedicated normal Chrome window in the existing
-profile. Each connected MCP process gets one host-assigned session and one owned tab.
+profile. Each adapter gets one host-assigned logical session and one owned tab. In 0.2.0,
+opt-in capability files preserve that session across adapter/native-host restarts
+while the extension retains its original capability. See [coordination](COORDINATION.md).
 
 ```mermaid
 flowchart LR
@@ -30,14 +32,17 @@ flowchart LR
    after that handshake; failed connection attempts can reuse the same lane window.
    It refuses an existing socket instead of stealing another profile's
    connection. Chrome's host manifest allows only the installed extension ID.
-3. Each socket gets a random session ID assigned by the host. Caller-supplied IDs
-   are overwritten. The MCP toolset has no target enumeration/selection primitive.
+3. Each socket gets a host-assigned random session ID. Persistent sessions prove a
+   private capability bound to a browser environment; one live socket lease is allowed.
+   Caller-supplied session/tab IDs are ignored. MCP cannot enumerate/select targets.
 4. `open` creates an inactive blank tab in the lane, attaches the debugger, enables
    Page, file-chooser interception, a fixed DPR=1 viewport and focus emulation. It
-   selects only that owned tab inside the agent window, then navigates it.
-5. A FIFO stages commands for all sessions. Already-active tabs need no selection
-   edit; explicit Chrome tab-drag edit refusals wait boundedly with ownership checks. Before actions, window focus/state and
-   current tab membership are checked. No windows are created during task execution.
+   navigates the inactive tab; screenshot capture stages it later.
+5. Bounded per-owner FIFOs order operations. Independent renderer input/navigation
+   can overlap; screenshots and tab creation/closure share a mutex. Already-active
+   tabs need no selection edit. Explicit Chrome tab-drag edit refusals wait boundedly.
+   Every debugger dispatch rechecks ownership, cancellation, control/focus generations
+   and window state. No windows are created during task execution.
 6. Capture tracks navigation revisions and waits 150 ms for late navigation events.
    If navigation spans capture/settling, it recaptures, up to eight attempts; ongoing
    navigation returns an observation error instead of granting a token. The returned
@@ -46,9 +51,10 @@ flowchart LR
    frame token. Input requires that token; navigation events invalidate it. There
    is no atomic screenshot/input lock on dynamic websites; tokens detect reuse and
    observed navigation, not every possible visual change.
-7. Close/disconnect removes only the owned tab, after rechecking membership. A queued
-   disconnected session is marked cancelled immediately, preventing queued mutations.
-   An action already delivered to Chrome cannot be rolled back.
+7. Close removes only a validated owned tab. Default disconnect cancels and cleans
+   up; persistent disconnect fences and retains the original capability. Human-
+   controlled tabs survive disconnect. An already-delivered action cannot be rolled
+   back. Explicit human handback requires a fresh screenshot.
 
 ## Public API mapping
 
@@ -75,8 +81,9 @@ A focused or minimized lane is refused. A moved tab loses ownership and is detac
 never closed in its new window. A user-cancelled debugger requires session recreation. A target_closed detach can
 reattach only after validating that the exact owned tab still exists in its lane;
 Chrome-prohibited extension URLs are never bypassed.
-Each CDP command has a 10-second deadline. Timeout poisons the lane and detaches the
-target; new actions require human reload/setup. The queue is not simply released to
+Each CDP command has a 10-second deadline. Timeout fences its owner and detaches only
+a still-current capability; independent sessions remain usable. The affected owner
+requires explicit cleanup/recreation. The queue is not simply released to
 continue mutating after an uncertain in-flight command. Only a transient inactive-page capture is retried, for up to eight read-only
    attempts. Clicks, typing and navigation are never automatically repeated.
    The bridge deadline is 30 s.
@@ -93,15 +100,18 @@ sessions prevent changes. Settings are saved even if the bridge connection fails
 
 Worker restart intentionally does not adopt tabs from storage: a mistaken adoption
 could capture a human tab. Old tabs/anchor windows may remain for manual cleanup.
-A crash can leave a socket; after confirming its host process is gone, remove only
-that stale socket. There is no silent profile fallback or automatic focus repair.
+A crash can leave a socket. A kernel-held SQLite lock serializes current-host
+startup/reclamation and releases on process death; a live legacy socket is preserved.
+Corrupt/unknown journal schemas fail closed. There is no silent profile fallback or automatic focus repair.
 
 The MCP client checks its actual socket rather than a one-time connected flag. If
 the bridge is absent, later calls retry connecting; if it disconnects, a later call
 can connect to a replacement host without restarting MCP. A broken in-flight call
-returns an unknown-outcome error and is never replayed. New native connections get
-new host-assigned session identities and must call `lane_open` for a new owned tab.
-On native-port loss the worker cancels only previously owned sessions.
+returns an unknown-outcome error and is never replayed. Default connections receive new identities and require a fresh owned tab. Opt-in
+logical sessions call `lane_open` to reconcile their surviving capability without
+navigating the supplied URL. Missing worker/Chrome capability state fails explicitly.
+On native-port loss persistent owners are suspended; default owners are cancelled.
+Interrupted journalled mutations are not replayed.
 
 Removing the prepared window immediately revokes its session map and frame tokens.
 Recreating it through the setup panel establishes a new generation. Queued work,
@@ -147,6 +157,8 @@ activate a desktop window, whose popup descendants inherit ownership, and whose
 modal surfaces are rendered into the lane. Such a change should live upstream;
 after-the-fact focus restoration is interference and is not an acceptable substitute.
 
-The setup popup can read its own lane/bridge state and update the mode and starting websites
-when there are no active sessions. Saving reuses the existing window. This user-only
-setup channel adds no agent-facing methods and cannot enumerate human tabs.
+The setup popup updates from lifecycle events without a polling interval. Only its
+trusted extension-origin sender can change access or pause/resume/release an owner.
+Human takeover fences work before reporting readiness. The popup displays owned
+session titles, never enumerating human tabs. Starting policy changes still require
+no active sessions. See [coordination](COORDINATION.md) for exact guarantees and limits.

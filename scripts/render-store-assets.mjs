@@ -16,7 +16,7 @@ const [logo, setup, human, agent, anchor] = await Promise.all([
 const css = `*{box-sizing:border-box}body{margin:0;background:#f3eee5;color:#242422;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.brand{display:flex;align-items:center;gap:12px;font-size:28px;font-weight:700;letter-spacing:-1px}.brand img{width:48px;height:48px}.tag{color:#b45018;font:600 12px monospace;letter-spacing:2px;margin:0 0 22px}h1{font:normal 68px/1.03 Georgia,serif;letter-spacing:-2px;margin:0 0 24px}p{font-size:20px;line-height:1.5;color:#62615b;margin:0}.footer{position:absolute;bottom:30px;left:52px;right:52px;font:12px/1.5 monospace;color:#77756d;border-top:1px solid #d7d1c6;padding-top:15px}.card{background:#fff;border:1px solid #d5cfc3;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px #27262110}.label{font:600 13px monospace;letter-spacing:1px;margin:0 0 12px}.pill{display:inline-block;margin:24px 0 0;padding:9px 12px;background:#e8e3d8;border-radius:6px;font-size:14px;color:#505046}`;
 const brand = `<div class="brand"><img src="${logo}" alt="">AgentLane</div>`;
 const footer =
-  '<div class="footer">Experimental beta · macOS + Chrome 134+ · Separate local bridge, Node.js 22+ and MCP client required</div>';
+  '<div class="footer">Experimental beta · macOS + Chrome 134+ · Separate local bridge, Node.js 22.13+ and MCP client required</div>';
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({

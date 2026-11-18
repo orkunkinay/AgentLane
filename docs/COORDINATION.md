@@ -5,6 +5,8 @@ extension changes. Use a manual source build in a disposable profile for validat
 The local broker requires Node.js 22.13+. Do not replace a personal installation
 merely to run tests.
 
+![Implemented coordination and trust boundaries.](images/coordination.svg)
+
 ## One broker, explicit browser capabilities
 
 The Chrome-launched native host remains the local broker. A kernel-held SQLite
@@ -43,8 +45,9 @@ only its explicit pre-dispatch refusal is retried, boundedly.
 
 ## Optional logical sessions across MCP/native-host restarts
 
-Without configuration, disconnect still closes the session's owned tab, preserving
-legacy behavior. A human-controlled tab is retained for explicit release.
+Without configuration, disconnect attempts to close the session's owned tab. If the
+lane is human-focused, minimized or human-controlled, cleanup is refused and the tab
+is retained for explicit release. A transport disconnect never authorizes focus recovery.
 
 Create a separate private capability file for each logical agent:
 
@@ -117,6 +120,13 @@ journal retention through its handshake. Legacy extensions remain usable without
 new journal retention (`coordination.journal: false`); persistent sessions require
 the updated extension. Upgrading the checkout does not reload an installed extension.
 
+New adapters negotiate bridge protocol compatibility before dispatch. An older native
+host returns `BROWSER_BRIDGE_UPGRADE_REQUIRED` without sending a browser action; restart
+the native bridge and MCP process after updating source. With journalling enabled,
+errors identify the journal operation ID with `operationIdSource: "journal"`. Inspect
+one record locally with `node scripts/operation-status.mjs <journal-operation-id>`.
+This read-only diagnostic is not proof of a website effect and never retries work.
+
 ## Human control and observation-only access
 
 When an agent asks for MFA/CAPTCHA or another human action, open AgentLane's popup.
@@ -138,8 +148,13 @@ extension code. A queued operation is fenced when the policy changes. It allows
 screenshots and closing an agent-controlled owned tab. Legacy sessions default to
 interaction for compatibility. It is not a semantic “safe clicks only” classifier:
 all clicks/typing/keys can cause external effects, so all are denied in observation
-mode. Agent arguments and page content cannot change the human-selected policy.
+mode. Restrictions survive close/reopen within a logical session and are stored
+as Chrome-local policy metadata. Agent arguments and page content cannot change them.
 The popup updates from lifecycle events; there is no health-polling timer.
+
+<img src="images/human-handoff.png" width="320" alt="Human-control session panel in a disposable profile, offering explicit handback, release and observation-only access." />
+
+*Actual 0.2.0 source UI from the disposable setup test; synthetic page only.*
 
 ## Limits and verification
 

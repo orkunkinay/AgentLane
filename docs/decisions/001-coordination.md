@@ -82,8 +82,10 @@ an explicit human resume; a changed screenshot alone cannot resume execution.
   authentication boundaries. Compare equivalent configurations only.
 - [Agent Lanes](https://github.com/ZipLyne-Agency/agent-lanes/tree/4b67532cc81555a72520eed646a140ce7f16c972):
   window pools/private display are candidates, but expand native/platform complexity.
-- [Browser Use](https://github.com/browser-use/browser-use/blob/ccbdb8095fbaf903c748880a600054a34c7b6191/browser_use/browser/session.py):
-  inspect reconnection/target discovery; target discovery alone is not authorization.
+- [Browser Use](https://github.com/browser-use/browser-use/blob/ccbdb8095fbaf903c748880a600054a34c7b6191/browser_use/repl/session.py):
+  the historical browser/session.py path was absent at this revision; current REPL
+  and browser-harness lifetime/target routing were inspected (see RESEARCH.md).
+  Target discovery alone is not authorization.
 - [Stagehand](https://github.com/browserbase/stagehand/tree/8901460d69e2aef8eb639daa0b2dda3fe2e47a8f):
   keep-alive/disconnect separate transport lifetime from browser lifetime. Hosted
   session persistence is not evidence for local Chrome ownership recovery.

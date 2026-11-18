@@ -49,3 +49,33 @@ The store-installed extension does not load source changes from the checkout.
 Keep the store installation recommended and manual installation explicitly optional.
 Explain its own extension ID and manual update lifecycle. Retain dated experiment
 and submission evidence with its original context.
+
+## Coordination changes and release checks
+
+Read [the coordination contract](docs/COORDINATION.md) and
+[the architectural decision](docs/decisions/001-coordination.md) before changing
+identity, scheduling, retry or handoff behavior. The broker uses built-in SQLite;
+Node.js 22.13+ is the minimum. No database server or new npm dependency is required.
+
+```sh
+npm test
+npm run format:check
+npm run check:site
+npm run package:extension
+node experiments/setup.mjs
+node experiments/dropdown.mjs
+AGENTLANE_MCP=1 AGENTLANE_NAVIGATION_PROBE=1 npm run test:browser
+npm run test:reliability
+npm run test:recovery
+```
+
+JavaScript syntax checks, JSON validation and runtime regression tests are provided;
+a whole-project static typecheck is not yet configured. CI includes Linux/Node 24
+and macOS/Node 22.13 jobs, but configured jobs are not evidence of a completed hosted
+run. All browser fixtures are disposable. Temporary test workload/resource sampling
+is not production health monitoring. Do not enable recurring diagnostics.
+
+Retain a failed benchmark trial and its configuration. Renderer-controlled human
+surrogates do not establish physical keyboard/pointer isolation. Comparative results
+need matched configurations and repeated/counterbalanced trials; do not infer a
+competitor failure from design documentation or an unavailable baseline.

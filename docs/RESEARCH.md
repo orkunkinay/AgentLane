@@ -128,3 +128,46 @@ The exact native Codex implementation responsible for every focus report has not
 established here: the browser host is unavailable and native code has no exposed
 replacement hook. Our local experiments establish concrete Chrome triggers and the
 supported MCP alternative, not a reverse-engineered account of closed app internals.
+
+## 2026-11-18 — Coordination source review
+
+Inspected primary docs and pinned upstream code before extending the broker. The
+[decision record](decisions/001-coordination.md) describes alternatives and baseline
+races. No upstream implementation was copied. Playwright, DevTools MCP and Agent
+Lanes carried Apache-2.0 licenses; Browser Use/its harness and Stagehand carried MIT
+licenses in these revisions. Future adoption still requires a license/notice review.
+
+- Playwright `8124fc39233c4c349b9dbebd4abc4103738eae81`: extension README and
+  `background.ts` show shared ConnectionBroker/TabRegistry and background mode.
+  Management-page activation is a human UI action, not evidence of tool focus theft.
+- DevTools MCP `343e6b1e82a80221d1e17ed9d46b174da7563075`: advanced-usage documents
+  concurrent page routing. Selection differs from exclusive ownership; isolated
+  profiles change the authentication boundary.
+- Agent Lanes `4b67532cc81555a72520eed646a140ce7f16c972`: inspected `docs/why.md`
+  and `extension/UPSTREAM.md`. Private display/window pools increase platform surface
+  and were not adopted without independently measured benefits.
+- Browser Use changed substantially: `browser_use/browser/session.py` was absent at
+  `ccbdb8095fbaf903c748880a600054a34c7b6191`. Its
+  [current REPL session implementation](https://github.com/browser-use/browser-use/blob/ccbdb8095fbaf903c748880a600054a34c7b6191/browser_use/repl/session.py)
+  authenticates its worker connection and supports keep-alive. The associated
+  [browser-harness daemon](https://github.com/browser-use/browser-harness/blob/4cccf3b8daf992227a6c9019ffbce5f7a2844280/src/browser_harness/daemon.py)
+  uses narrow session-state/dedicated-target locks and replacement routing. Target
+  discovery/replacement alone cannot establish AgentLane resource authorization.
+- Stagehand `8901460d69e2aef8eb639daa0b2dda3fe2e47a8f`: browser configuration docs
+  distinguish disconnect, close and keep-alive, with different hosted-session
+  lifetimes. Hosted persistence is not proof of local default-profile recovery.
+- [Chromium debugger implementation](https://chromium.googlesource.com/chromium/src/+/main/chrome/browser/extensions/api/debugger/debugger_api.cc)
+  was inspected for profile/URL attachment checks and attached/detached errors.
+  Target and debugger-session identities have different lifetimes. An attachment
+  conflict does not authorize detaching another controller.
+- [MCP cancellation](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/basic/patterns/cancellation.mdx)
+  concerns request lifetime, not rollback. The installed SDK's cancellation signal
+  now reaches local socket fencing.
+
+SQLite kernel locks were chosen over stale PID files/heartbeat leases: they avoid
+PID reuse and split-brain stale-lock deletion without polling. Schema updates are
+transactional; the lock database is separate from the committed operation journal.
+No separate database server, extra resident broker or npm dependency was needed.
+Per-target input concurrency was adopted after real MCP/Chrome fixtures verified
+exact distinct submissions and preserved human fixture state. Capture staging stays
+serialized. Comparative tool performance remains unmeasured.

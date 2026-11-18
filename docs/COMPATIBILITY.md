@@ -22,7 +22,7 @@
 | Popups/new windows | Not isolated | Can activate UI; do not use as a zero-interruption claim |
 | Minimized lane | Refused | No activation/restoration fallback |
 | Occluded window/other Spaces | Unverified | No launch flags or virtual display required by implementation; rendering must be measured |
-| Multiple agent sessions | Unit-tested ownership/queue | 300 renderer rounds and 11 tab recreations tested; simultaneous real-agent load unmeasured |
+| Multiple 0.2.0 MCP sessions | Synthetic multi-client matrix tested | 1/2/5/10/20 independent SDK stdio clients in idle/renderer-active fixtures; actual simultaneous Codex/Claude/Cursor model sessions remain unverified |
 
 Only one Chrome native host may own a given socket. Use separate short
 `AGENTLANE_STATE_DIR` paths in both launcher and MCP environment for independent profiles.
@@ -32,3 +32,19 @@ identically across Chrome versions. Run the harness after browser upgrades.
 Historical normal-profile observations were recorded under the former Still name.
 The rename was verified in disposable Chrome; the loaded personal-profile extension
 requires the [manual migration steps](MIGRATION.md) before it can be called updated.
+
+
+## 0.2.0 source changes
+
+Unreleased, not installed into the personal Chrome profile by this work. The local
+broker requires Node.js 22.13+; the SQLite/transport/Node suite was also exercised
+using Node 22.13.0. Current browser tests use Chrome for Testing 159.0.8154.6.
+The declared Chrome 134 minimum is a feature gate, not a fresh test of every version.
+
+Opt-in logical sessions preserve the exact tab across SDK MCP/native-host restarts
+while the worker retains ownership. Worker/Chrome registry loss is an explicit
+failure, not automatic restoration. Handoff/policy UI is tested in a disposable
+profile. A headed observer test records only its bounded interval; physical active
+human participation, fresh real-account validation and cross-product multi-model
+sessions were not run for this source revision. Linux CI is configured but its new
+jobs have not run because these commits remain local.

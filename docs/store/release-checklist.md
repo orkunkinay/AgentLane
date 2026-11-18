@@ -23,10 +23,18 @@ The listing must disclose macOS, Chrome 134+, Node.js 22+, the separately instal
 native messaging host/MCP server, and an MCP-compatible client. AI provider costs
 and data policies depend on the user's chosen client/provider.
 
+## Current 0.2.0 source preparation
+
+The 0.2.0 build is not submitted or published. Its extension-only ZIP contains 16
+allowlisted files, including errors.js; the historical 0.1.1 submission had 15.
+Review the updated metadata disclosure (acceptance version 2), local SQLite journal,
+Node 22.13+ requirement and human/policy controls before a future submission. Do not
+replace the old submission hash with a newly built archive hash.
+
 ## Prepared materials
 
 - `npm run package:extension`: extension-only ZIP, SHA-256 and build-info.json in
-  `artifacts/chrome-store/`. The script verifies an exact 15-file allowlist.
+  `artifacts/chrome-store/`. The current script verifies an exact 16-file allowlist.
 - `npm run assets:store`: three opaque 1280x800 screenshots, 440x280 promo tile and
   128px icon. Screenshots show disposable-profile UI and synthetic data, with setup
   prerequisites and experimental limitations visible in the artwork.

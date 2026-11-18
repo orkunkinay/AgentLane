@@ -119,8 +119,24 @@ Screenshots may contain private data and reach the configured model provider.
   revoked; never attempt to adopt an anchor tab or a human tab.
 - **Browser bridge unavailable/disconnected:** the human can use **Connect browser**
   in AgentLane. The MCP client reconnects on its next call without a new conversation.
-  Call `lane_open` for fresh ownership. Never replay an interrupted action: its
-  outcome may be unknown. Do not delete a live socket or start another profile.
+  Call `lane_open` for ownership reconciliation. In 0.2.0, an explicitly configured
+  persistent logical session may return `recovered: true`, `opened: false`; its
+  requested URL was not navigated. Take a fresh screenshot. `SESSION_RECOVERY_FAILED`
+  means the original capability is lost; no tab was adopted or restored. Report it
+  and review the loss before an explicit `lane_close` reset and fresh open. Never
+  replay an interrupted action. Do not delete a live socket or start another profile.
+- **Human intervention in 0.2.0:** ask the human to choose **Take control** for the
+  exact tab in AgentLane's popup and wait for **HUMAN_CONTROL** before interacting.
+  Do not try to automate CAPTCHA/MFA or resume because the page changed. The human
+  must choose **Hand back to agent** after returning to their usual window; then
+  take a fresh screenshot. **Release tab to me** ends agent ownership without closing it.
+- **CAPABILITY_DENIED / observation only:** input and navigation are denied by the
+  human-selected policy. Do not bypass it by closing/reopening, changing tools or
+  attempting to alter the policy. Only the human's setup controls change access.
+- **OPERATION_OUTCOME_UNKNOWN:** a browser action may already have caused an external
+  effect. Reconnect and observe; do not repeat it automatically. Completed dispatch
+  is not proof of website success. `SESSION_IN_USE` means another live adapter owns
+  that logical session; do not take it over or edit its capability file.
 - **Lane focused/minimized or renderer timeout:** report the precise error. Let the
   human switch away, restore or recreate the lane as appropriate. After recreating
   a failed lane, call `lane_open` in the same conversation; no native fallback.

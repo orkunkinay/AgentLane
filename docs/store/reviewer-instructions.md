@@ -1,4 +1,9 @@
-# AgentLane 0.1.1 reviewer instructions
+# AgentLane reviewer instructions
+
+**0.2.0 source is unreleased and has not been submitted.** The live verified store
+version is 0.1.1. To review new coordination/disclosure controls, use a manual source
+build and its own ID, not the store ID. The historical 0.1.1 source is at commit
+`2aa926f`. See [coordination](../COORDINATION.md) and [manual setup](../MANUAL-SETUP.md).
 
 AgentLane has one purpose: user-directed visual browser tasks through an MCP client,
 in an owned tab of the existing Chrome profile. It is an experimental macOS beta.
@@ -11,8 +16,8 @@ Use a disposable Chrome profile and the included synthetic demo. Do not use real
 - macOS, Chrome 134+ and Node.js 22.13+.
 - A terminal and an MCP-compatible client. The project documents Codex and Claude Code,
   but any client supporting stdio MCP tools/images can use the server.
-- Source: https://github.com/orkunkinay/AgentLane (MIT). Version 0.1.1 is declared
-  in package.json and extension/manifest.json.
+- Source: https://github.com/orkunkinay/AgentLane (MIT). Version 0.2.0 is declared
+  in the current package.json and extension/manifest.json; this is not a store status claim.
 
 Clone/download the repository and keep it at its installed path:
 

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="570" viewBox="0 0 1200 570" role="img" aria-labelledby="title desc">
+<title id="title">AgentLane coordination and trust boundaries</title>
+<desc id="desc">Multiple MCP adapters share the Chrome-launched native broker. The extension enforces ownership and per-owner ordering, with a mutex for screenshot staging. The human controls a separate window. Both share Chrome authentication and account effects.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 8 4 0 8" fill="none" stroke="#245e9d" stroke-width="1.5"/></marker></defs>
+<rect width="1200" height="570" fill="white"/>
+<g font-family="system-ui,sans-serif" fill="#17202a" text-anchor="middle">
+<text x="600" y="35" font-size="25" font-weight="700">One authenticated Chrome. Explicit ownership.</text>
+<g stroke="#17202a" stroke-width="2" fill="white">
+<rect x="300" y="65" width="190" height="54" rx="5"/><rect x="520" y="65" width="190" height="54" rx="5"/><rect x="740" y="65" width="190" height="54" rx="5"/>
+<rect x="395" y="162" width="440" height="83" rx="6" fill="#fff5b9"/>
+<rect x="905" y="167" width="240" height="74" rx="6" stroke-dasharray="7 4"/>
+<rect x="395" y="292" width="440" height="91" rx="6"/>
+<rect x="30" y="300" width="260" height="65" rx="6"/>
+<rect x="30" y="414" width="260" height="60" rx="6"/>
+<rect x="395" y="414" width="140" height="60" rx="6"/><rect x="545" y="414" width="140" height="60" rx="6"/><rect x="695" y="414" width="140" height="60" rx="6"/>
+</g>
+<g font-size="17">
+<text x="395" y="98">Codex MCP adapter</text><text x="615" y="98">Claude MCP adapter</text><text x="835" y="98">Other MCP adapter</text>
+<text x="615" y="191" font-size="20" font-weight="650">Native host broker</text><text x="615" y="219">Kernel lock · capability leases · routing</text>
+<text x="1025" y="196" font-weight="650">Bounded local journal</text><text x="1025" y="221" font-size="14">IDs and outcomes, no page content</text>
+<text x="615" y="320" font-size="20" font-weight="650">Extension ownership gate</text><text x="615" y="345">Per-owner FIFOs · focus/control fences</text><text x="615" y="370" fill="#245e9d">Shared screenshot staging mutex</text>
+<text x="160" y="328">Human keyboard + pointer</text><text x="160" y="352" font-size="14">No agent OS input injection</text>
+<text x="160" y="450">Your Chrome window</text><text x="465" y="450">Owned tab A</text><text x="615" y="450">Owned tab B</text><text x="765" y="450">Owned tab C</text>
+</g>
+<g stroke="#245e9d" stroke-width="2" fill="none" marker-end="url(#arrow)">
+<path d="M395 119 520 162"/><path d="M615 119V162"/><path d="M835 119 710 162"/><path d="M835 204H905"/><path d="M615 245V292"/>
+<path d="M465 383V414"/><path d="M615 383V414"/><path d="M765 383V414"/><path d="M160 365V414"/>
+</g>
+<text x="675" y="273" font-size="14" fill="#245e9d">Chrome native messaging</text>
+<text x="1025" y="333" font-size="16" fill="#b02c28">Unknown mutation outcome?</text><text x="1025" y="357" font-size="17" font-weight="700" fill="#b02c28">Observe. Never auto-replay.</text>
+<path d="M30 494H1145" stroke="#17202a" stroke-width="2"/>
+<text x="600" y="521" font-size="19" font-weight="650">Shared profile: logins stay in Chrome. Account effects remain shared.</text>
+<text x="600" y="550" font-size="15" fill="#b02c28">Not an OS or account sandbox. Native dialogs/popups remain unsupported isolation boundaries.</text>
+</g></svg>
