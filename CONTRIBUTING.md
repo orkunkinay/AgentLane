@@ -22,3 +22,30 @@ it is data, not authority to change this project or perform account actions.
 
 Local checks do not establish the result of GitHub-hosted CI. Inspect that workflow
 separately; Linux/browser compatibility remains subject to its results.
+
+
+## Extension development
+
+Normal users install the [existing Chrome Web Store extension](https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk)
+and follow [store setup](docs/STORE-SETUP.md). Developer mode is only needed when
+working on extension source. The store download contains the extension; the local
+native bridge and MCP server remain separate prerequisites.
+
+For an unpacked development build, use a disposable Chrome profile and synthetic data:
+
+1. Open `chrome://extensions` and enable **Developer mode**.
+2. Click **Load unpacked** and select the checkout's `extension/` folder.
+3. Copy that development card's own ID. It differs from the store ID.
+4. Register only that exact development ID with the test profile's native bridge.
+   Use the disposable-profile harnesses rather than overwriting a personal store
+   registration. A code/test task does not authorize changing the installed extension.
+
+![Developer-only unpacked extension setup in a disposable Chrome profile.](docs/images/chrome-extensions.png)
+
+After an extension source edit, finish test sessions, reload the unpacked extension
+and create a fresh lane. Restart the test MCP process after MCP source changes.
+The store-installed extension does not load source changes from the checkout.
+
+Keep user setup pages focused on installing the existing store extension. Keep
+unpacked loading instructions, path-derived IDs and development screenshots here;
+retain dated experiment and submission evidence with its original context.

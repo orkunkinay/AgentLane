@@ -18,7 +18,8 @@ flowchart LR
 
 ## Lifecycle
 
-1. Human loads the extension, registers its exact origin with the native host and
+1. Human installs the Chrome Web Store extension, registers its exact store origin
+   (`chrome-extension://mpiigaljakpfmmihkahppdaaccmpgmmk/`) with the native host and
    chooses Selected websites (default) or explicit Any website through the popup.
    Selected websites checks direct opening and navigation against exact origins;
    links and redirects can lead elsewhere. Setup creates a separate unfocused

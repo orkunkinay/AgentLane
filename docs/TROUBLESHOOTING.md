@@ -17,8 +17,9 @@ Google Chrome has been tested.
 **Stale socket after a crash:** the host now reclaims a socket that nothing answers on
 and refuses to start, with an explanation, when a live host owns it.
 
-**Not connected / ENOENT:** load the extension in the intended profile,
-register its exact ID with `scripts/install-host.mjs`, then click **Connect browser**
+**Not connected / ENOENT:** install the existing Chrome Web Store extension in the
+intended profile and register store ID `mpiigaljakpfmmihkahppdaaccmpgmmk` with
+`scripts/install-host.mjs`, then click **Connect browser**
 or **Create agent window** in its popup. A failed connection retry reuses the window
 it already created. Confirm `~/.agentlane/browser.sock` exists. GUI-launched Chrome may
 not inherit your
@@ -95,7 +96,13 @@ images spanning observed navigation and settles briefly, but navigation after it
 return still requires another screenshot. Dynamic content may also move without a
 navigation event. Do not blindly replay a potentially completed input.
 
-**Applying a source update:** unpacked extension workers keep their loaded code.
+**Updating a store installation:** Chrome updates the installed extension through
+the Web Store. Editing or updating this checkout does not update that extension.
+For a local bridge/MCP source update, finish active tasks, restart the MCP server
+and reconnect the browser bridge if its host was still running old code. Keep the
+store origin pinned; do not replace the store extension with an unpacked copy.
+
+**Extension development only — applying a source update:** unpacked extension workers keep their loaded code.
 Finish existing sessions, click AgentLane’s Reload control at `chrome://extensions`,
 prepare a fresh lane with the full origin list, and use a fresh MCP connection.
 Changing files on disk alone does not update the running worker or MCP process.

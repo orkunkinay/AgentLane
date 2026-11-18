@@ -88,11 +88,7 @@ is not the whole setup: the checkout, local bridge and MCP server below are stil
 required. Follow the [illustrated store setup guide](docs/STORE-SETUP.md), including
 [repairing an older unpacked installation](docs/STORE-SETUP.md#switching-from-an-unpacked-extension).
 
-For extension development, you can instead open `chrome://extensions`, enable
-**Developer mode**, click **Load unpacked**, select this checkout's `extension/`
-folder, and copy that card's own ID. Use that ID in step 3; it differs from the store ID.
-
-![Development alternative: Load unpacked and the extension ID in a disposable Chrome profile.](docs/images/chrome-extensions.png)
+Extension developers can use the separate [contributor setup](CONTRIBUTING.md#extension-development).
 
 Review the debugger permission before using a real profile. Chrome grants broad
 browser access to the extension even though AgentLane exposes a narrow toolset.
@@ -256,8 +252,11 @@ pointer, window/Space, authentication, visual workflow, durability and ownership
 The lane window and browser bridge are separate. Opening the anchor page by itself
 does not prepare a lane or connect its bridge; use the extension controls and wait
 for **Connected**. Routine window/bridge recovery works in the same conversation.
-After installing this source update, reload the extension and restart the MCP server
-once to load the new code. An already-running MCP process keeps its old implementation.
+The store extension updates through Chrome; editing this checkout does not change
+its installed code. After updating the local bridge/MCP source, finish active tasks
+and restart the MCP server; reconnect the browser bridge if its host was running the
+old code. An already-running process keeps its old implementation. Extension source
+development and manual reload steps are in [Contributing](CONTRIBUTING.md#extension-development).
 
 AgentLane supplies `lane_open`, `lane_screenshot`, `lane_click`, `lane_type`, `lane_key`,
 `lane_scroll`, `lane_navigate` and `lane_close`. Each connection owns one tab.

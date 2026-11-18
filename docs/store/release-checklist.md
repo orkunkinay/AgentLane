@@ -1,11 +1,19 @@
 # Chrome Web Store beta submission
 
-## Recorded submission
+## Current installation
+
+[Install the existing store item](https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk)
+and follow [the setup guide](../STORE-SETUP.md). Public listing version 0.1.1 and a
+working store-installed bridge were verified on 2026-11-18. The developer dashboard
+has not been re-inspected here; the record below preserves the submission-time state.
+Future releases update this existing item with a new version, not a new store item.
+
+## Historical submission record (2026-11-17)
 
 Version 0.1.1 was submitted on 17 November 2026. Google confirmed submission and
 reported **Pending review** for item `mpiigaljakpfmmihkahppdaaccmpgmmk`.
 Distribution is **Unlisted**, with automatic publication enabled after approval.
-This is not yet an approval or published-install claim. The icon, three screenshots,
+That record predates the live-listing verification above. The icon, three screenshots,
 small promo tile, privacy declarations, policy URL and reviewer setup were saved.
 See [submission-status.json](submission-status.json) for the package hash and status.
 
@@ -47,7 +55,7 @@ and data policies depend on the user's chosen client/provider.
 - This release does not claim a new full live mail journey, cross-platform verification,
   universal native-dialog/closed-shadow isolation, or a new clean physical-desktop run.
 
-## Submission steps in the owner's account
+## Historical first-submission procedure (completed for 0.1.1)
 
 1. Complete developer registration if required. Acceptance of Google's binding
    agreement needs action-time confirmation; payment requires an explicit fee limit.
@@ -78,5 +86,5 @@ Policy references checked on 17 November 2026:
 - https://developer.chrome.com/docs/webstore/program-policies/policies
 - https://developer.chrome.com/docs/webstore/images
 
-This checklist is preparation evidence. The developer dashboard's actual status is
-required before claiming the extension was submitted, approved or published.
+This checklist preserves first-submission evidence. Verify the developer dashboard
+before claiming a current review/approval status or the outcome of a future release.

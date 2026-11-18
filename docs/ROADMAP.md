@@ -42,7 +42,9 @@ or a proven sufficient change for every native authentication sheet.
 - Package the visual-only protocol as a backend for other MCP agents and test their
   image/coordinate support. Add Linux, Windows named-pipe ACLs and browser-specific
   native-host installers.
-- Reproducible signed extension release, dependency updates and security review.
-- Publish only after the owner approves repository publication and privacy review.
+- Done: version 0.1.1 is available through the Chrome Web Store; the public listing
+  and store-installed bridge workflow were verified on 2026-11-18. See [setup](STORE-SETUP.md).
+- Maintain reproducible release packages, dependency updates and security review.
+  Future store versions need a new versioned package and review; retain submission evidence.
 
 No timeline or general zero-interruption claim is implied by this roadmap.

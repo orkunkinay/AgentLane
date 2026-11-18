@@ -23,9 +23,9 @@ npm ci
 npm test
 ```
 
-Install the submitted/store extension in the disposable profile. Find its actual
-32-letter ID in chrome://extensions. The submitted store item ID is
-`mpiigaljakpfmmihkahppdaaccmpgmmk`; an unpacked development copy has a different ID. Register only that ID with the native host:
+Install the [existing Chrome Web Store extension](https://chromewebstore.google.com/detail/agentlane/mpiigaljakpfmmihkahppdaaccmpgmmk)
+in the disposable profile. Developer mode is not required. Its store item ID is
+`mpiigaljakpfmmihkahppdaaccmpgmmk`; register only that ID with the native host:
 
 ```sh
 node scripts/install-host.mjs mpiigaljakpfmmihkahppdaaccmpgmmk

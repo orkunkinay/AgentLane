@@ -1,4 +1,20 @@
-# Migrating the former Still installation to AgentLane
+# Installation migrations
+
+## Current path: an unpacked extension to the store extension
+
+AgentLane is available as an existing Chrome Web Store extension. For a current
+installation or a switch from an unpacked copy, use the
+[store setup and bridge-ID migration guide](STORE-SETUP.md#switching-from-an-unpacked-extension).
+The store ID is `mpiigaljakpfmmihkahppdaaccmpgmmk`. Removing an unpacked extension
+does not update the native-host registration. Developer mode is not required for
+the store installation, and the legacy script below does not migrate the origin
+to the store ID.
+
+## Historical path: the former Still installation to AgentLane
+
+The remainder documents the earlier local rename of an unpacked development build.
+Its same-ID reload steps apply only to that legacy rename, not to store installation.
+
 
 The display name is **AgentLane** and the technical prefix is **agentlane**.
 The repository URL and the eight `lane_*` tool names do not change. This is a
@@ -69,7 +85,7 @@ This is resumable migration, not a transaction that claims to undo every filesys
 change on failure. Inspect an error before proceeding; do not force overwrite custom
 policies, delete state trees or broaden an allowlist to make the script succeed.
 
-## Manual Chrome step—still required for this local installation
+## Historical manual Chrome step for the unpacked rename
 
 **The personal-profile extension was not reloaded by the migration. Its loaded name
 and worker are not claimed to have changed.** The screenshots in this checkout were

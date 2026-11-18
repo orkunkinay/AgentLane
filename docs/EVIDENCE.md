@@ -502,3 +502,24 @@ AgentLane. Disposable-browser layout checks and visual review passed at 390px an
 1280px for the homepage and docs. A pre-existing mobile header overflow was fixed
 by hiding the redundant Home link at small widths; the logo still links home.
 Runtime/browser regressions were not rerun for these documentation-only changes.
+
+## 2026-11-18 — Store installation consistency audit
+
+The deployed documentation already contained the store install steps, but retained
+an expandable unpacked-installation alternative. Removed that alternative and its
+development screenshot from user setup pages and README; the full unpacked procedure
+now lives in CONTRIBUTING.md. Current migration, architecture, troubleshooting,
+roadmap and reviewer/release guidance point to the existing store extension and its
+exact origin. The former Still rename and submission status remain explicitly dated
+historical records. Store updates and local bridge/MCP source updates are described
+separately; editing the checkout does not update a store-installed extension.
+
+Site validation now requires the store URL/host command and rejects unpacked setup
+instructions/screenshots in user-facing HTML. `npm run check:site`,
+`npm run format:check` and `git diff --check` passed. Disposable-browser checks found
+no horizontal overflow at 390px and 1280px; the revised installation section was
+visually inspected through AgentLane. No runtime implementation changed.
+
+The preceding GitHub-hosted Test run (44319301482) did not execute any steps: its
+annotation reports an account billing lock. Its Pages deployment succeeded. Local
+checks are not represented as a passing hosted test run.
