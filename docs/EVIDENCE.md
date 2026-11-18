@@ -537,3 +537,26 @@ Site, formatting and whitespace checks passed. The manual section opened in
 390px/1280px disposable-browser checks without horizontal overflow; screenshots were
 visually inspected. The store route remains present and the site validator requires
 both installation options. No runtime/browser regression run was needed.
+
+## 2026-11-18: 0.2.0 coordination and recovery work
+
+Local source only; no new store submission or push. See the detailed
+[implementation report](IMPLEMENTATION-REPORT.md) and
+[benchmark measurements](BENCHMARK-RESULTS.md), including raw synthetic reports.
+
+- 80/80 tests passed on Node 24.18.0 and the minimum Node 22.13.0.
+- Final real MCP/native/CDP browser/navigation and extracted 16-file package setup passed.
+- Ten 1/2/5/10/20-client scenarios passed: 76 distinct authenticated fixture effects,
+  preserved human selected tab/input and no owned sessions after cleanup.
+- Exact-tab MCP/native-host reconnection and five mutation acknowledgement-loss
+  scenarios passed without replay. Worker-memory loss simulation failed closed.
+- Site/style/whitespace checks passed; setup, handoff, diagram and desktop/mobile
+  website layouts were visually reviewed. No horizontal overflow at 390/1440px.
+- Final package SHA-256: `f33e198e21f76cc68d28a554983f829ca5c02acbd349b509544c57de3e8afd85`.
+  This is a local 0.2.0 build, not the historical submitted 0.1.1 archive.
+
+A baseline attempt failed first capture; a later full baseline run passed. Timing
+comparisons are descriptive, sequential, single-trial and not a speed claim. No
+external competitor benchmark, new real-account/physical-human acceptance, full
+worker/Chrome restoration or hosted CI success is claimed. See release blockers
+in the report. Raw desktop observer recordings remain ignored and uncommitted.

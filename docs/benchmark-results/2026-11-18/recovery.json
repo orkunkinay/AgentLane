@@ -1,0 +1,31 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/159.0.8154.6",
+    "revision": "@98a2592026af8d673b9fa83b626ac68bdf4ae78a",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/159.0.0.0 Safari/537.36",
+    "jsVersion": "15.9.128.1"
+  },
+  "results": {
+    "mcpRestartPreservedExactTab": true,
+    "mcpRecoveryMs": 101.63845900000001,
+    "competingLeaseRejected": true,
+    "nativeRestartPreservedExactTab": true,
+    "nativeRecoveryMs": 88.07720900000004,
+    "committedEffectNotReplayed": true,
+    "fiveMutationKindsExactlyOnceInFixture": true,
+    "lossBeforeServerCommit": true,
+    "lostRegistryFailsClosed": true
+  },
+  "effects": 5,
+  "effectsByKind": {
+    "message": 1,
+    "record": 1,
+    "order": 1,
+    "form": 1,
+    "delete": 1
+  },
+  "faultTiming": "form before server commit; message/record/order/delete after server commit; all before client acknowledgement",
+  "workerRestart": "capability-memory-loss simulation only",
+  "physicalIsolation": "not measured"
+}
